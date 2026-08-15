@@ -890,10 +890,10 @@ const GADGETS = {
     fuse: 0.0, ammo: 3, reload: 1.5,
   },
   rocket: {
-    // v5.10 工程兵 RPG 强化：飞弹快（85m/s）、下坠小（重力 2）、可开镜（adsFov 30）、
-    // 对载具高伤（antiVehicle ×2）、对步兵溅射小（×0.35）
-    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 85, gravity: 2, radius: 5, damage: 280,
-    fuse: 0.0, ammo: 4, antiVehicle: true, reload: 2.5,
+    // v5.43 反坦克强化：飞弹更快（95m/s）、伤害更高（360）、备弹更多（5）、装填更快（2.0s）、溅射更大（6m）
+    // 对载具高伤（antiVehicle ×2）、对步兵溅射小（×0.35）、可开镜（adsFov 30）
+    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 95, gravity: 2, radius: 6, damage: 360,
+    fuse: 0.0, ammo: 5, antiVehicle: true, reload: 2.0,
     scope: true, adsFov: 30, adsTime: 0.2,
   },
   ammo: { name: '弹药箱', kind: 'instant', ammo: -1 },
@@ -930,27 +930,27 @@ const SMOKE = {
 // 血量 ~40% 削减 + 地面速度大幅降低 + 步兵枪械伤害倍率提升（见 weapons.damageVehicle）
 const VEHICLES = {
   tank: {
-    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp: 600, armorClass: 'heavy',
-    speed: 10, reverseSpeed: 7, turnRate: 2.4, camHeight: 4.6,   // v5.29 更机动（转向/倒车增强）
-    shellDamage: 250, shellRadius: 12, shellSpeed: 95, shellReload: 2.2, shellSpread: 0.002,
-    mgDamage: 14, mgRate: 0.1, mgSpread: 0.02,   // v5.14 车载机枪扩散（≈1.1° 锥角）
+    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp: 900, armorClass: 'heavy',
+    speed: 11, reverseSpeed: 7, turnRate: 2.6, camHeight: 4.6,   // v5.43 加强：更厚血 + 更强炮 + 更机动
+    shellDamage: 320, shellRadius: 13, shellSpeed: 110, shellReload: 1.8, shellSpread: 0.002,
+    mgDamage: 18, mgRate: 0.1, mgSpread: 0.02,   // v5.14 车载机枪扩散（≈1.1° 锥角）
   },
   apc: {
-    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp: 420, armorClass: 'light',
-    speed: 14, reverseSpeed: 8, turnRate: 2.6, camHeight: 3.6,   // v5.29 更机动
-    mgDamage: 20, mgRate: 0.085, mgSpread: 0.022,   // v5.14 车载机枪扩散
+    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp: 560, armorClass: 'light',
+    speed: 15, reverseSpeed: 8, turnRate: 2.6, camHeight: 3.6,   // v5.43 加强
+    mgDamage: 26, mgRate: 0.085, mgSpread: 0.022,   // v5.14 车载机枪扩散
   },
   aa: {
-    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp: 400, armorClass: 'light',
-    speed: 13, reverseSpeed: 7, turnRate: 2.4, camHeight: 3.4,   // v5.29 更机动
-    cannonDamage: 18, cannonRate: 0.08, cannonSpread: 0.01,   // v5.14 扩散微增（保持对空压制力）
+    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp: 520, armorClass: 'light',
+    speed: 14, reverseSpeed: 7, turnRate: 2.4, camHeight: 3.4,   // v5.43 加强
+    cannonDamage: 24, cannonRate: 0.08, cannonSpread: 0.01,   // v5.14 扩散微增（保持对空压制力）
     antiAir: true, range: 400,   // 对空（直升机 ×3 / 喷气机 ×1.5）/ 对地极弱
   },
   heli: {
-    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp: 480, armorClass: 'air',
-    speed: 26, turnRate: 1.2, camHeight: 2.6,
-    rocketDamage: 90, rocketRadius: 5, rocketSpeed: 70, rocketReload: 0.16, rocketSpread: 0.002,
-    cannonDamage: 16, cannonRate: 0.07, cannonSpread: 0.02,   // v5.14 机炮扩散
+    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp: 620, armorClass: 'air',
+    speed: 28, turnRate: 1.2, camHeight: 2.6,
+    rocketDamage: 120, rocketRadius: 6, rocketSpeed: 75, rocketReload: 0.15, rocketSpread: 0.002,
+    cannonDamage: 20, cannonRate: 0.07, cannonSpread: 0.02,   // v5.43 加强
   },
   // v5.10 喷气战斗机已删除（用户要求）
 };
@@ -6949,76 +6949,125 @@ const VEHICLE_SPAWNS = [
     return v;
   }
 
-  // ---- 网格 ----
+  // ---- 网格（v5.43 重绘：坦克/装甲车/防空车/直升机细节建模） ----
   function buildMesh(v) {
     const g = new THREE.Group();
     const teamC = v.team === TEAM_RED ? 0xb8443a : 0x355ca8;
-    const bodyM = new THREE.MeshStandardMaterial({ color: teamC, roughness: 0.55, metalness: 0.45 });
-    const darkM = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.7, metalness: 0.4 });
+    const bodyM = new THREE.MeshStandardMaterial({ color: teamC, roughness: 0.5, metalness: 0.5 });
+    const darkM = new THREE.MeshStandardMaterial({ color: 0x23262a, roughness: 0.62, metalness: 0.55 });
+    const trackM = new THREE.MeshStandardMaterial({ color: 0x14161a, roughness: 0.9, metalness: 0.15 });
+    const glassM = new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.15, metalness: 0.7 });
 
     if (v.kind === 'tank') {
-      const hull = box(3.0, 1.5, 4.8, bodyM); hull.position.y = 1.1;
-      const treadL = box(0.9, 1.0, 4.9, darkM); treadL.position.set(-1.6, 0.5, 0);
-      const treadR = box(0.9, 1.0, 4.9, darkM); treadR.position.set(1.6, 0.5, 0);
-      g.add(hull, treadL, treadR);
+      // 主战坦克：倾斜首上装甲 + 侧裙板 + 六对负重轮 + 炮塔（指挥塔/舱盖/炮口制退器）
+      const hull = box(3.2, 1.5, 5.4, bodyM); hull.position.y = 1.15;
+      const glacis = box(3.0, 0.85, 1.7, bodyM); glacis.position.set(0, 1.5, -2.15); glacis.rotation.x = -0.42;
+      const rearDeck = box(3.0, 0.5, 1.1, darkM); rearDeck.position.set(0, 1.35, 2.55);
+      const skirtL = box(0.12, 0.55, 4.6, bodyM); skirtL.position.set(-1.72, 0.9, 0);
+      const skirtR = box(0.12, 0.55, 4.6, bodyM); skirtR.position.set(1.72, 0.9, 0);
+      const treadL = box(0.85, 0.85, 5.7, trackM); treadL.position.set(-1.62, 0.42, 0);
+      const treadR = box(0.85, 0.85, 5.7, trackM); treadR.position.set(1.62, 0.42, 0);
+      g.add(hull, glacis, rearDeck, skirtL, skirtR, treadL, treadR);
+      for (let i = 0; i < 6; i++) {
+        const wz = -2.4 + i * 0.96;
+        const wl = cyl(0.42, 0.4, darkM, 10); wl.rotation.z = Math.PI / 2; wl.position.set(-1.62, 0.42, wz);
+        const wr = cyl(0.42, 0.4, darkM, 10); wr.rotation.z = Math.PI / 2; wr.position.set(1.62, 0.42, wz);
+        g.add(wl, wr);
+      }
       const turret = new THREE.Group();
-      const turretBody = box(2.3, 0.8, 2.8, bodyM); turretBody.position.y = 1.9;
-      const barrelPivot = new THREE.Group(); barrelPivot.position.set(0, 2.0, -0.6);
-      const barrel = cyl(0.16, 3.4, darkM); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0, -1.7);
-      barrelPivot.add(barrel);
-      turret.add(turretBody, barrelPivot);
+      const turretBody = box(2.5, 0.8, 3.1, bodyM); turretBody.position.y = 1.98;
+      const mantlet = box(1.15, 1.0, 0.85, darkM); mantlet.position.set(0, 2.02, -1.6);
+      const cupola = cyl(0.42, 0.3, darkM, 8); cupola.position.set(0.85, 2.5, 0.6);
+      const hatch = cyl(0.34, 0.18, darkM, 8); hatch.position.set(-0.8, 2.45, 0.9);
+      const antenna = cyl(0.025, 1.9, darkM, 4); antenna.position.set(-1.0, 3.3, 0.7); antenna.rotation.x = 0.12;
+      const barrelPivot = new THREE.Group(); barrelPivot.position.set(0, 2.05, -0.6);
+      const barrel = cyl(0.15, 4.4, darkM, 10); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0, -2.2);
+      const muzzle = cyl(0.21, 0.55, darkM, 8); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0, -4.3);
+      barrelPivot.add(barrel, muzzle);
+      turret.add(turretBody, mantlet, cupola, hatch, antenna, barrelPivot);
       g.add(turret);
       v.parts.turret = turret; v.parts.barrelPivot = barrelPivot;
     } else if (v.kind === 'apc') {
-      const hull = box(2.6, 1.6, 4.6, bodyM); hull.position.y = 1.3;
-      const roof = box(2.2, 0.4, 3.2, darkM); roof.position.y = 2.0;
-      g.add(hull, roof);
-      for (let i = 0; i < 4; i++) {
-        const wx = (i % 2 === 0 ? -1.2 : 1.2), wz = (i < 2 ? 1.4 : -1.4);
-        const wheel = cyl(0.5, 0.4, darkM, 8); wheel.rotation.z = Math.PI / 2;
+      // 装甲运兵车：六轮 + 倾斜车头 + 机枪塔 + 侧门
+      const hull = box(2.7, 1.6, 4.9, bodyM); hull.position.y = 1.3;
+      const nose = box(2.4, 1.0, 1.4, bodyM); nose.position.set(0, 1.35, -2.4); nose.rotation.x = -0.5;
+      const roof = box(2.3, 0.35, 3.4, darkM); roof.position.y = 2.0;
+      const doorL = box(0.1, 0.7, 0.9, darkM); doorL.position.set(-1.36, 1.3, 0.7);
+      const doorR = box(0.1, 0.7, 0.9, darkM); doorR.position.set(1.36, 1.3, 0.7);
+      const windshield = box(1.9, 0.4, 0.08, glassM); windshield.position.set(0, 1.7, -2.05); windshield.rotation.x = -0.5;
+      g.add(hull, nose, roof, doorL, doorR, windshield);
+      for (let i = 0; i < 6; i++) {
+        const wx = (i % 2 === 0 ? -1.15 : 1.15), wz = -1.6 + Math.floor(i / 2) * 1.6;
+        const wheel = cyl(0.5, 0.42, darkM, 8); wheel.rotation.z = Math.PI / 2;
         wheel.position.set(wx, 0.5, wz);
         g.add(wheel);
       }
       const turret = new THREE.Group();
-      const mg = box(0.16, 0.16, 1.6, darkM); mg.position.set(0, 2.2, -0.4);
-      turret.add(mg);
-      turret.position.y = 2.0;
+      const mount = box(0.5, 0.35, 0.7, darkM); mount.position.set(0, 2.2, -0.5);
+      const shield = box(0.7, 0.5, 0.1, bodyM); shield.position.set(0, 2.3, -1.0);
+      const barrelPivot = new THREE.Group(); barrelPivot.position.set(0, 2.25, -0.6);
+      const mg = cyl(0.08, 1.9, darkM, 8); mg.rotation.x = Math.PI / 2; mg.position.set(0, 0, -1.0);
+      barrelPivot.add(mg);
+      turret.add(mount, shield, barrelPivot);
       g.add(turret);
-      v.parts.turret = turret; v.parts.barrelPivot = turret;
+      v.parts.turret = turret; v.parts.barrelPivot = barrelPivot;
     } else if (v.kind === 'aa') {
-      // 防空炮车：半开式炮塔 + 双联高射炮管
-      const hull = box(2.6, 1.4, 4.6, bodyM); hull.position.y = 1.2;
-      const roof = box(2.2, 0.3, 3.0, darkM); roof.position.y = 2.0;
-      g.add(hull, roof);
-      for (let i = 0; i < 4; i++) {
-        const wx = (i % 2 === 0 ? -1.2 : 1.2), wz = (i < 2 ? 1.4 : -1.4);
-        const wheel = cyl(0.5, 0.4, darkM, 8); wheel.rotation.z = Math.PI / 2;
+      // 防空炮车：半开式炮塔 + 双联高射炮 + 弹鼓 + 雷达
+      const hull = box(2.7, 1.5, 4.9, bodyM); hull.position.y = 1.25;
+      const nose = box(2.4, 1.0, 1.3, bodyM); nose.position.set(0, 1.3, -2.4); nose.rotation.x = -0.45;
+      const bed = box(2.2, 0.3, 2.6, darkM); bed.position.y = 1.9;
+      g.add(hull, nose, bed);
+      for (let i = 0; i < 6; i++) {
+        const wx = (i % 2 === 0 ? -1.15 : 1.15), wz = -1.6 + Math.floor(i / 2) * 1.6;
+        const wheel = cyl(0.5, 0.42, darkM, 8); wheel.rotation.z = Math.PI / 2;
         wheel.position.set(wx, 0.5, wz);
         g.add(wheel);
       }
       const turret = new THREE.Group();
-      const turretBody = box(1.6, 0.6, 1.8, bodyM); turretBody.position.y = 2.3;
-      const barrelPivot = new THREE.Group(); barrelPivot.position.set(0, 2.3, -0.4);
-      const barrel1 = cyl(0.09, 3.6, darkM); barrel1.rotation.x = Math.PI / 2; barrel1.position.set(0.25, 0.25, -1.8);
-      const barrel2 = cyl(0.09, 3.6, darkM); barrel2.rotation.x = Math.PI / 2; barrel2.position.set(-0.25, 0.25, -1.8);
-      const mag1 = box(0.2, 0.26, 0.4, darkM); mag1.position.set(0.25, 0.3, -0.3);
-      const mag2 = box(0.2, 0.26, 0.4, darkM); mag2.position.set(-0.25, 0.3, -0.3);
-      barrelPivot.add(barrel1, barrel2, mag1, mag2);
-      turret.add(turretBody, barrelPivot);
+      const turretBody = box(1.7, 0.6, 1.9, bodyM); turretBody.position.y = 2.3;
+      const seat = box(0.6, 0.5, 0.6, darkM); seat.position.set(0, 2.7, 0.7);
+      const barrelPivot = new THREE.Group(); barrelPivot.position.set(0, 2.3, -0.6);
+      const barrel1 = cyl(0.09, 3.9, darkM, 8); barrel1.rotation.x = Math.PI / 2; barrel1.position.set(0.28, 0.3, -1.95);
+      const barrel2 = cyl(0.09, 3.9, darkM, 8); barrel2.rotation.x = Math.PI / 2; barrel2.position.set(-0.28, 0.3, -1.95);
+      const mag1 = box(0.22, 0.3, 0.45, darkM); mag1.position.set(0.28, 0.35, -0.2);
+      const mag2 = box(0.22, 0.3, 0.45, darkM); mag2.position.set(-0.28, 0.35, -0.2);
+      const radar = box(0.02, 0.7, 0.5, darkM); radar.position.set(0, 3.1, -0.6);
+      barrelPivot.add(barrel1, barrel2, mag1, mag2, radar);
+      turret.add(turretBody, seat, barrelPivot);
       g.add(turret);
       v.parts.turret = turret; v.parts.barrelPivot = barrelPivot;
     } else if (v.kind === 'heli') {
-      const fuse = box(2.0, 1.4, 4.6, bodyM); fuse.position.y = 1.5;
-      const cockpit = box(1.6, 1.0, 1.2, new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.2, metalness: 0.6 }));
-      cockpit.position.set(0, 1.6, -1.8);
-      const tail = box(0.5, 0.5, 3.0, darkM); tail.position.set(0, 1.6, 3.2);
-      const tailFin = box(0.1, 0.9, 0.7, darkM); tailFin.position.set(0, 2.0, 4.2);
-      const rotor = box(6.0, 0.08, 0.35, darkM); rotor.position.y = 2.6;
-      const tailRotor = box(0.1, 1.2, 0.12, darkM); tailRotor.position.set(0.5, 1.7, 4.5);
-      const skidL = box(0.12, 0.2, 3.0, darkM); skidL.position.set(-0.9, 0.25, -0.3);
-      const skidR = box(0.12, 0.2, 3.0, darkM); skidR.position.set(0.9, 0.25, -0.3);
-      g.add(fuse, cockpit, tail, tailFin, rotor, tailRotor, skidL, skidR);
+      // 武装直升机：锥形机头 + 玻璃座舱 + 短翼火箭巢 + 四叶主旋翼 + 尾桨 + 滑橇
+      const fuse = box(2.0, 1.5, 4.8, bodyM); fuse.position.y = 1.5;
+      const nose = box(1.6, 1.1, 1.2, bodyM); nose.position.set(0, 1.55, -2.2); nose.rotation.x = -0.35;
+      const cockpit = box(1.55, 0.95, 1.4, glassM); cockpit.position.set(0, 1.65, -1.7); cockpit.rotation.x = -0.25;
+      const tail = box(0.45, 0.45, 3.4, darkM); tail.position.set(0, 1.65, 3.6);
+      const tailFin = box(0.08, 1.0, 0.8, darkM); tailFin.position.set(0, 2.1, 4.7);
+      const tailStab = box(0.08, 0.12, 1.4, darkM); tailStab.position.set(0, 1.5, 4.9);
+      const wingL = box(0.5, 0.14, 1.7, bodyM); wingL.position.set(-1.25, 1.5, -0.4);
+      const wingR = box(0.5, 0.14, 1.7, bodyM); wingR.position.set(1.25, 1.5, -0.4);
+      const podL = cyl(0.17, 1.3, darkM, 8); podL.rotation.x = Math.PI / 2; podL.position.set(-1.45, 1.38, -0.4);
+      const podR = cyl(0.17, 1.3, darkM, 8); podR.rotation.x = Math.PI / 2; podR.position.set(1.45, 1.38, -0.4);
+      const rotor = new THREE.Group();
+      const bladeA = box(7.2, 0.06, 0.34, darkM);
+      const bladeB = box(0.34, 0.06, 7.2, darkM);
+      rotor.add(bladeA, bladeB);
+      const rotorHub = cyl(0.22, 0.18, darkM, 8);
+      rotor.add(rotorHub);
+      rotor.position.y = 2.75;
+      const tailRotor = new THREE.Group(); tailRotor.position.set(0.58, 1.7, 5.1);
+      const trBlade = box(0.1, 1.5, 0.1, darkM);
+      tailRotor.add(trBlade);
+      const skidL = box(0.14, 0.18, 3.1, darkM); skidL.position.set(-0.95, 0.3, -0.3);
+      const skidR = box(0.14, 0.18, 3.1, darkM); skidR.position.set(0.95, 0.3, -0.3);
+      const strutL1 = box(0.1, 0.8, 0.1, darkM); strutL1.position.set(-0.95, 0.7, -1.4);
+      const strutL2 = box(0.1, 0.8, 0.1, darkM); strutL2.position.set(-0.95, 0.7, 0.9);
+      const strutR1 = box(0.1, 0.8, 0.1, darkM); strutR1.position.set(0.95, 0.7, -1.4);
+      const strutR2 = box(0.1, 0.8, 0.1, darkM); strutR2.position.set(0.95, 0.7, 0.9);
+      g.add(fuse, nose, cockpit, tail, tailFin, tailStab, wingL, wingR, podL, podR, rotor, tailRotor,
+        skidL, skidR, strutL1, strutL2, strutR1, strutR2);
       v.parts.rotor = rotor;
+      v.parts.tailRotor = tailRotor;
     }
     g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     v.group = g;
@@ -7035,6 +7084,7 @@ const VEHICLE_SPAWNS = [
       v.group.rotation.z = -v.hovRoll * 0.5;
       v.group.rotation.x = -v.hovPitch * 0.4;
       if (v.parts.rotor) v.parts.rotor.rotation.y += dt * (v.occupant ? 26 : 4);
+      if (v.parts.tailRotor) v.parts.tailRotor.rotation.z += dt * (v.occupant ? 42 : 8);   // v5.43 尾桨
     } else if (v.parts.turret) {
       v.parts.turret.rotation.y = v.turretYaw;
       if (v.parts.barrelPivot) {

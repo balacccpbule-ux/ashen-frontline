@@ -29,7 +29,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'return JSON.stringify({ speed: g.speed, gravity: g.gravity, scope: !!g.scope, adsFov: g.adsFov, ammo: g.ammo, tankDrop: tankDrop, infDrop: infDrop });' +
       '})()');
     const a = JSON.parse(r1);
-    assert(a.speed === 85 && a.gravity === 2, 'RPG 飞弹快 + 下坠小（' + a.speed + 'm/s / 重力 ' + a.gravity + '）');
+    assert(a.speed === 95 && a.gravity === 2, 'RPG 飞弹快 + 下坠小（' + a.speed + 'm/s / 重力 ' + a.gravity + '）');
     assert(a.scope === true && a.adsFov === 30, 'RPG 可开镜（30°）');
     assert(a.tankDrop === 200, 'RPG 对载具 ×2（实测 ' + a.tankDrop + '）');
     assert(a.infDrop === 35, 'RPG 对步兵溅射 ×0.35（实测 ' + a.infDrop + '）');

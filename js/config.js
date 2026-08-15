@@ -320,10 +320,10 @@ const GADGETS = {
     fuse: 0.0, ammo: 3, reload: 1.5,
   },
   rocket: {
-    // v5.10 工程兵 RPG 强化：飞弹快（85m/s）、下坠小（重力 2）、可开镜（adsFov 30）、
-    // 对载具高伤（antiVehicle ×2）、对步兵溅射小（×0.35）
-    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 85, gravity: 2, radius: 5, damage: 280,
-    fuse: 0.0, ammo: 4, antiVehicle: true, reload: 2.5,
+    // v5.43 反坦克强化：飞弹更快（95m/s）、伤害更高（360）、备弹更多（5）、装填更快（2.0s）、溅射更大（6m）
+    // 对载具高伤（antiVehicle ×2）、对步兵溅射小（×0.35）、可开镜（adsFov 30）
+    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 95, gravity: 2, radius: 6, damage: 360,
+    fuse: 0.0, ammo: 5, antiVehicle: true, reload: 2.0,
     scope: true, adsFov: 30, adsTime: 0.2,
   },
   ammo: { name: '弹药箱', kind: 'instant', ammo: -1 },
@@ -360,27 +360,27 @@ const SMOKE = {
 // 血量 ~40% 削减 + 地面速度大幅降低 + 步兵枪械伤害倍率提升（见 weapons.damageVehicle）
 const VEHICLES = {
   tank: {
-    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp: 600, armorClass: 'heavy',
-    speed: 10, reverseSpeed: 7, turnRate: 2.4, camHeight: 4.6,   // v5.29 更机动（转向/倒车增强）
-    shellDamage: 250, shellRadius: 12, shellSpeed: 95, shellReload: 2.2, shellSpread: 0.002,
-    mgDamage: 14, mgRate: 0.1, mgSpread: 0.02,   // v5.14 车载机枪扩散（≈1.1° 锥角）
+    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp: 900, armorClass: 'heavy',
+    speed: 11, reverseSpeed: 7, turnRate: 2.6, camHeight: 4.6,   // v5.43 加强：更厚血 + 更强炮 + 更机动
+    shellDamage: 320, shellRadius: 13, shellSpeed: 110, shellReload: 1.8, shellSpread: 0.002,
+    mgDamage: 18, mgRate: 0.1, mgSpread: 0.02,   // v5.14 车载机枪扩散（≈1.1° 锥角）
   },
   apc: {
-    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp: 420, armorClass: 'light',
-    speed: 14, reverseSpeed: 8, turnRate: 2.6, camHeight: 3.6,   // v5.29 更机动
-    mgDamage: 20, mgRate: 0.085, mgSpread: 0.022,   // v5.14 车载机枪扩散
+    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp: 560, armorClass: 'light',
+    speed: 15, reverseSpeed: 8, turnRate: 2.6, camHeight: 3.6,   // v5.43 加强
+    mgDamage: 26, mgRate: 0.085, mgSpread: 0.022,   // v5.14 车载机枪扩散
   },
   aa: {
-    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp: 400, armorClass: 'light',
-    speed: 13, reverseSpeed: 7, turnRate: 2.4, camHeight: 3.4,   // v5.29 更机动
-    cannonDamage: 18, cannonRate: 0.08, cannonSpread: 0.01,   // v5.14 扩散微增（保持对空压制力）
+    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp: 520, armorClass: 'light',
+    speed: 14, reverseSpeed: 7, turnRate: 2.4, camHeight: 3.4,   // v5.43 加强
+    cannonDamage: 24, cannonRate: 0.08, cannonSpread: 0.01,   // v5.14 扩散微增（保持对空压制力）
     antiAir: true, range: 400,   // 对空（直升机 ×3 / 喷气机 ×1.5）/ 对地极弱
   },
   heli: {
-    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp: 480, armorClass: 'air',
-    speed: 26, turnRate: 1.2, camHeight: 2.6,
-    rocketDamage: 90, rocketRadius: 5, rocketSpeed: 70, rocketReload: 0.16, rocketSpread: 0.002,
-    cannonDamage: 16, cannonRate: 0.07, cannonSpread: 0.02,   // v5.14 机炮扩散
+    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp: 620, armorClass: 'air',
+    speed: 28, turnRate: 1.2, camHeight: 2.6,
+    rocketDamage: 120, rocketRadius: 6, rocketSpeed: 75, rocketReload: 0.15, rocketSpread: 0.002,
+    cannonDamage: 20, cannonRate: 0.07, cannonSpread: 0.02,   // v5.43 加强
   },
   // v5.10 喷气战斗机已删除（用户要求）
 };

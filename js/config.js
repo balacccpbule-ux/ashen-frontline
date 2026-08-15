@@ -89,6 +89,7 @@ const CONFIG = {
 
   SPAWN_PROTECT: 3.0,         // 出生无敌秒数
   RESPAWN_TIME: 2.0,
+  CROSSHAIR: true,             // v5.46 红点准星开关（测试用，未来取消）
   FIRE_DIST_MIN: 25,          // AI 开火距离内
 
   // v5.10 突击兵护盾（120 点，等效 60 血；无法补充，重生重置）
@@ -230,7 +231,7 @@ const WEAPONS = {
     adsFov: 42, adsTime: 0.2,
     dropoff: 0.38, falloffRange: 120,
     drawTime: 0.55, modes: ['auto', 'semi'],
-    range: 120, tracer: 0xff3355, sound: 'rifle', scope: false, flashPower: 1.0,
+    range: 120, tracer: 0xff3355, sound: 'rifle', scope: true, flashPower: 1.0,
   },
   lmg: {
     name: 'MG-80 重机枪', key: 'lmg', type: 'auto', auto: true,   // v5.11 改名：重机枪
@@ -241,7 +242,7 @@ const WEAPONS = {
     adsFov: 42, adsTime: 0.22,
     dropoff: 0.35, falloffRange: 140,
     drawTime: 0.75, modes: ['auto'],
-    range: 140, tracer: 0x38c8ff, sound: 'lmg', scope: false, flashPower: 1.2,
+    range: 140, tracer: 0x38c8ff, sound: 'lmg', scope: true, flashPower: 1.2,
   },
   sniper: {
     name: 'SR-50 栓动狙击枪', key: 'sniper', type: 'bolt', auto: false,
@@ -263,7 +264,7 @@ const WEAPONS = {
     adsFov: 45, adsTime: 0.18,
     dropoff: 0.45, falloffRange: 90,
     drawTime: 0.45, modes: ['auto'],
-    range: 90, tracer: 0xffb340, sound: 'smg', scope: false, flashPower: 0.8,
+    range: 90, tracer: 0xffb340, sound: 'smg', scope: true, flashPower: 0.8,
   },
   pistol: {
     name: 'P-45 手枪', key: 'pistol', type: 'semi', auto: false,
@@ -274,7 +275,7 @@ const WEAPONS = {
     adsFov: 50, adsTime: 0.15,
     dropoff: 0.5, falloffRange: 80,
     drawTime: 0.35, modes: ['auto'],
-    range: 80, tracer: 0xff5fd0, sound: 'pistol', scope: false, flashPower: 0.6,
+    range: 80, tracer: 0xff5fd0, sound: 'pistol', scope: true, flashPower: 0.6,
   },
   shotgun: {
     name: 'SG-12 霰弹枪', key: 'shotgun', type: 'shotgun', auto: false,
@@ -286,7 +287,7 @@ const WEAPONS = {
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.06, falloffRange: 32,   // 近战王者：射程末端仅剩 6% 伤害（衰减极陡）
     drawTime: 0.4, modes: ['auto'],    // v5.11 掏枪更快（0.6→0.4），换枪后立刻能射
-    range: 45, tracer: 0xffaa33, sound: 'shotgun', scope: false, flashPower: 1.6,
+    range: 45, tracer: 0xffaa33, sound: 'shotgun', scope: true, flashPower: 1.6,
   },
   aa12: {
     name: 'AA-12 全自动霰弹枪', key: 'aa12', type: 'shotgun', auto: true,
@@ -298,7 +299,7 @@ const WEAPONS = {
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.12, falloffRange: 26,
     drawTime: 0.45, modes: ['auto'],
-    range: 40, tracer: 0xffc040, sound: 'shotgun', scope: false, flashPower: 1.4,
+    range: 40, tracer: 0xffc040, sound: 'shotgun', scope: true, flashPower: 1.4,
   },
   dmr: {
     name: 'MK-14 精确射手步枪', key: 'dmr', type: 'semi', auto: false,
@@ -309,7 +310,7 @@ const WEAPONS = {
     adsFov: 28, adsTime: 0.2,         // 4x 级中倍镜（无狙击镜遮罩，见 player 开镜）
     dropoff: 0.25, falloffRange: 300,
     drawTime: 0.65, modes: ['auto'],
-    range: 300, tracer: 0x9ad0ff, sound: 'dmr', scope: false, flashPower: 1.3,
+    range: 300, tracer: 0x9ad0ff, sound: 'dmr', scope: true, flashPower: 1.3,
   },
 };
 

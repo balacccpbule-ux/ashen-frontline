@@ -591,7 +591,7 @@
       homing: opts.homing || null, turnRate: opts.turnRate || 5,
       owner, team: owner ? owner.team : -1, life: 0,
     };
-    const col = kind === 'grenade' ? 0x7aa050 : kind === 'flare' ? 0xffffff : kind === 'mortarShell' ? 0x6a7a4a : 0xffcc66;
+    const col = kind === 'grenade' ? 0x1a1a1a : kind === 'flare' ? 0xffffff : kind === 'mortarShell' ? 0x1a1a1a : 0xffcc66;
     const g = kind === 'missile'
       ? new THREE.ConeGeometry(0.14, 0.7, 6)
       : new THREE.SphereGeometry(kind === 'grenade' ? 0.14 : 0.18, 6, 6);
@@ -878,6 +878,14 @@
         if (p.kind === 'missile') {
           const len = Math.hypot(p.vel.x, p.vel.y, p.vel.z) || 1;
           p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(p.vel.x / len, p.vel.y / len, p.vel.z / len));
+        }
+      }
+      // v5.46 迫击炮黑色尾迹（每隔一小段喷黑烟）
+      if (p.kind === 'mortarShell') {
+        p._trailT = (p._trailT || 0) - dt;
+        if (p._trailT <= 0) {
+          p._trailT = 0.05;
+          Game.effects.emit(p.pos.x, p.pos.y, p.pos.z, 0x1a1a1a, 2, 0.8, 0.5, 0.1, 1, 1);
         }
       }
       let boom = false;

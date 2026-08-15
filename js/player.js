@@ -366,6 +366,20 @@
     const poly = mat(0x33383f, 0.55, 0.45);
     const wood = mat(0x6b4f2e, 0.72, 0.12);
     const glow = mat(0x0a0c0e, 0.35, 0.65);
+    // v5.46 镂空长方体瞄准镜（像素风，无圆环）；长度取决于交战距离
+    const addScope = (g, y, z) => {
+      const tl = M.clamp(WEAPONS[key].range / 800, 0.16, 0.42);
+      const st = 0.008, tw = 0.075, th = 0.055;
+      const sc = new THREE.Group();
+      const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+      const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+      const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+      const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+      sc.add(wT, wB, wL, wR);
+      sc.position.set(0, y, z);
+      g.add(sc);
+      g.userData.scopeLocal = { x: 0, y, z };
+    };
     if (key === 'pistol') {
       const slide = box(0.075, 0.09, 0.34, metal); slide.position.set(0, 0.03, -0.1);
       const frame = box(0.065, 0.12, 0.2, poly); frame.position.set(0, -0.04, 0.03);
@@ -373,6 +387,7 @@
       const muzzle = box(0.045, 0.045, 0.06, glow); muzzle.position.set(0, 0.03, -0.3);
       const sight = redDotSight(); sight.position.set(0, 0.1, -0.12); sight.scale.setScalar(0.7);
       g.add(slide, frame, grip, muzzle, sight);
+      addScope(g, 0.12, -0.03);
     } else if (key === 'sniper') {
       const body = box(0.06, 0.1, 0.5, poly); body.position.set(0, 0.02, 0.05);
       const barrel = cyl(0.028, 0.62, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.58);
@@ -384,9 +399,7 @@
         const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
-        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
-        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rB.position.z = tl / 2;
-        scope.add(wT, wB, wL, wR, rF, rB);
+        scope.add(wT, wB, wL, wR);
       }
       scope.position.set(0, 0.13, -0.08);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
@@ -406,6 +419,7 @@
       const handle = box(0.04, 0.07, 0.12, poly); handle.position.set(0, 0.15, -0.1);
       const sight = redDotSight(); sight.position.set(0, 0.15, -0.18);
       g.add(body, barrel, muzzle, mag, stock, bipod, handle, sight);
+      addScope(g, 0.13, -0.05);
     } else if (key === 'smg') {
       const body = box(0.06, 0.11, 0.38, poly); body.position.set(0, 0.03, -0.02);
       const barrel = cyl(0.032, 0.2, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.06, -0.28);
@@ -415,6 +429,7 @@
       const grip = box(0.04, 0.1, 0.05, dark); grip.position.set(0, -0.08, 0.08);
       const sight = redDotSight(); sight.position.set(0, 0.12, -0.06); sight.scale.setScalar(0.8);
       g.add(body, barrel, muzzle, mag, stock, grip, sight);
+      addScope(g, 0.12, -0.05);
     } else if (key === 'shotgun') {
       // 泵动霰弹枪：粗管 + 管式弹仓 + 木托 + 泵把
       const body = box(0.07, 0.11, 0.55, wood); body.position.set(0, 0.01, 0.02);
@@ -424,6 +439,7 @@
       const pump = box(0.08, 0.07, 0.16, poly); pump.position.set(0, -0.03, -0.2);
       const stock = box(0.06, 0.12, 0.3, wood); stock.position.set(0, 0, 0.36); stock.rotation.x = 0.1;
       g.add(body, barrel, tubeMag, muzzle, pump, stock);
+      addScope(g, 0.12, -0.05);
     } else if (key === 'aa12') {
       // AA-12 全自动霰弹枪：粗管 + 弹鼓 + 战术托
       const body = box(0.08, 0.12, 0.6, poly); body.position.set(0, 0.02, 0);
@@ -433,6 +449,7 @@
       const stock = box(0.06, 0.1, 0.26, dark); stock.position.set(0, 0.01, 0.36);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.11, 0.16);
       g.add(body, barrel, muzzle, drum, stock, grip);
+      addScope(g, 0.12, -0.05);
     } else if (key === 'dmr') {
       // 精确射手步枪：长枪管 + 中倍镜 + 垂直握把
       const body = box(0.06, 0.11, 0.55, poly); body.position.set(0, 0.01, 0.02);
@@ -445,9 +462,7 @@
         const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
-        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
-        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rB.position.z = tl / 2;
-        scope.add(wT, wB, wL, wR, rF, rB);
+        scope.add(wT, wB, wL, wR);
       }
       scope.position.set(0, 0.13, -0.06);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
@@ -465,6 +480,7 @@
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.16);
       const sight = redDotSight(); sight.position.set(0, 0.12, -0.04);
       g.add(body, barrel, muzzle, mag, stock, grip, sight);
+      addScope(g, 0.12, -0.05);
     }
     g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     return g;
@@ -793,6 +809,9 @@
     // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
       reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
+    // v5.46 开镜时摆正（消除腰射 0.03 的轻微偏转），镜管严格对准屏幕中心
+    const scopeAligned = P.ads && P.adsEase > 0.5 && P.scopeLocal;
+    P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : 0.03, k);
   }
 
   P.init = init; P.update = update;

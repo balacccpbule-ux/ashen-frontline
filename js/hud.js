@@ -474,7 +474,8 @@
     const gap = inVehicle ? 7 : Math.min(34, 3 + spreadDeg * 9);   // v5.10 准星缩小
     el.crosshair.style.setProperty('--gap', gap + 'px');
     el.crosshair.classList.toggle('reddot', !inVehicle && !isSniper);
-    el.crosshair.style.display = Game.Player.scoped ? 'none' : '';
+    // v5.46 红点准星可配置开关（测试用，未来取消）
+    el.crosshair.style.display = (Game.Player.scoped || !CONFIG.CROSSHAIR) ? 'none' : '';
     el.scope.classList.toggle('hidden', !Game.Player.scoped);
 
     // 兵力 + 模式标签

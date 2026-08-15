@@ -431,6 +431,11 @@
       const v = findCrewVehicle(s);
       if (v) {
         const d = M.dist2(s.pos.x, s.pos.z, v.pos.x, v.pos.z);
+        // v5.47 直升机留给玩家：AI 机师延迟登机（先靠近、不进舱）
+        if (b.crew === 'heli' && Game.time < CONFIG.HELI_GRAB_DELAY) {
+          if (d > 8) moveToward(s, v.pos, dt, 1);
+          return;
+        }
         if (d < 6.5) { Game.Vehicles.enter(v, s); return; }
         moveToward(s, v.pos, dt, 1);
         return;

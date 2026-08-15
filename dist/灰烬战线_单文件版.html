@@ -663,6 +663,7 @@ const CONFIG = {
   RESPAWN_TIME: 2.0,
   CROSSHAIR: true,             // v5.46 红点准星开关（测试用，未来取消）
   FIRE_DIST_MIN: 25,          // AI 开火距离内
+  HELI_GRAB_DELAY: 15,         // v5.47 AI 直升机乘员延迟登机秒数（给玩家留直升机）
 
   // v5.10 突击兵护盾（120 点，等效 60 血；无法补充，重生重置）
   ASSAULT_SHIELD: 120,        // 突击兵护盾点数
@@ -799,7 +800,7 @@ const WEAPONS = {
     // 新扩散模型（度·锥角半角）
     spreadHip: 1.4, spreadAds: 0.25, spreadPerShot: 0.22, spreadMax: 3.4, spreadDecay: 3.6,
     // 新后坐模型（RecoilAxis 弹簧 + 确定性 pattern）
-    recoilDef: { pitch: 0.06, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.09, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
     adsFov: 42, adsTime: 0.2,
     dropoff: 0.38, falloffRange: 120,
     drawTime: 0.55, modes: ['auto', 'semi'],
@@ -810,7 +811,7 @@ const WEAPONS = {
     damage: 25, rate: 0.075, mag: 100, reserve: 200, reload: 3.4,
     spread: 0, bloomPerShot: 0.00045, bloomMax: 0.06, recoil: 0.028, recoilYaw: 0.009,
     spreadHip: 1.6, spreadAds: 0.3, spreadPerShot: 0.16, spreadMax: 3.8, spreadDecay: 3.0,
-    recoilDef: { pitch: 0.05, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.075, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
     adsFov: 42, adsTime: 0.22,
     dropoff: 0.35, falloffRange: 140,
     drawTime: 0.75, modes: ['auto'],
@@ -821,7 +822,7 @@ const WEAPONS = {
     damage: 96, rate: 1.25, mag: 5, reserve: 40, reload: 2.7, boltTime: 0.9,   // v5.17 拉栓时长（读条/动画/收镜）
     spread: 0, bloomPerShot: 0.03, bloomMax: 0.12, recoil: 0.07, recoilYaw: 0.007,
     spreadHip: 0.35, spreadAds: 0.02, spreadPerShot: 2.0, spreadMax: 3.0, spreadDecay: 2.5,
-    recoilDef: { pitch: 0.15, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.19, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
     adsFov: 18, adsTime: 0.25,
     dropoff: 0, falloffRange: 400,
     drawTime: 0.7, modes: ['auto'],
@@ -832,7 +833,7 @@ const WEAPONS = {
     damage: 21, rate: 0.058, mag: 32, reserve: 160, reload: 1.9,
     spread: 0, bloomPerShot: 0.0002, bloomMax: 0.05, recoil: 0.02, recoilYaw: 0.008,
     spreadHip: 1.2, spreadAds: 0.2, spreadPerShot: 0.18, spreadMax: 3.0, spreadDecay: 4.2,
-    recoilDef: { pitch: 0.035, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.05, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
     adsFov: 45, adsTime: 0.18,
     dropoff: 0.45, falloffRange: 90,
     drawTime: 0.45, modes: ['auto'],
@@ -843,7 +844,7 @@ const WEAPONS = {
     damage: 32, rate: 0.2, mag: 12, reserve: 48, reload: 1.5,
     spread: 0, bloomPerShot: 0.003, bloomMax: 0.05, recoil: 0.032, recoilYaw: 0.01,
     spreadHip: 1.0, spreadAds: 0.2, spreadPerShot: 0.35, spreadMax: 3.0, spreadDecay: 5.0,
-    recoilDef: { pitch: 0.088, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.13, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.15,
     dropoff: 0.5, falloffRange: 80,
     drawTime: 0.35, modes: ['auto'],
@@ -855,7 +856,7 @@ const WEAPONS = {
     pellets: 8, pelletsSpread: 2.3,   // 每发 8 颗弹丸，散射增强（锥角 2.3°）
     spread: 0, bloomPerShot: 0.012, bloomMax: 0.09, recoil: 0.075, recoilYaw: 0.014,
     spreadHip: 2.2, spreadAds: 1.0, spreadPerShot: 2.4, spreadMax: 4.5, spreadDecay: 4.0,
-    recoilDef: { pitch: 0.16, yaw: 0.025, climbShape: [1.9, 1.5, 1.2, 1.0], drift: 0.6, bias: 0.05, seed: 0x6b1f9c },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.22, yaw: 0.025, climbShape: [1.9, 1.5, 1.2, 1.0], drift: 0.6, bias: 0.05, seed: 0x6b1f9c },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.06, falloffRange: 32,   // 近战王者：射程末端仅剩 6% 伤害（衰减极陡）
     drawTime: 0.4, modes: ['auto'],    // v5.11 掏枪更快（0.6→0.4），换枪后立刻能射
@@ -867,7 +868,7 @@ const WEAPONS = {
     pellets: 8, pelletsSpread: 2.2,
     spread: 0, bloomPerShot: 0.008, bloomMax: 0.08, recoil: 0.04, recoilYaw: 0.008,
     spreadHip: 1.9, spreadAds: 0.9, spreadPerShot: 1.1, spreadMax: 3.6, spreadDecay: 3.5,
-    recoilDef: { pitch: 0.106, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.15, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.12, falloffRange: 26,
     drawTime: 0.45, modes: ['auto'],
@@ -878,7 +879,7 @@ const WEAPONS = {
     damage: 55, rate: 0.16, mag: 15, reserve: 90, reload: 2.2,
     spread: 0, bloomPerShot: 0.004, bloomMax: 0.07, recoil: 0.05, recoilYaw: 0.009,
     spreadHip: 1.0, spreadAds: 0.08, spreadPerShot: 0.5, spreadMax: 2.6, spreadDecay: 3.2,
-    recoilDef: { pitch: 0.106, yaw: 0.018, climbShape: [1.6, 1.35, 1.15, 1.0], drift: 0.6, bias: 0.06, seed: 0x3f8e5a },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.15, yaw: 0.018, climbShape: [1.6, 1.35, 1.15, 1.0], drift: 0.6, bias: 0.06, seed: 0x3f8e5a },   // v5.20 后坐增强
     adsFov: 28, adsTime: 0.2,         // 4x 级中倍镜（无狙击镜遮罩，见 player 开镜）
     dropoff: 0.25, falloffRange: 300,
     drawTime: 0.65, modes: ['auto'],
@@ -1175,6 +1176,8 @@ const VEHICLE_SPAWNS = [
       'merit.suppress': '火力压制',
       'merit.spot': '标记',
       'merit.vehicle': '载具摧毁',
+      'merit.vehicleAssist': '载具助攻',
+      'merit.spotAssist': '侦察助攻',
       'merit.ammo': '补给弹药',
       'merit.heal': '治疗',
       'merit.capture': '占领',
@@ -1310,6 +1313,8 @@ const VEHICLE_SPAWNS = [
       'merit.suppress': 'Suppression',
       'merit.spot': 'Spot',
       'merit.vehicle': 'Vehicle destroyed',
+      'merit.vehicleAssist': 'Vehicle Assist',
+      'merit.spotAssist': 'Spot Assist',
       'merit.ammo': 'Ammo resupplied',
       'merit.heal': 'Heal',
       'merit.capture': 'Capture',
@@ -2004,15 +2009,15 @@ const VEHICLE_SPAWNS = [
       slotIdx = (slotIdx + 1) % SLOT_N;
       const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
       const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
-      // ①枪口爆响（近处主导）
-      crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
+      // ①枪口爆响（近处主导）——v5.47 更低沉
+      crack(jitter(p.crackF * 0.82, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
       // ②火药主体（中频带通）
-      noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
-      // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
-      thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
-      thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
+      noiseBurst(jitter(p.bodyF * 0.82, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
+      // ③低频砰 + ④亚低音（远处主导 → 滚雷感，增强低频）
+      thump(jitter(p.thumpF * 0.9, 0.08), p.thumpDur, p.thumpVol * vol * 1.2);
+      thump(jitter(p.subF0 * 0.9, 0.08), p.subDur, p.subVol * vol * 1.25 * (0.3 + 0.7 * far));
       // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
-      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
+      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.55 * vol);
       // ⑤机匣机械层
       if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
       // ⑥尾音噪声（进混响）
@@ -2260,6 +2265,27 @@ const VEHICLE_SPAWNS = [
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
     o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.55);
+  }
+  // v5.47 拉安全栓：清脆金属"咔哒"（高频瞬态 + 金属环 + 回弹）
+  function pinPull() {
+    SOUND_LOG.push({ n: 'pinPull', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.34, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.05);
+    const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
+    const rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 5200; rf.Q.value = 22;
+    const rg = ctx.createGain();
+    rg.gain.setValueAtTime(0.18, t);
+    rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.start(t); rsrc.stop(t + 0.06);
+    tone(2800, 0.02, 0.15, 0.03);
   }
   // ============================================================
   //  v5.33 专用音效（由 tools/音效工坊_soundlab.html 设计）
@@ -2561,7 +2587,7 @@ const VEHICLE_SPAWNS = [
   Game.sound = {
     shot, reloadStart, reloadMagIn, reloadBolt, reload: reloadStart,
     dryFire, hitBeep, killChime, whizz, shellDrop,
-    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
+    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, pinPull, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
     engineStart, engineUpdate, engineStop,
     heal,
     mortarLaunch, mortarWhistle,
@@ -4846,6 +4872,11 @@ const VEHICLE_SPAWNS = [
       }
     }
     s.lastKiller = attacker;   // v5.12 复仇追踪
+    // v5.47 侦察助攻：被标记敌人被击杀，标记者得助攻（非击杀者、同阵营）
+    if (attacker && s.spottedBy && s.spottedBy !== attacker && s.spottedBy.alive && s.spottedBy.team === attacker.team) {
+      s.spottedBy.score += 25;
+      if (s.spottedBy.isPlayer && Game.hud) Game.hud.merit('spotAssist', 25);
+    }
     if (s.isPlayer) {
       Game.stats.deaths++;
       if (Game.Player.setMortarDeployed) Game.Player.setMortarDeployed(false);   // 阵亡收起迫击炮
@@ -4951,6 +4982,13 @@ const VEHICLE_SPAWNS = [
     }
     v.hp -= final;
     v.lastHitBy = attacker;
+    // v5.47 载具助攻追踪：记录近期伤害来源
+    if (attacker && final > 0) {
+      if (!v.recentDamage) v.recentDamage = {};
+      const r = v.recentDamage[attacker.id];
+      if (r) { r.amount += final; r.t = Game.time; }
+      else v.recentDamage[attacker.id] = { amount: final, t: Game.time };
+    }
     // v5.23 准星跳伤害数字（玩家对载具造成伤害）
     if (attacker && attacker.isPlayer && Game.hud && Game.hud.damagePop && final > 0) {
       Game.hud.damagePop(final, '#ffd27a');
@@ -4966,6 +5004,20 @@ const VEHICLE_SPAWNS = [
     if (attacker && attacker.team !== v.team) {
       attacker.score += 150;
       if (attacker.isPlayer && Game.hud) Game.hud.merit('vehicle', 150);   // v5.18 功绩
+    }
+    // v5.47 载具助攻：8 秒内造成伤害的队友（非击杀者）各得助攻
+    if (v.recentDamage) {
+      for (const id in v.recentDamage) {
+        const r = v.recentDamage[id];
+        if (r && Game.time - r.t < 8 && r.amount >= 50 && Number(id) !== (attacker ? attacker.id : -1)) {
+          const helper = Game.soldiers[Number(id)];
+          if (helper && helper.alive && helper.team === (attacker ? attacker.team : -1)) {
+            helper.score += 30;
+            if (helper.isPlayer && Game.hud) Game.hud.merit('vehicleAssist', 30);
+          }
+        }
+      }
+      v.recentDamage = null;
     }
     // 爆炸
     Game.effects.explosion({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 9, true);
@@ -5052,6 +5104,7 @@ const VEHICLE_SPAWNS = [
     spawnProjectile('grenade', eye,
       { x: f.x * GRENADE.speed + s.vel.x * 0.5, y: f.y * GRENADE.speed + 7, z: f.z * GRENADE.speed + s.vel.z * 0.5 },
       s, { gravity: GRENADE.gravity, radius: GRENADE.radius, damage: GRENADE.damage, fuse: GRENADE.fuse, bounce: true });
+    if (s.isPlayer && Game.sound.pinPull) Game.sound.pinPull();   // v5.47 拉安全栓清脆音效（替代投掷音）
     if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.grenadeThrown'));
   }
 
@@ -5156,6 +5209,7 @@ const VEHICLE_SPAWNS = [
     }
     const first = !(o.spottedUntil > Game.time);
     o.spottedUntil = Game.time + CONFIG.SPOT_TIME;
+    o.spottedBy = s;   // v5.47 侦察助攻追踪：记录标记者
     s.spotCooldown = Game.time + CONFIG.SPOT_COOLDOWN;
     if (first) {
       s.score += CONFIG.SPOT_SCORE;
@@ -5828,6 +5882,15 @@ const VEHICLE_SPAWNS = [
     const wood = mat(0x6b4f2e, 0.72, 0.12);
     const glow = mat(0x0a0c0e, 0.35, 0.65);
     // v5.46 镂空长方体瞄准镜（像素风，无圆环）；长度取决于交战距离
+    // v5.47 集成十字线：极细黑线刻在镜管前端，随镜管移动（非屏幕外设）
+    const reticleMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, depthWrite: false, transparent: true, opacity: 0.92 });
+    const addReticle = (sc, tw, th, tl) => {
+      const t = 0.003;
+      const v = box(t, th - 0.014, t, reticleMat);
+      const h = box(tw - 0.014, t, t, reticleMat);
+      v.position.z = h.position.z = -tl / 2 + 0.006;
+      sc.add(v, h);
+    };
     const addScope = (g, y, z) => {
       const tl = M.clamp(WEAPONS[key].range / 800, 0.16, 0.42);
       const st = 0.008, tw = 0.075, th = 0.055;
@@ -5837,9 +5900,11 @@ const VEHICLE_SPAWNS = [
       const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
       const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
       sc.add(wT, wB, wL, wR);
+      addReticle(sc, tw, th, tl);
       sc.position.set(0, y, z);
       g.add(sc);
       g.userData.scopeLocal = { x: 0, y, z };
+      g.userData.scopeMesh = sc;
     };
     if (key === 'pistol') {
       const slide = box(0.075, 0.09, 0.34, metal); slide.position.set(0, 0.03, -0.1);
@@ -5861,9 +5926,11 @@ const VEHICLE_SPAWNS = [
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
+        addReticle(scope, tw, th, tl);
       }
       scope.position.set(0, 0.13, -0.08);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
+      g.userData.scopeMesh = scope;
       const stock = box(0.055, 0.1, 0.3, wood); stock.position.set(0, -0.02, 0.36);
       const mag = box(0.05, 0.12, 0.08, metal); mag.position.set(0, -0.1, -0.18);
       const bipod = box(0.05, 0.15, 0.03, dark); bipod.position.set(0, -0.11, -0.42); bipod.rotation.x = 0.22;
@@ -5924,9 +5991,11 @@ const VEHICLE_SPAWNS = [
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
+        addReticle(scope, tw, th, tl);
       }
       scope.position.set(0, 0.13, -0.06);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
+      g.userData.scopeMesh = scope;
       const mag = box(0.05, 0.14, 0.08, metal); mag.position.set(0, -0.11, -0.12); mag.rotation.x = 0.2;
       const stock = box(0.055, 0.09, 0.28, poly); stock.position.set(0, -0.01, 0.34);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.14);
@@ -6264,15 +6333,28 @@ const VEHICLE_SPAWNS = [
     }
     const k = 1 - Math.exp(-14 * dt);
     P.view.position.x = M.lerp(P.view.position.x, target.x + bobX, k);
+    // v5.47 后座动画仅前后（z 主），上下只留极小下压用于干扰（y 极微），枪口始终朝前
     P.view.position.y = M.lerp(P.view.position.y,
-      target.y + bobY - P.viewKick * 0.03 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
-    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.12 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
+      target.y + bobY - P.viewKick * 0.015 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
+    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.16 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
     // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
       reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
     // v5.46 开镜时摆正（消除腰射 0.03 的轻微偏转），镜管严格对准屏幕中心
     const scopeAligned = P.ads && P.adsEase > 0.5 && P.scopeLocal;
     P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : 0.03, k);
+    // v5.47 开镜只显示镜管：隐藏枪身，消除枪体挡镜内视野（镜管+集成十字线保留）
+    if (pw && P.models && P.models[pw.def.key]) {
+      const gm = P.models[pw.def.key];
+      const scopeMesh = gm.userData.scopeMesh;
+      if (scopeMesh) {
+        for (let i = 0; i < gm.children.length; i++) {
+          const c = gm.children[i];
+          if (c !== scopeMesh) c.visible = !scopeAligned;
+        }
+        scopeMesh.visible = true;
+      }
+    }
   }
 
   P.init = init; P.update = update;
@@ -6715,6 +6797,11 @@ const VEHICLE_SPAWNS = [
       const v = findCrewVehicle(s);
       if (v) {
         const d = M.dist2(s.pos.x, s.pos.z, v.pos.x, v.pos.z);
+        // v5.47 直升机留给玩家：AI 机师延迟登机（先靠近、不进舱）
+        if (b.crew === 'heli' && Game.time < CONFIG.HELI_GRAB_DELAY) {
+          if (d > 8) moveToward(s, v.pos, dt, 1);
+          return;
+        }
         if (d < 6.5) { Game.Vehicles.enter(v, s); return; }
         moveToward(s, v.pos, dt, 1);
         return;
@@ -8431,7 +8518,8 @@ const VEHICLE_SPAWNS = [
     el.crosshair.classList.toggle('reddot', !inVehicle && !isSniper);
     // v5.46 红点准星可配置开关（测试用，未来取消）
     el.crosshair.style.display = (Game.Player.scoped || !CONFIG.CROSSHAIR) ? 'none' : '';
-    el.scope.classList.toggle('hidden', !Game.Player.scoped);
+    // v5.47 镜枪十字线已集成在 3D 镜管上，屏幕外设十字线仅保留给无镜管的可开镜装备（RPG）
+    el.scope.classList.toggle('hidden', !(Game.Player.scoped && !Game.Player.scopeLocal));
 
     // 兵力 + 模式标签
     el.ticketRed.textContent = Math.ceil(Game.ticketsRed);
@@ -8689,6 +8777,8 @@ const VEHICLE_SPAWNS = [
     suppress: { label: '火力压制', color: '#b8a0ff' },
     spot: { label: '标记', color: '#8fd0ff' },
     vehicle: { label: '载具摧毁', color: '#ffd27a' },
+    vehicleAssist: { label: '载具助攻', color: '#ffcf8a' },   // v5.47
+    spotAssist: { label: '侦察助攻', color: '#8fd0ff' },       // v5.47
     ammo: { label: '补给弹药', color: '#8ad0c8' },
     heal: { label: '治疗', color: '#6ad06a' },
     capture: { label: '占领', color: '#ffd27a' },

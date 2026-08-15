@@ -274,15 +274,15 @@
       slotIdx = (slotIdx + 1) % SLOT_N;
       const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
       const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
-      // ①枪口爆响（近处主导）
-      crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
+      // ①枪口爆响（近处主导）——v5.47 更低沉
+      crack(jitter(p.crackF * 0.82, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
       // ②火药主体（中频带通）
-      noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
-      // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
-      thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
-      thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
+      noiseBurst(jitter(p.bodyF * 0.82, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
+      // ③低频砰 + ④亚低音（远处主导 → 滚雷感，增强低频）
+      thump(jitter(p.thumpF * 0.9, 0.08), p.thumpDur, p.thumpVol * vol * 1.2);
+      thump(jitter(p.subF0 * 0.9, 0.08), p.subDur, p.subVol * vol * 1.25 * (0.3 + 0.7 * far));
       // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
-      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
+      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.55 * vol);
       // ⑤机匣机械层
       if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
       // ⑥尾音噪声（进混响）
@@ -530,6 +530,27 @@
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
     o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.55);
+  }
+  // v5.47 拉安全栓：清脆金属"咔哒"（高频瞬态 + 金属环 + 回弹）
+  function pinPull() {
+    SOUND_LOG.push({ n: 'pinPull', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.34, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.05);
+    const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
+    const rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 5200; rf.Q.value = 22;
+    const rg = ctx.createGain();
+    rg.gain.setValueAtTime(0.18, t);
+    rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.start(t); rsrc.stop(t + 0.06);
+    tone(2800, 0.02, 0.15, 0.03);
   }
   // ============================================================
   //  v5.33 专用音效（由 tools/音效工坊_soundlab.html 设计）
@@ -831,7 +852,7 @@
   Game.sound = {
     shot, reloadStart, reloadMagIn, reloadBolt, reload: reloadStart,
     dryFire, hitBeep, killChime, whizz, shellDrop,
-    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
+    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, pinPull, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
     engineStart, engineUpdate, engineStop,
     heal,
     mortarLaunch, mortarWhistle,

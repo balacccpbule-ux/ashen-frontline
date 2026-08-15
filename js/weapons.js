@@ -421,6 +421,11 @@
       }
     }
     s.lastKiller = attacker;   // v5.12 复仇追踪
+    // v5.47 侦察助攻：被标记敌人被击杀，标记者得助攻（非击杀者、同阵营）
+    if (attacker && s.spottedBy && s.spottedBy !== attacker && s.spottedBy.alive && s.spottedBy.team === attacker.team) {
+      s.spottedBy.score += 25;
+      if (s.spottedBy.isPlayer && Game.hud) Game.hud.merit('spotAssist', 25);
+    }
     if (s.isPlayer) {
       Game.stats.deaths++;
       if (Game.Player.setMortarDeployed) Game.Player.setMortarDeployed(false);   // 阵亡收起迫击炮
@@ -526,6 +531,13 @@
     }
     v.hp -= final;
     v.lastHitBy = attacker;
+    // v5.47 载具助攻追踪：记录近期伤害来源
+    if (attacker && final > 0) {
+      if (!v.recentDamage) v.recentDamage = {};
+      const r = v.recentDamage[attacker.id];
+      if (r) { r.amount += final; r.t = Game.time; }
+      else v.recentDamage[attacker.id] = { amount: final, t: Game.time };
+    }
     // v5.23 准星跳伤害数字（玩家对载具造成伤害）
     if (attacker && attacker.isPlayer && Game.hud && Game.hud.damagePop && final > 0) {
       Game.hud.damagePop(final, '#ffd27a');
@@ -541,6 +553,20 @@
     if (attacker && attacker.team !== v.team) {
       attacker.score += 150;
       if (attacker.isPlayer && Game.hud) Game.hud.merit('vehicle', 150);   // v5.18 功绩
+    }
+    // v5.47 载具助攻：8 秒内造成伤害的队友（非击杀者）各得助攻
+    if (v.recentDamage) {
+      for (const id in v.recentDamage) {
+        const r = v.recentDamage[id];
+        if (r && Game.time - r.t < 8 && r.amount >= 50 && Number(id) !== (attacker ? attacker.id : -1)) {
+          const helper = Game.soldiers[Number(id)];
+          if (helper && helper.alive && helper.team === (attacker ? attacker.team : -1)) {
+            helper.score += 30;
+            if (helper.isPlayer && Game.hud) Game.hud.merit('vehicleAssist', 30);
+          }
+        }
+      }
+      v.recentDamage = null;
     }
     // 爆炸
     Game.effects.explosion({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 9, true);
@@ -627,6 +653,7 @@
     spawnProjectile('grenade', eye,
       { x: f.x * GRENADE.speed + s.vel.x * 0.5, y: f.y * GRENADE.speed + 7, z: f.z * GRENADE.speed + s.vel.z * 0.5 },
       s, { gravity: GRENADE.gravity, radius: GRENADE.radius, damage: GRENADE.damage, fuse: GRENADE.fuse, bounce: true });
+    if (s.isPlayer && Game.sound.pinPull) Game.sound.pinPull();   // v5.47 拉安全栓清脆音效（替代投掷音）
     if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.grenadeThrown'));
   }
 
@@ -731,6 +758,7 @@
     }
     const first = !(o.spottedUntil > Game.time);
     o.spottedUntil = Game.time + CONFIG.SPOT_TIME;
+    o.spottedBy = s;   // v5.47 侦察助攻追踪：记录标记者
     s.spotCooldown = Game.time + CONFIG.SPOT_COOLDOWN;
     if (first) {
       s.score += CONFIG.SPOT_SCORE;

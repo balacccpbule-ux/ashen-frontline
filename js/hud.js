@@ -476,7 +476,8 @@
     el.crosshair.classList.toggle('reddot', !inVehicle && !isSniper);
     // v5.46 红点准星可配置开关（测试用，未来取消）
     el.crosshair.style.display = (Game.Player.scoped || !CONFIG.CROSSHAIR) ? 'none' : '';
-    el.scope.classList.toggle('hidden', !Game.Player.scoped);
+    // v5.47 镜枪十字线已集成在 3D 镜管上，屏幕外设十字线仅保留给无镜管的可开镜装备（RPG）
+    el.scope.classList.toggle('hidden', !(Game.Player.scoped && !Game.Player.scopeLocal));
 
     // 兵力 + 模式标签
     el.ticketRed.textContent = Math.ceil(Game.ticketsRed);
@@ -734,6 +735,8 @@
     suppress: { label: '火力压制', color: '#b8a0ff' },
     spot: { label: '标记', color: '#8fd0ff' },
     vehicle: { label: '载具摧毁', color: '#ffd27a' },
+    vehicleAssist: { label: '载具助攻', color: '#ffcf8a' },   // v5.47
+    spotAssist: { label: '侦察助攻', color: '#8fd0ff' },       // v5.47
     ammo: { label: '补给弹药', color: '#8ad0c8' },
     heal: { label: '治疗', color: '#6ad06a' },
     capture: { label: '占领', color: '#ffd27a' },

@@ -91,6 +91,7 @@ const CONFIG = {
   RESPAWN_TIME: 2.0,
   CROSSHAIR: true,             // v5.46 红点准星开关（测试用，未来取消）
   FIRE_DIST_MIN: 25,          // AI 开火距离内
+  HELI_GRAB_DELAY: 15,         // v5.47 AI 直升机乘员延迟登机秒数（给玩家留直升机）
 
   // v5.10 突击兵护盾（120 点，等效 60 血；无法补充，重生重置）
   ASSAULT_SHIELD: 120,        // 突击兵护盾点数
@@ -227,7 +228,7 @@ const WEAPONS = {
     // 新扩散模型（度·锥角半角）
     spreadHip: 1.4, spreadAds: 0.25, spreadPerShot: 0.22, spreadMax: 3.4, spreadDecay: 3.6,
     // 新后坐模型（RecoilAxis 弹簧 + 确定性 pattern）
-    recoilDef: { pitch: 0.06, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.09, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
     adsFov: 42, adsTime: 0.2,
     dropoff: 0.38, falloffRange: 120,
     drawTime: 0.55, modes: ['auto', 'semi'],
@@ -238,7 +239,7 @@ const WEAPONS = {
     damage: 25, rate: 0.075, mag: 100, reserve: 200, reload: 3.4,
     spread: 0, bloomPerShot: 0.00045, bloomMax: 0.06, recoil: 0.028, recoilYaw: 0.009,
     spreadHip: 1.6, spreadAds: 0.3, spreadPerShot: 0.16, spreadMax: 3.8, spreadDecay: 3.0,
-    recoilDef: { pitch: 0.05, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.075, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
     adsFov: 42, adsTime: 0.22,
     dropoff: 0.35, falloffRange: 140,
     drawTime: 0.75, modes: ['auto'],
@@ -249,7 +250,7 @@ const WEAPONS = {
     damage: 96, rate: 1.25, mag: 5, reserve: 40, reload: 2.7, boltTime: 0.9,   // v5.17 拉栓时长（读条/动画/收镜）
     spread: 0, bloomPerShot: 0.03, bloomMax: 0.12, recoil: 0.07, recoilYaw: 0.007,
     spreadHip: 0.35, spreadAds: 0.02, spreadPerShot: 2.0, spreadMax: 3.0, spreadDecay: 2.5,
-    recoilDef: { pitch: 0.15, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.19, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
     adsFov: 18, adsTime: 0.25,
     dropoff: 0, falloffRange: 400,
     drawTime: 0.7, modes: ['auto'],
@@ -260,7 +261,7 @@ const WEAPONS = {
     damage: 21, rate: 0.058, mag: 32, reserve: 160, reload: 1.9,
     spread: 0, bloomPerShot: 0.0002, bloomMax: 0.05, recoil: 0.02, recoilYaw: 0.008,
     spreadHip: 1.2, spreadAds: 0.2, spreadPerShot: 0.18, spreadMax: 3.0, spreadDecay: 4.2,
-    recoilDef: { pitch: 0.035, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.05, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
     adsFov: 45, adsTime: 0.18,
     dropoff: 0.45, falloffRange: 90,
     drawTime: 0.45, modes: ['auto'],
@@ -271,7 +272,7 @@ const WEAPONS = {
     damage: 32, rate: 0.2, mag: 12, reserve: 48, reload: 1.5,
     spread: 0, bloomPerShot: 0.003, bloomMax: 0.05, recoil: 0.032, recoilYaw: 0.01,
     spreadHip: 1.0, spreadAds: 0.2, spreadPerShot: 0.35, spreadMax: 3.0, spreadDecay: 5.0,
-    recoilDef: { pitch: 0.088, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.13, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.15,
     dropoff: 0.5, falloffRange: 80,
     drawTime: 0.35, modes: ['auto'],
@@ -283,7 +284,7 @@ const WEAPONS = {
     pellets: 8, pelletsSpread: 2.3,   // 每发 8 颗弹丸，散射增强（锥角 2.3°）
     spread: 0, bloomPerShot: 0.012, bloomMax: 0.09, recoil: 0.075, recoilYaw: 0.014,
     spreadHip: 2.2, spreadAds: 1.0, spreadPerShot: 2.4, spreadMax: 4.5, spreadDecay: 4.0,
-    recoilDef: { pitch: 0.16, yaw: 0.025, climbShape: [1.9, 1.5, 1.2, 1.0], drift: 0.6, bias: 0.05, seed: 0x6b1f9c },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.22, yaw: 0.025, climbShape: [1.9, 1.5, 1.2, 1.0], drift: 0.6, bias: 0.05, seed: 0x6b1f9c },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.06, falloffRange: 32,   // 近战王者：射程末端仅剩 6% 伤害（衰减极陡）
     drawTime: 0.4, modes: ['auto'],    // v5.11 掏枪更快（0.6→0.4），换枪后立刻能射
@@ -295,7 +296,7 @@ const WEAPONS = {
     pellets: 8, pelletsSpread: 2.2,
     spread: 0, bloomPerShot: 0.008, bloomMax: 0.08, recoil: 0.04, recoilYaw: 0.008,
     spreadHip: 1.9, spreadAds: 0.9, spreadPerShot: 1.1, spreadMax: 3.6, spreadDecay: 3.5,
-    recoilDef: { pitch: 0.106, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.15, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.18,
     dropoff: 0.12, falloffRange: 26,
     drawTime: 0.45, modes: ['auto'],
@@ -306,7 +307,7 @@ const WEAPONS = {
     damage: 55, rate: 0.16, mag: 15, reserve: 90, reload: 2.2,
     spread: 0, bloomPerShot: 0.004, bloomMax: 0.07, recoil: 0.05, recoilYaw: 0.009,
     spreadHip: 1.0, spreadAds: 0.08, spreadPerShot: 0.5, spreadMax: 2.6, spreadDecay: 3.2,
-    recoilDef: { pitch: 0.106, yaw: 0.018, climbShape: [1.6, 1.35, 1.15, 1.0], drift: 0.6, bias: 0.06, seed: 0x3f8e5a },   // v5.20 后坐增强
+    recoilDef: { pitch: 0.15, yaw: 0.018, climbShape: [1.6, 1.35, 1.15, 1.0], drift: 0.6, bias: 0.06, seed: 0x3f8e5a },   // v5.20 后坐增强
     adsFov: 28, adsTime: 0.2,         // 4x 级中倍镜（无狙击镜遮罩，见 player 开镜）
     dropoff: 0.25, falloffRange: 300,
     drawTime: 0.65, modes: ['auto'],

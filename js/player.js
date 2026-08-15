@@ -367,6 +367,15 @@
     const wood = mat(0x6b4f2e, 0.72, 0.12);
     const glow = mat(0x0a0c0e, 0.35, 0.65);
     // v5.46 镂空长方体瞄准镜（像素风，无圆环）；长度取决于交战距离
+    // v5.47 集成十字线：极细黑线刻在镜管前端，随镜管移动（非屏幕外设）
+    const reticleMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, depthWrite: false, transparent: true, opacity: 0.92 });
+    const addReticle = (sc, tw, th, tl) => {
+      const t = 0.003;
+      const v = box(t, th - 0.014, t, reticleMat);
+      const h = box(tw - 0.014, t, t, reticleMat);
+      v.position.z = h.position.z = -tl / 2 + 0.006;
+      sc.add(v, h);
+    };
     const addScope = (g, y, z) => {
       const tl = M.clamp(WEAPONS[key].range / 800, 0.16, 0.42);
       const st = 0.008, tw = 0.075, th = 0.055;
@@ -376,9 +385,11 @@
       const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
       const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
       sc.add(wT, wB, wL, wR);
+      addReticle(sc, tw, th, tl);
       sc.position.set(0, y, z);
       g.add(sc);
       g.userData.scopeLocal = { x: 0, y, z };
+      g.userData.scopeMesh = sc;
     };
     if (key === 'pistol') {
       const slide = box(0.075, 0.09, 0.34, metal); slide.position.set(0, 0.03, -0.1);
@@ -400,9 +411,11 @@
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
+        addReticle(scope, tw, th, tl);
       }
       scope.position.set(0, 0.13, -0.08);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
+      g.userData.scopeMesh = scope;
       const stock = box(0.055, 0.1, 0.3, wood); stock.position.set(0, -0.02, 0.36);
       const mag = box(0.05, 0.12, 0.08, metal); mag.position.set(0, -0.1, -0.18);
       const bipod = box(0.05, 0.15, 0.03, dark); bipod.position.set(0, -0.11, -0.42); bipod.rotation.x = 0.22;
@@ -463,9 +476,11 @@
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
+        addReticle(scope, tw, th, tl);
       }
       scope.position.set(0, 0.13, -0.06);
       g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
+      g.userData.scopeMesh = scope;
       const mag = box(0.05, 0.14, 0.08, metal); mag.position.set(0, -0.11, -0.12); mag.rotation.x = 0.2;
       const stock = box(0.055, 0.09, 0.28, poly); stock.position.set(0, -0.01, 0.34);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.14);
@@ -803,15 +818,28 @@
     }
     const k = 1 - Math.exp(-14 * dt);
     P.view.position.x = M.lerp(P.view.position.x, target.x + bobX, k);
+    // v5.47 后座动画仅前后（z 主），上下只留极小下压用于干扰（y 极微），枪口始终朝前
     P.view.position.y = M.lerp(P.view.position.y,
-      target.y + bobY - P.viewKick * 0.03 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
-    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.12 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
+      target.y + bobY - P.viewKick * 0.015 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
+    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.16 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
     // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
       reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
     // v5.46 开镜时摆正（消除腰射 0.03 的轻微偏转），镜管严格对准屏幕中心
     const scopeAligned = P.ads && P.adsEase > 0.5 && P.scopeLocal;
     P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : 0.03, k);
+    // v5.47 开镜只显示镜管：隐藏枪身，消除枪体挡镜内视野（镜管+集成十字线保留）
+    if (pw && P.models && P.models[pw.def.key]) {
+      const gm = P.models[pw.def.key];
+      const scopeMesh = gm.userData.scopeMesh;
+      if (scopeMesh) {
+        for (let i = 0; i < gm.children.length; i++) {
+          const c = gm.children[i];
+          if (c !== scopeMesh) c.visible = !scopeAligned;
+        }
+        scopeMesh.visible = true;
+      }
+    }
   }
 
   P.init = init; P.update = update;

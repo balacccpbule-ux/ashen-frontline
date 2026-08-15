@@ -370,7 +370,7 @@
       sc.add(wT, wB, wL, wR);
       addReticle(sc, tw, th, tl);
       // v5.48 镜座：连接镜管与机匣（消除悬浮缝隙，位于镜管下方不挡镜内视野）
-      const mount = box(tw * 0.5, 0.05, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.025, 0);
+      const mount = box(tw * 0.5, 0.08, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.04, 0);
       sc.add(mount);
       sc.position.set(0, y, z);
       g.add(sc);
@@ -383,7 +383,7 @@
       const grip = box(0.06, 0.16, 0.1, dark); grip.position.set(0, -0.13, 0.06); grip.rotation.x = 0.25;
       const muzzle = box(0.045, 0.045, 0.06, glow); muzzle.position.set(0, 0.03, -0.3);
       g.add(slide, frame, grip, muzzle);
-      addScope(g, 0.12, -0.03);
+      addScope(g, 0.15, -0.03);
     } else if (key === 'sniper') {
       const body = box(0.06, 0.1, 0.5, poly); body.position.set(0, 0.02, 0.05);
       const barrel = cyl(0.028, 0.66, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.54);   // v5.48 加长枪管消除机匣-枪管缝隙
@@ -397,11 +397,11 @@
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
         addReticle(scope, tw, th, tl);
-        const mount = box(tw * 0.5, 0.05, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.025, 0);
+        const mount = box(tw * 0.5, 0.08, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.04, 0);
         scope.add(mount);
       }
-      scope.position.set(0, 0.13, -0.08);
-      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
+      scope.position.set(0, 0.16, -0.08);
+      g.userData.scopeLocal = { x: 0, y: 0.16, z: -0.08 };
       g.userData.scopeMesh = scope;
       const stock = box(0.055, 0.1, 0.3, wood); stock.position.set(0, -0.02, 0.36);
       const mag = box(0.05, 0.12, 0.08, metal); mag.position.set(0, -0.1, -0.18);
@@ -417,7 +417,7 @@
       const stock = box(0.07, 0.1, 0.28, wood); stock.position.set(0, 0.02, 0.4);
       const bipod = box(0.06, 0.16, 0.04, dark); bipod.position.set(0, -0.12, -0.44); bipod.rotation.x = 0.15;
       g.add(body, barrel, muzzle, mag, stock, bipod);
-      addScope(g, 0.13, -0.05);
+      addScope(g, 0.15, -0.05);
     } else if (key === 'smg') {
       const body = box(0.06, 0.11, 0.38, poly); body.position.set(0, 0.03, -0.02);
       const barrel = cyl(0.032, 0.2, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.06, -0.28);
@@ -426,7 +426,7 @@
       const stock = box(0.05, 0.08, 0.22, dark); stock.position.set(0, 0.02, 0.22);
       const grip = box(0.04, 0.1, 0.05, dark); grip.position.set(0, -0.08, 0.08);
       g.add(body, barrel, muzzle, mag, stock, grip);
-      addScope(g, 0.12, -0.05);
+      addScope(g, 0.15, -0.05);
     } else if (key === 'shotgun') {
       // 泵动霰弹枪：粗管 + 管式弹仓 + 木托 + 泵把
       const body = box(0.07, 0.11, 0.55, wood); body.position.set(0, 0.01, 0.02);
@@ -436,7 +436,7 @@
       const pump = box(0.08, 0.07, 0.16, poly); pump.position.set(0, -0.03, -0.2);
       const stock = box(0.06, 0.12, 0.3, wood); stock.position.set(0, 0, 0.36); stock.rotation.x = 0.1;
       g.add(body, barrel, tubeMag, muzzle, pump, stock);
-      addScope(g, 0.12, -0.05);
+      addScope(g, 0.15, -0.05);
     } else if (key === 'aa12') {
       // AA-12 全自动霰弹枪：粗管 + 弹鼓 + 战术托
       const body = box(0.08, 0.12, 0.6, poly); body.position.set(0, 0.02, 0);
@@ -446,7 +446,7 @@
       const stock = box(0.06, 0.1, 0.26, dark); stock.position.set(0, 0.01, 0.36);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.11, 0.16);
       g.add(body, barrel, muzzle, drum, stock, grip);
-      addScope(g, 0.12, -0.05);
+      addScope(g, 0.15, -0.05);
     } else if (key === 'dmr') {
       // 精确射手步枪：长枪管 + 中倍镜 + 垂直握把
       const body = box(0.06, 0.11, 0.55, poly); body.position.set(0, 0.01, 0.02);
@@ -461,11 +461,11 @@
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
         addReticle(scope, tw, th, tl);
-        const mount = box(tw * 0.5, 0.05, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.025, 0);
+        const mount = box(tw * 0.5, 0.08, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.04, 0);
         scope.add(mount);
       }
-      scope.position.set(0, 0.13, -0.06);
-      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
+      scope.position.set(0, 0.16, -0.06);
+      g.userData.scopeLocal = { x: 0, y: 0.16, z: -0.06 };
       g.userData.scopeMesh = scope;
       const mag = box(0.05, 0.14, 0.08, metal); mag.position.set(0, -0.11, -0.12); mag.rotation.x = 0.2;
       const stock = box(0.055, 0.09, 0.28, poly); stock.position.set(0, -0.01, 0.34);
@@ -480,7 +480,7 @@
       const stock = box(0.06, 0.1, 0.24, poly); stock.position.set(0, -0.01, 0.32);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.16);
       g.add(body, barrel, muzzle, mag, stock, grip);
-      addScope(g, 0.12, -0.05);
+      addScope(g, 0.15, -0.05);
     }
     g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     return g;
@@ -574,6 +574,7 @@
     P.adsPos = new THREE.Vector3(0, -0.125, -0.34);
     syncModel();
   }
+
 
   function update(dt) {
     const s = Game.player;
@@ -804,6 +805,10 @@
     // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
     if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {
       target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
+    }
+    // v5.48 RPG 开镜：火箭筒模型放低，防止挡视野
+    if (P.ads && P.adsEase > 0.5 && Game.player.slot === 'gadget' && Game.player.gadget === 'rocket') {
+      target = { x: 0, y: -0.22, z: -0.34 };
     }
     const k = 1 - Math.exp(-14 * dt);
     // v5.48 冲刺横持：整体再往左 + 船形绝对位置水平晃动

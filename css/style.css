@@ -97,6 +97,19 @@ html, body {
   background: rgba(20,28,24,0.75);
 }
 
+/* v5.48 俯瞰战场大地图（M 键） */
+#bigmap-overlay {
+  position: absolute; inset: 0; z-index: 60;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.62);
+}
+#bigmap-overlay.hidden { display: none; }
+#bigmap-header { color: #ffd27a; font-size: 15px; font-weight: bold; margin-bottom: 10px; text-shadow: 0 1px 3px #000; }
+#bigmap {
+  width: min(86vmin, 640px); height: min(86vmin, 640px);
+  border: 2px solid rgba(255,255,255,0.5); border-radius: 6px;
+}
+
 /* ---------- 左下 血量 ---------- */
 #bottom-left { position: absolute; left: 20px; bottom: 20px; }
 #health-bar {

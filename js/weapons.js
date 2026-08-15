@@ -183,7 +183,16 @@
     const eye = getEyePos(s);
     const pellets = w.pellets || 1;   // v5：霰弹枪多弹丸
     const dir = getAimDir(s, adsEase);
-    const muzzle = { x: eye.x + dir.x * 0.7, y: eye.y + dir.y * 0.7 - 0.06, z: eye.z + dir.z * 0.7 };
+    // v5.48 真实枪口：从眼睛沿枪械偏移（右/下/前，腰射→开镜插值），子弹不再从脸上射出
+    const av = aimVectors(s);
+    const offR = M.lerp(0.34, 0.02, adsEase);
+    const offD = M.lerp(0.26, 0.09, adsEase);
+    const offF = M.lerp(1.28, 1.05, adsEase);
+    const muzzle = {
+      x: eye.x + av.r.x * offR + av.f.x * offF,
+      y: eye.y - offD + av.f.y * offF,
+      z: eye.z + av.r.z * offR + av.f.z * offF,
+    };
     Game.effects.muzzleFlash(muzzle, w.flashPower || 1);
     if (Game.effects.ejectShell) Game.effects.ejectShell(muzzle, dir); // 抛壳
     const shotVol = s.isPlayer ? 1 : Game.audio.distanceVol(eye);
@@ -200,8 +209,21 @@
         const ln = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
         pdir = { x: dx / ln, y: dy / ln, z: dz / ln };
       }
-      const hit = hitTest(eye, pdir, w.range, s);
-      if (!hit) { Game.effects.tracer(muzzle, at(eye, pdir, w.range), w.tracer); continue; }
+      // v5.48 玩家：先眼睛定准星落点，再枪口射向落点（收敛到准星、尊重枪口遮挡）；AI 仍从眼睛
+      let hit = null, hitEnd = null;
+      if (s.isPlayer) {
+        const aimHit = hitTest(eye, pdir, w.range, s);
+        const ap = aimHit ? aimHit.point : at(eye, pdir, w.range);
+        const bdx = ap.x - muzzle.x, bdy = ap.y - muzzle.y, bdz = ap.z - muzzle.z;
+        const bl = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz) || 1;
+        const bdir = { x: bdx / bl, y: bdy / bl, z: bdz / bl };
+        hit = hitTest(muzzle, bdir, bl + 0.5, s);
+        hitEnd = hit ? hit.point : ap;
+      } else {
+        hit = hitTest(eye, pdir, w.range, s);
+        hitEnd = hit ? hit.point : at(eye, pdir, w.range);
+      }
+      if (!hit) { Game.effects.tracer(muzzle, hitEnd, w.tracer); continue; }
       lastHit = hit; lastDir = pdir; lastEnd = hit.point;
       Game.effects.tracer(muzzle, hit.point, w.tracer);
       const falloff = falloffFactor(w, hit.t);

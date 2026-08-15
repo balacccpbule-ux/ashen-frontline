@@ -70,6 +70,9 @@
       ['sprint', '冲刺速度', 'SPRINT_SPEED', 1, 20, 0.1, f2],
       ['jump', '跳跃力', 'JUMP_VEL', 1, 20, 0.1, f2],
     ]},
+    { title: '界面', type: 'map', items: [
+      ['mapsize', '小地图大小(K)', 'minimapSize', 120, 320, 10, f0],
+    ]},
     { title: '生存 / 治疗', type: 'cfg', items: [
       ['shield', '突击兵护盾', 'ASSAULT_SHIELD', 0, 300, 10, f0],
       ['shielddrain', '护盾消耗率', 'SHIELD_DRAIN_RATE', 1, 4, 0.5, f2],
@@ -192,6 +195,15 @@
 
   function bindButton(id, onClick) { $(id).addEventListener('click', onClick); }
 
+  // 小地图大小滑块（写 Game.hud.minimapSize + 实时重设画布尺寸）
+  function bindMapSlider(id, field, fmt) {
+    const sl = $('#' + id), val = $('#' + id + '-v');
+    const refresh = () => { const v = (Game.hud && Game.hud[field]) || 190; sl.value = v; val.textContent = fmt(v); };
+    sl.addEventListener('input', () => { const v = parseFloat(sl.value); if (Game.hud && Game.hud.setMinimapSize) Game.hud.setMinimapSize(v, true); val.textContent = fmt(v); });
+    sl.addEventListener('change', () => { toast('小地图大小 ' + sl.value + 'px'); });
+    refresh();
+  }
+
   // ---------- 构建面板 ----------
   function build() {
     injectStyle();
@@ -255,6 +267,8 @@
         } else if (sec.type === 'veh') {
           const [vk, field] = key.split('.');
           bindCfg(id, 'veh.' + key, () => VEHICLES[vk][field], (v) => { VEHICLES[vk][field] = v; }, it[6]);
+        } else if (sec.type === 'map') {
+          bindMapSlider(id, key, it[6]);
         } else {
           // cfg；反应延迟特殊处理（同时设 MIN/MAX）
           if (key === 'AI_REACT_MIN') {

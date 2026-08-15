@@ -14,7 +14,12 @@
     save: { totalScore: 0, kills: 0, deaths: 0, wins: 0, losses: 0, bestStreak: 0 },
     visIdx: 0,                 // v5.16 敌方载具视野轮询游标
     mortarReveals: [],         // v5.16 反炮击预警：被敌方迫击炮命中后高亮的敌方迫击炮手 [{ s, until }]
+    minimapRange: 100,         // v5.48 小地图缩放挡位（25/50/100/200m，N 键循环）
+    minimapSize: 190,          // v5.48 小地图显示尺寸（px，K 键/调参面板调整）
+    bigMapOpen: false,         // v5.48 M 键俯瞰大地图开关
   };
+  const MINIMAP_RANGES = [25, 50, 100, 200];
+  const MINIMAP_SIZES = [140, 190, 240];
 
   const $ = (id) => document.getElementById(id);
   const normAngle = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
@@ -30,7 +35,8 @@
       ticketRed: $('ticket-red'), ticketBlue: $('ticket-blue'),
       modeTag: $('mode-tag'), sectorBar: $('sector-bar'),
       flags: $('flags'), score: $('score'), rankMini: $('rank-mini'),
-      minimap: $('minimap'), captureStatus: $('capture-status'), message: $('message'),
+      minimap: $('minimap'), bigmap: $('bigmap'), bigmapOverlay: $('bigmap-overlay'),
+      captureStatus: $('capture-status'), message: $('message'),
       spawnHint: $('spawn-hint'), vehicleHud: $('vehicle-hud'),
       vehicleName: $('vehicle-name'), vehicleHealthFill: $('vehicle-health-fill'), vehicleHint: $('vehicle-hint'),
       pauseHint: $('pause-hint'),
@@ -54,6 +60,11 @@
     buildFlags();
     loadSave();
     bindMenuSelect();
+    // v5.48 小地图：读取保存尺寸 + 绑定 N/M/K
+    let savedSize = 190;
+    try { savedSize = parseInt(localStorage.getItem('ashen_minimap_size') || '190') || 190; } catch (e) {}
+    setMinimapSize(savedSize, true);
+    bindMapKeys();
   }
 
   // ---- 菜单模式/地图选择 ----
@@ -256,8 +267,9 @@
     return off;
   }
   function initMinimap() {
-    H.minimapBg = renderTerrainCanvas(CONFIG.MINIMAP_SIZE);
-    H.mortarBg = renderTerrainCanvas(380);   // v5.7 迫击炮地图（高分辨率）
+    H.minimapBg = renderTerrainCanvas(256);   // v5.48 小地图地形底图（更高分辨率，放大不糊）
+    H.bigMapBg = renderTerrainCanvas(640);    // v5.48 大地图地形底图
+    H.mortarBg = renderTerrainCanvas(380);    // v5.7 迫击炮地图（高分辨率）
   }
 
   // v5.16 敌方载具视野：玩家本人或任意轮询到的队友对载具有 LOS 即视为可见
@@ -287,101 +299,196 @@
     if (H.mortarReveals.length > 4) H.mortarReveals.shift();
   }
 
-  function drawMinimap() {
-    const c = H.el.minimap; if (!c || !H.minimapBg) return;
-    const ctx = c.getContext('2d');
-    const size = CONFIG.MINIMAP_SIZE;
-    const scale = size / (CONFIG.WORLD * 2);
-    ctx.drawImage(H.minimapBg, 0, 0);
-    const now = Game.time;
-    const pt = Game.player.team;
-    // v5.16 过期反炮击预警清理
+  // ---- v5.48 地图渲染：小地图/大地图共用，朝向为北实时旋转 + 缩放挡位 ----
+  function mapFrame(size, range) {
+    const p = Game.player;
+    const scale = size / (range * 2);
+    const cos = Math.cos(p.yaw), sin = Math.sin(p.yaw);
+    const cx = size / 2, cy = size / 2;
+    const to = (wx, wz) => {
+      const dx = wx - p.pos.x, dz = wz - p.pos.z;
+      return { x: cx + (dx * cos - dz * sin) * scale, y: cy + (dx * sin + dz * cos) * scale };
+    };
+    const inRange = (wx, wz) => {
+      const dx = wx - p.pos.x, dz = wz - p.pos.z;
+      const rx = dx * cos - dz * sin, rz = dx * sin + dz * cos;
+      return Math.abs(rx) <= range && Math.abs(rz) <= range;
+    };
+    return { scale, cos, sin, cx, cy, to, inRange };
+  }
+
+  function renderMap(ctx, size, range, bg) {
+    const p = Game.player;
+    const f = mapFrame(size, range);
+    ctx.clearRect(0, 0, size, size);
+    // 地形底图：旋转 + 缩放（玩家朝向 = 上）
+    ctx.save();
+    ctx.translate(f.cx, f.cy);
+    ctx.rotate(p.yaw);
+    const bgScale = bg.width / (CONFIG.WORLD * 2);
+    ctx.scale(f.scale / bgScale, f.scale / bgScale);
+    ctx.drawImage(bg, -(p.pos.x + CONFIG.WORLD) * bgScale, -(p.pos.z + CONFIG.WORLD) * bgScale);
+    ctx.restore();
+    const now = Game.time, pt = p.team;
     H.mortarReveals = H.mortarReveals.filter((r) => r.until > now && r.s && r.s.alive);
     // 占领点
-    for (const f of Game.flags) {
-      const x = (f.x + CONFIG.WORLD) * scale, y = (f.z + CONFIG.WORLD) * scale;
-      const col = f.owner === TEAM_RED ? '#ff6a5e' : f.owner === TEAM_BLUE ? '#6aa0ff' : '#e8e8e8';
+    for (const flag of Game.flags) {
+      if (!f.inRange(flag.x, flag.z)) continue;
+      const q = f.to(flag.x, flag.z);
+      const col = flag.owner === TEAM_RED ? '#ff6a5e' : flag.owner === TEAM_BLUE ? '#6aa0ff' : '#e8e8e8';
       ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#000'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(f.id, x, y + 3);
+      ctx.fillStyle = '#000'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(flag.id, q.x, q.y + 3);
     }
-    // 载具：己方恒显；敌方有视野才标注（v5.16）
+    // 载具：己方恒显；敌方有视野才标注；按类型绘制缩小俯视图
     for (const v of Game.vehicles) {
       if (!v.alive) continue;
       if (v.team !== pt) {
         if (!(v.minimapSeenUntil > now) && (v.visCheckT || 0) <= now) {
-          v.visCheckT = now + 0.4;   // 节流 LOS 判定
+          v.visCheckT = now + 0.4;
           if (vehicleSeenByTeam(v)) v.minimapSeenUntil = now + 1.2;
         }
-        if (!(v.minimapSeenUntil > now) && !(v.spottedUntil > now)) continue;   // 无视野且未标记 → 不标注
+        if (!(v.minimapSeenUntil > now) && !(v.spottedUntil > now)) continue;
       }
-      const x = (v.pos.x + CONFIG.WORLD) * scale, y = (v.pos.z + CONFIG.WORLD) * scale;
-      // v5.39 载具坦克符号标记：车身矩形 + 炮管（车头朝向），区别于步兵圆点
-      ctx.fillStyle = v.team === TEAM_RED ? '#e06a5e' : '#6a8ae0';
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.lineWidth = 1;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(Math.atan2(-Math.sin(v.yaw), -Math.cos(v.yaw)));
-      ctx.fillRect(-2.6, -1.8, 5.2, 3.6);          // 车体
-      ctx.strokeRect(-2.6, -1.8, 5.2, 3.6);
-      ctx.fillRect(0, -0.7, 5.5, 1.4);             // 炮管（车头朝前）
-      ctx.restore();
+      if (!f.inRange(v.pos.x, v.pos.z)) continue;
+      const q = f.to(v.pos.x, v.pos.z);
+      drawVehicleSilhouette(ctx, v.kind, v.team, q.x, q.y, v.yaw - p.yaw);
       if (v.team !== pt) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1;   // 视野标注描边
-        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(q.x, q.y, 9, 0, Math.PI * 2); ctx.stroke();
       }
     }
     // 队友
     for (const s of Game.soldiers) {
       if (!s.alive || s.team !== pt || s === Game.player) continue;
-      const x = (s.pos.x + CONFIG.WORLD) * scale, y = (s.pos.z + CONFIG.WORLD) * scale;
-      ctx.fillStyle = '#6ad06a'; ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+      if (!f.inRange(s.pos.x, s.pos.z)) continue;
+      const q = f.to(s.pos.x, s.pos.z);
+      ctx.fillStyle = '#6ad06a'; ctx.fillRect(q.x - 1.5, q.y - 1.5, 3, 3);
     }
-    // 被标记的敌人（v5.26 迫击炮兵部署/暴露时特殊标记）
+    // 被标记的敌人
     for (const s of Game.soldiers) {
       if (!s.alive || s.team === pt) continue;
-      if (s.spottedUntil > now) {
-        const x = (s.pos.x + CONFIG.WORLD) * scale, y = (s.pos.z + CONFIG.WORLD) * scale;
+      if (s.spottedUntil > now && f.inRange(s.pos.x, s.pos.z)) {
+        const q = f.to(s.pos.x, s.pos.z);
         if (s.clsKey === 'mortar') {
-          // 迫击炮图标：橙色圆 + 白十字（区别于普通红点）
           ctx.fillStyle = '#ffa028';
-          ctx.beginPath(); ctx.arc(x, y, 3.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(q.x, q.y, 3.4, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(x - 4.6, y); ctx.lineTo(x + 4.6, y);
-          ctx.moveTo(x, y - 4.6); ctx.lineTo(x, y + 4.6);
+          ctx.moveTo(q.x - 4.6, q.y); ctx.lineTo(q.x + 4.6, q.y);
+          ctx.moveTo(q.x, q.y - 4.6); ctx.lineTo(q.x, q.y + 4.6);
           ctx.stroke();
         } else {
           ctx.fillStyle = '#ff5544';
-          ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(q.x, q.y, 2.5, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
-    // v5.16 反炮击预警：敌方迫击炮手（无视视野，脉冲高亮 + 十字图标）
+    // 反炮击预警
     for (const r of H.mortarReveals) {
-      const x = (r.s.pos.x + CONFIG.WORLD) * scale, y = (r.s.pos.z + CONFIG.WORLD) * scale;
+      if (!r.s || !r.s.alive || !f.inRange(r.s.pos.x, r.s.pos.z)) continue;
+      const q = f.to(r.s.pos.x, r.s.pos.z);
       const pulse = 4 + Math.sin(now * 6) * 1.3;
       ctx.fillStyle = 'rgba(255,150,40,0.35)';
-      ctx.beginPath(); ctx.arc(x, y, pulse + 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(q.x, q.y, pulse + 3.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#ffa028';
-      ctx.beginPath(); ctx.arc(x, y, pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(q.x, q.y, pulse, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(x, y, pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(q.x, q.y, pulse, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(x - 3, y); ctx.lineTo(x + 3, y);
-      ctx.moveTo(x, y - 3); ctx.lineTo(x, y + 3);
+      ctx.moveTo(q.x - 3, q.y); ctx.lineTo(q.x + 3, q.y);
+      ctx.moveTo(q.x, q.y - 3); ctx.lineTo(q.x, q.y + 3);
       ctx.stroke();
     }
-    // 玩家（白点 + 朝向线）
-    const px = (Game.player.pos.x + CONFIG.WORLD) * scale, py = (Game.player.pos.z + CONFIG.WORLD) * scale;
-    const fx = -Math.sin(Game.player.yaw), fz = -Math.cos(Game.player.yaw);
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + fx * 7, py + fz * 7); ctx.stroke();
+    // 玩家：中心白色箭头（朝上 = 当前朝向）
     ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(f.cx, f.cy - 6);
+    ctx.lineTo(f.cx - 4, f.cy + 4);
+    ctx.lineTo(f.cx + 4, f.cy + 4);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(f.cx, f.cy, 2.2, 0, Math.PI * 2); ctx.stroke();
   }
+
+  // v5.48 载具缩小俯视图（按类型区分：坦克/装甲车/防空车/直升机）
+  function drawVehicleSilhouette(ctx, kind, team, x, y, ang) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    ctx.fillStyle = team === TEAM_RED ? '#e06a5e' : '#6a8ae0';
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.lineWidth = 1;
+    if (kind === 'tank') {
+      ctx.fillRect(-3, -2, 6, 4); ctx.strokeRect(-3, -2, 6, 4);
+      ctx.fillRect(-1.5, -1.5, 3, 3); ctx.strokeRect(-1.5, -1.5, 3, 3);
+      ctx.fillRect(0, -0.8, 5, 1.6);
+    } else if (kind === 'apc') {
+      ctx.fillRect(-3, -1.8, 6, 3.6); ctx.strokeRect(-3, -1.8, 6, 3.6);
+      ctx.fillRect(-1, -1, 2, 2); ctx.strokeRect(-1, -1, 2, 2);
+      ctx.fillRect(0, -0.6, 3, 1.2);
+    } else if (kind === 'aa') {
+      ctx.fillRect(-2.6, -1.8, 5.2, 3.6); ctx.strokeRect(-2.6, -1.8, 5.2, 3.6);
+      ctx.fillRect(-1.2, -1.2, 2.4, 2.4); ctx.strokeRect(-1.2, -1.2, 2.4, 2.4);
+      ctx.fillRect(0, -0.6, 3.4, 1.2);
+      ctx.fillRect(0.8, -1, 0.9, 0.9); ctx.fillRect(0.8, 0.1, 0.9, 0.9);
+    } else if (kind === 'heli') {
+      ctx.fillRect(-0.8, -2.4, 1.6, 4.8); ctx.strokeRect(-0.8, -2.4, 1.6, 4.8);
+      ctx.fillRect(-3.2, -0.5, 6.4, 1);
+      ctx.fillRect(0.4, 2, 2.4, 0.8);
+    }
+    ctx.restore();
+  }
+
+  function drawMinimap() {
+    const c = H.el.minimap; if (!c || !H.minimapBg) return;
+    renderMap(c.getContext('2d'), H.minimapSize, H.minimapRange, H.minimapBg);
+  }
+
+  function drawBigMap() {
+    if (!H.bigMapOpen) return;
+    const c = H.el.bigmap; if (!c || !H.bigMapBg) return;
+    renderMap(c.getContext('2d'), c.width, H.minimapRange, H.bigMapBg);
+  }
+
+  // v5.48 小地图尺寸 / 缩放 / 大地图
+  function setMinimapSize(size, silent) {
+    H.minimapSize = size;
+    const c = H.el.minimap;
+    if (c) { c.width = c.height = size; c.style.width = c.style.height = size + 'px'; }
+    try { localStorage.setItem('ashen_minimap_size', String(size)); } catch (e) {}
+    if (!silent) H.message('小地图大小 ' + size + 'px');
+  }
+  function cycleMinimapRange() {
+    const i = MINIMAP_RANGES.indexOf(H.minimapRange);
+    H.minimapRange = MINIMAP_RANGES[(i + 1) % MINIMAP_RANGES.length];
+    H.message('小地图范围 ' + H.minimapRange + 'm');
+  }
+  function cycleMinimapSize() {
+    const i = MINIMAP_SIZES.indexOf(H.minimapSize);
+    setMinimapSize(MINIMAP_SIZES[(i + 1) % MINIMAP_SIZES.length]);
+  }
+  function toggleBigMap() {
+    H.bigMapOpen = !H.bigMapOpen;
+    if (H.el.bigmapOverlay) H.el.bigmapOverlay.classList.toggle('hidden', !H.bigMapOpen);
+    if (H.bigMapOpen) {
+      if (document.exitPointerLock) { try { document.exitPointerLock(); } catch (e) {} }
+    } else if (Game.running && Game.player && Game.player.alive && Game.phase === 'playing' && Game.Player && Game.Player.requestLock) {
+      Game.Player.requestLock();
+    }
+  }
+  function bindMapKeys() {
+    document.addEventListener('keydown', (e) => {
+      if (!Game.running) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      if (e.code === 'KeyN') { e.preventDefault(); cycleMinimapRange(); }
+      else if (e.code === 'KeyM') { e.preventDefault(); toggleBigMap(); }
+      else if (e.code === 'KeyK') { e.preventDefault(); cycleMinimapSize(); }
+    });
+  }
+  H.setMinimapSize = setMinimapSize;
 
   // ---- 每帧更新 ----
   function update(dt) {
@@ -510,8 +617,9 @@
     // v5.39 阵亡俯视选点：实时刷新复活点按钮投影（跟随相机）
     if (Game.phase === 'dead') updateDeathSpawns();
 
-    // 小地图
+    // 小地图 / 大地图
     drawMinimap();
+    drawBigMap();
 
     // 迫击炮部署地图（部署期间实时刷新）
     if (Game.Player.mortarDeployed) drawMortarMap();

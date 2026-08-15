@@ -246,7 +246,7 @@
       '<button id="dbg-spawn">复活敌方AI</button><button id="dbg-slow">慢动作</button><button id="dbg-shadow">阴影</button>' +
       '</div><div class="row"><button id="dbg-crosshair">红点准星</button></div>';
     html += '<h4>参数</h4><div class="row">' +
-      '<button id="dbg-reset" class="danger">重置全部参数</button>' +
+      '<button id="dbg-export">导出参数</button><button id="dbg-reset" class="danger">重置全部参数</button>' +
       '</div>';
     html += '<h4>信息</h4><div id="dbg-info"></div></div>';
 
@@ -308,6 +308,15 @@
     bindButton('#dbg-slow', () => { Game.timeScale = (Game.timeScale === 1 ? 0.3 : 1); $('#dbg-slow').classList.toggle('on', Game.timeScale !== 1); toast(Game.timeScale === 1 ? '慢动作：关' : '慢动作：0.3×'); });
     bindButton('#dbg-shadow', () => { CONFIG.SHADOWS = !CONFIG.SHADOWS; if (Game.renderer) Game.renderer.shadowMap.enabled = CONFIG.SHADOWS; $('#dbg-shadow').classList.toggle('on', CONFIG.SHADOWS); toast(CONFIG.SHADOWS ? '阴影：开' : '阴影：关'); });
     bindButton('#dbg-crosshair', () => { CONFIG.CROSSHAIR = !CONFIG.CROSSHAIR; $('#dbg-crosshair').classList.toggle('on', CONFIG.CROSSHAIR); toast(CONFIG.CROSSHAIR ? '红点准星：开（测试）' : '红点准星：关'); });
+
+    // 导出参数（复制本地已保存参数为 JSON，供对齐发布版）
+    bindButton('#dbg-export', () => {
+      const json = JSON.stringify(SAVED);
+      console.log('[params-export]', json);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(json).then(() => toast('已导出参数到剪贴板')).catch(() => toast('已输出到控制台，请复制'));
+      } else toast('已输出到控制台，请复制');
+    });
 
     // 重置
     bindButton('#dbg-reset', () => { try { localStorage.removeItem(STORE_KEY); } catch (e) {} location.reload(); });

@@ -73,13 +73,13 @@ const CONFIG = {
   GRAVITY: 30,
   FALL_DMG_THRESHOLD: 8,      // 坠落伤害阈值：下落距离超过此米数开始掉血
   FALL_DMG_PER_M: 9,          // 每超过 1 米造成的伤害
-  WALK_SPEED: 6.0,
-  SPRINT_SPEED: 9.2,
+  WALK_SPEED:7.4,
+  SPRINT_SPEED:9.5,
   CROUCH_SPEED: 3.0,
   ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
   LEAN_ANGLE_DEG: 15,         // v5.49 歪头侧倾角度（度）
   LEAN_PIVOT_HEIGHT: 0,        // v5.49 歪头枢轴高度（0 = 脚底）
-  JUMP_VEL: 8.8,
+  JUMP_VEL:9.5,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,
   PLAYER_RADIUS: 0.42,
@@ -122,17 +122,17 @@ const CONFIG = {
   CAPTURE_RADIUS: 14,         // 占领点半径
 
   // AI 难度（v5 调优：v4 战斗烈度不足——30 秒 64 人战场仅 25 人次阵亡，交火太怂）
-  AI_AIM_ERROR_MIN: 0.09,     // 瞄准误差下限（rad）
-  AI_AIM_ERROR_MAX: 0.20,     // 瞄准误差上限（rad）
-  AI_LOCK_TIME: 1.6,          // 索敌后误差收敛时间（秒）
-  AI_FIRE_CHANCE: 0.42,       // 交火时每帧开火概率（v4 为 0.3，烈度不足）
-  AI_ENGAGE_RANGE: 85,        // 索敌交战距离（v4 为 70）
+  AI_AIM_ERROR_MIN:0.04,     // 瞄准误差下限（rad）
+  AI_AIM_ERROR_MAX:0.35,     // 瞄准误差上限（rad）
+  AI_LOCK_TIME:1.4,          // 索敌后误差收敛时间（秒）
+  AI_FIRE_CHANCE:0.7,       // 交火时每帧开火概率（v4 为 0.3，烈度不足）
+  AI_ENGAGE_RANGE:150,        // 索敌交战距离（v4 为 70）
   AI_REACT_MIN: 0.32,         // 首次索敌反应延迟下限（秒，v4 为 0.4）
   AI_REACT_MAX: 0.32,         // 首次索敌反应延迟上限（秒，v4 为 0.4）
 
   // 战斗导演（参考 ironhold combat director）：公平性/协同
   AI_GRACE_TIME: 0.65,        // 索敌后开火宽限（秒）：先机动/瞄准，不立即开火（v4 为 0.8）
-  COMBAT_MAX_SHOOTERS_PER_TARGET: 2, // 同一目标最多同时开火的敌人数（其余照常机动）
+  COMBAT_MAX_SHOOTERS_PER_TARGET:3, // 同一目标最多同时开火的敌人数（其余照常机动）
   SWEEP_MIN_ALIVE: 3,         // 每方存活 AI ≤ 此数时启动残局清扫（防躲猫猫）
   SWEEP_INTERVAL: 6,          // 残局清扫周期（秒）
   SWEEP_HUNT_TIME: 9,         // 清扫时追踪敌人最后位置时长（秒）
@@ -225,43 +225,43 @@ const CLASS_ORDER = ['assault', 'support', 'recon', 'engineer', 'mortar', 'medic
 const WEAPONS = {
   ar: {
     name: 'AR-40 自动步枪', key: 'ar', type: 'auto', auto: true,
-    damage: 27, rate: 0.095, mag: 30, reserve: 150, reload: 2.1,
+    damage:32, rate:0.08, mag:44, reserve: 150, reload: 2.1,
     // 旧键（兼容）
-    spread: 0, bloomPerShot: 0.0009, bloomMax: 0.055, recoil: 0.032, recoilYaw: 0.01,
+    spread: 0, bloomPerShot:0.0034, bloomMax:0.215, recoil:0.046, recoilYaw: 0.01,
     // 新扩散模型（度·锥角半角）
-    spreadHip: 1.4, spreadAds: 0.25, spreadPerShot: 0.22, spreadMax: 3.4, spreadDecay: 3.6,
+    spreadHip:1.25, spreadAds: 0.25, spreadPerShot:0.85, spreadMax:2.4, spreadDecay: 3.6,
     // 新后坐模型（RecoilAxis 弹簧 + 确定性 pattern）
-    recoilDef: { pitch: 0.09, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
-    adsFov: 42, adsTime: 0.2, adsSens: 1.0,
-    dropoff: 0.38, falloffRange: 120,
+    recoilDef: { pitch:0.026, yaw:0.016, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
+    adsFov:47, adsTime: 0.2, adsSens: 1.0,
+    dropoff:0, falloffRange: 120,
     drawTime: 0.55, modes: ['auto', 'semi'],
-    range: 120, tracer: 0xff3355, sound: 'rifle', scope: true, flashPower: 1.0,
+    range:90, tracer: 0xff3355, sound: 'rifle', scope: true, flashPower: 1.0,
   },
   lmg: {
     name: 'MG-80 重机枪', key: 'lmg', type: 'auto', auto: true,   // v5.11 改名：重机枪
-    damage: 25, rate: 0.075, mag: 100, reserve: 200, reload: 3.4,
+    damage:90, rate:0.065, mag: 100, reserve: 200, reload: 3.4,
     spread: 0, bloomPerShot: 0.00045, bloomMax: 0.06, recoil: 0.028, recoilYaw: 0.009,
-    spreadHip: 1.6, spreadAds: 0.3, spreadPerShot: 0.16, spreadMax: 3.8, spreadDecay: 3.0,
-    recoilDef: { pitch: 0.075, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
-    adsFov: 42, adsTime: 0.22, adsSens: 1.0,
-    dropoff: 0.35, falloffRange: 140,
+    spreadHip: 1.6, spreadAds: 0.3, spreadPerShot:1.95, spreadMax:3, spreadDecay: 3.0,
+    recoilDef: { pitch:0.097, yaw:0.034, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
+    adsFov:33, adsTime: 0.22, adsSens: 1.0,
+    dropoff:0, falloffRange: 140,
     drawTime: 0.75, modes: ['auto'],
-    range: 140, tracer: 0x38c8ff, sound: 'lmg', scope: true, flashPower: 1.2,
+    range:450, tracer: 0x38c8ff, sound: 'lmg', scope: true, flashPower: 1.2,
   },
   sniper: {
     name: 'SR-50 栓动狙击枪', key: 'sniper', type: 'bolt', auto: false,
-    damage: 96, rate: 1.25, mag: 5, reserve: 40, reload: 2.7, boltTime: 0.9,   // v5.17 拉栓时长（读条/动画/收镜）
-    spread: 0, bloomPerShot: 0.03, bloomMax: 0.12, recoil: 0.07, recoilYaw: 0.007,
-    spreadHip: 0.35, spreadAds: 0.02, spreadPerShot: 2.0, spreadMax: 3.0, spreadDecay: 2.5,
-    recoilDef: { pitch: 0.19, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
-    adsFov: 18, adsTime: 0.25, adsSens: 1.0,
+    damage:115, rate:1.5, mag:10, reserve: 40, reload: 2.7, boltTime: 0.9,   // v5.17 拉栓时长（读条/动画/收镜）
+    spread: 0, bloomPerShot: 0.03, bloomMax: 0.12, recoil:0.044, recoilYaw: 0.007,
+    spreadHip:0, spreadAds: 0.02, spreadPerShot:0, spreadMax:0, spreadDecay: 2.5,
+    recoilDef: { pitch:0.15, yaw:0.05, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
+    adsFov:10, adsTime: 0.25, adsSens: 1.0,
     dropoff: 0, falloffRange: 400,
     drawTime: 0.7, modes: ['auto'],
-    range: 400, tracer: 0x3dff9e, sound: 'sniper', scope: true, flashPower: 1.9,
+    range:500, tracer: 0x3dff9e, sound: 'sniper', scope: true, flashPower: 1.9,
   },
   smg: {
     name: 'SMG-9 冲锋枪', key: 'smg', type: 'auto', auto: true,
-    damage: 21, rate: 0.058, mag: 32, reserve: 160, reload: 1.9,
+    damage:26, rate: 0.058, mag: 32, reserve: 160, reload: 1.9,
     spread: 0, bloomPerShot: 0.0002, bloomMax: 0.05, recoil: 0.02, recoilYaw: 0.008,
     spreadHip: 1.2, spreadAds: 0.2, spreadPerShot: 0.18, spreadMax: 3.0, spreadDecay: 4.2,
     recoilDef: { pitch: 0.05, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
@@ -272,7 +272,7 @@ const WEAPONS = {
   },
   pistol: {
     name: 'P-45 手枪', key: 'pistol', type: 'semi', auto: false,
-    damage: 32, rate: 0.2, mag: 12, reserve: 48, reload: 1.5,
+    damage: 32, rate:0.115, mag: 12, reserve: 48, reload: 1.5,
     spread: 0, bloomPerShot: 0.003, bloomMax: 0.05, recoil: 0.032, recoilYaw: 0.01,
     spreadHip: 1.0, spreadAds: 0.2, spreadPerShot: 0.35, spreadMax: 3.0, spreadDecay: 5.0,
     recoilDef: { pitch: 0.13, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
@@ -283,7 +283,7 @@ const WEAPONS = {
   },
   shotgun: {
     name: 'SG-12 霰弹枪', key: 'shotgun', type: 'shotgun', auto: false,
-    damage: 15, rate: 0.6, mag: 6, reserve: 30, reload: 2.6,   // v5.11 射速 0.85→0.6（泵动更跟手）
+    damage:16, rate:0.3, mag: 6, reserve: 30, reload: 2.6,   // v5.11 射速 0.85→0.6（泵动更跟手）
     pellets: 8, pelletsSpread: 2.3,   // 每发 8 颗弹丸，散射增强（锥角 2.3°）
     spread: 0, bloomPerShot: 0.012, bloomMax: 0.09, recoil: 0.075, recoilYaw: 0.014,
     spreadHip: 2.2, spreadAds: 1.0, spreadPerShot: 2.4, spreadMax: 4.5, spreadDecay: 4.0,
@@ -295,15 +295,15 @@ const WEAPONS = {
   },
   aa12: {
     name: 'AA-12 全自动霰弹枪', key: 'aa12', type: 'shotgun', auto: true,
-    damage: 12, rate: 0.14, mag: 8, reserve: 40, reload: 2.8,   // 全自动连喷：7 发/秒
+    damage:16, rate:0.13, mag:38, reserve: 40, reload: 2.8,   // 全自动连喷：7 发/秒
     pellets: 8, pelletsSpread: 2.2,
     spread: 0, bloomPerShot: 0.008, bloomMax: 0.08, recoil: 0.04, recoilYaw: 0.008,
-    spreadHip: 1.9, spreadAds: 0.9, spreadPerShot: 1.1, spreadMax: 3.6, spreadDecay: 3.5,
-    recoilDef: { pitch: 0.15, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
+    spreadHip:5, spreadAds: 0.9, spreadPerShot:2, spreadMax:8, spreadDecay: 3.5,
+    recoilDef: { pitch:0.103, yaw:0.033, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
     adsFov: 50, adsTime: 0.18, adsSens: 1.0,
-    dropoff: 0.12, falloffRange: 26,
+    dropoff:0.8, falloffRange: 26,
     drawTime: 0.45, modes: ['auto'],
-    range: 40, tracer: 0xffc040, sound: 'shotgun', scope: true, flashPower: 1.4,
+    range:90, tracer: 0xffc040, sound: 'shotgun', scope: true, flashPower: 1.4,
   },
   dmr: {
     name: 'MK-14 精确射手步枪', key: 'dmr', type: 'semi', auto: false,
@@ -321,13 +321,13 @@ const WEAPONS = {
 // 战术装备（兵种专属）
 const GADGETS = {
   grenadeLauncher: {
-    name: '下挂榴弹', kind: 'projectile', speed: 42, gravity: 24, radius: 7, damage: 140,
-    fuse: 0.0, ammo: 3, reload: 1.5,
+    name: '下挂榴弹', kind: 'projectile', speed: 42, gravity: 24, radius:12, damage:100,
+    fuse: 0.0, ammo: 3, reload:0.5,
   },
   rocket: {
-    // v5.43 反坦克强化：飞弹更快（95m/s）、伤害更高（360）、备弹更多（5）、装填更快（2.0s）、溅射更大（6m）
-    // 对载具高伤（antiVehicle ×2）、对步兵溅射小（×0.35）、可开镜（adsFov 30）
-    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 95, gravity: 2, radius: 6, damage: 360,
+    // v5.52 反坦克强化：飞弹快（95m/s）、数值伤害=实际伤害（600，不再 ×2）、无距离衰减、溅射小（1m）
+    // 对步兵溅射小（×0.35）、可开镜（adsFov 30）
+    name: 'RPG-7 火箭筒', kind: 'projectile', speed: 95, gravity: 2, radius:1, damage:600,
     fuse: 0.0, ammo: 5, antiVehicle: true, reload: 2.0,
     scope: true, adsFov: 30, adsTime: 0.2,
   },
@@ -335,8 +335,8 @@ const GADGETS = {
   flare: { name: '侦察信号弹', kind: 'flare', ammo: -1 },
   mortar: {
     name: '60mm 迫击炮', kind: 'mortar',
-    minRange: 15, maxRange: 180, radius: 12, damage: 300,   // v5.24 最小射程 40→15m（近距自卫曲射）
-    ammo: 6, reload: 4.5,   // 反步兵曲射（无 antiVehicle：对步兵全额溅射）
+    minRange:20, maxRange:170, radius:10, damage:40,   // v5.52 最小射程 20m（近距自卫曲射）
+    ammo:5, reload:4.5,   // 反步兵曲射（无 antiVehicle：对步兵全额溅射）
   },
   medkit: {
     name: '医疗箱', kind: 'medic',
@@ -365,26 +365,26 @@ const SMOKE = {
 // 血量 ~40% 削减 + 地面速度大幅降低 + 步兵枪械伤害倍率提升（见 weapons.damageVehicle）
 const VEHICLES = {
   tank: {
-    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp: 900, armorClass: 'heavy',
+    name: '主战坦克', key: 'tank', seats: 1, hitRadius: 3.6, hp:500, armorClass: 'heavy',
     speed: 11, reverseSpeed: 7, turnRate: 2.6, camHeight: 4.6,   // v5.43 加强：更厚血 + 更强炮 + 更机动
-    shellDamage: 320, shellRadius: 13, shellSpeed: 110, shellReload: 1.8, shellSpread: 0.002,
+    shellDamage:120, shellRadius:12, shellSpeed: 110, shellReload: 1.8, shellSpread: 0.002,
     mgDamage: 18, mgRate: 0.1, mgSpread: 0.02,   // v5.14 车载机枪扩散（≈1.1° 锥角）
   },
   apc: {
-    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp: 560, armorClass: 'light',
+    name: '装甲运兵车', key: 'apc', seats: 3, hitRadius: 3.2, hp:1000, armorClass: 'light',
     speed: 15, reverseSpeed: 8, turnRate: 2.6, camHeight: 3.6,   // v5.43 加强
     mgDamage: 26, mgRate: 0.085, mgSpread: 0.022,   // v5.14 车载机枪扩散
   },
   aa: {
-    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp: 520, armorClass: 'light',
+    name: '防空炮车', key: 'aa', seats: 1, hitRadius: 3.2, hp:1000, armorClass: 'light',
     speed: 14, reverseSpeed: 7, turnRate: 2.4, camHeight: 3.4,   // v5.43 加强
     cannonDamage: 24, cannonRate: 0.08, cannonSpread: 0.01,   // v5.14 扩散微增（保持对空压制力）
     antiAir: true, range: 400,   // 对空（直升机 ×3 / 喷气机 ×1.5）/ 对地极弱
   },
   heli: {
-    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp: 620, armorClass: 'air',
+    name: '武装直升机', key: 'heli', seats: 1, hitRadius: 3.4, hp:2000, armorClass: 'air',
     speed: 28, turnRate: 1.2, camHeight: 2.6,
-    rocketDamage: 120, rocketRadius: 6, rocketSpeed: 75, rocketReload: 0.15, rocketSpread: 0.002,
+    rocketDamage:80, rocketRadius: 6, rocketSpeed: 75, rocketReload: 0.15, rocketSpread: 0.002,
     cannonDamage: 20, cannonRate: 0.07, cannonSpread: 0.02,   // v5.43 加强
   },
   // v5.10 喷气战斗机已删除（用户要求）

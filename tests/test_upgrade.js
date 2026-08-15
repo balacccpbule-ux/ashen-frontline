@@ -31,7 +31,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     const a = JSON.parse(r1);
     assert(a.speed === 95 && a.gravity === 2, 'RPG 飞弹快 + 下坠小（' + a.speed + 'm/s / 重力 ' + a.gravity + '）');
     assert(a.scope === true && a.adsFov === 30, 'RPG 可开镜（30°）');
-    assert(a.tankDrop === 200, 'RPG 对载具 ×2（实测 ' + a.tankDrop + '）');
+    assert(a.tankDrop === 100, 'RPG 对载具 = 数值伤害（实测 ' + a.tankDrop + '）');
     assert(a.infDrop === 35, 'RPG 对步兵溅射 ×0.35（实测 ' + a.infDrop + '）');
 
     // 2) 突击兵护盾：120 点 ≈ 60 血，无法补充
@@ -135,7 +135,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'return JSON.stringify({ auto: aa.auto, pellets: aa.pellets, rate: aa.rate, idleHidden: idleHidden, buf: +buf.toFixed(2) });' +
       '})()');
     const g = JSON.parse(r7);
-    assert(g.auto === true && g.pellets === 8 && g.rate === 0.14, 'AA-12 全自动 8 弹丸 7 发/秒');
+    assert(g.auto === true && g.pellets === 8 && g.rate === 0.13, 'AA-12 全自动 8 弹丸 ~7.7 发/秒');
     assert(g.idleHidden === true, '非换弹/装填时读条隐藏（不常驻）');
     assert(g.buf >= 0.5, '换枪期间点击排队到枪就绪（clickBuf ' + g.buf + 's）');
 

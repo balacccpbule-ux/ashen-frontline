@@ -76,7 +76,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'return JSON.stringify({ heliHp: Math.round(H.hp), heliAlive: H.alive });' +
       '})()');
     const a = JSON.parse(r);
-    assert(a.heliHp < 480, 'AA 攻击空中直升机（HP ' + a.heliHp + '/480）');
+    assert(a.heliHp < 1000, 'AA 攻击空中直升机（HP ' + a.heliHp + '/2000，削血过半）');
 
     const errors = cdp.errors();
     for (const e of errors) console.error('  !! ' + e);

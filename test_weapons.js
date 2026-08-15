@@ -133,20 +133,24 @@ function main() {
       }
       return JSON.stringify({ peak: +peak.toFixed(4) });
     })()`));
-    check('T2.5 后坐强度：全自动 1.5s 枪口爬升 ≥0.06rad（~3.4°，可感知）',
-      R25 && R25.peak >= 0.06, 'peak=' + (R25 ? R25.peak : '?'));
+    check('T2.5 后坐强度：全自动 1.5s 枪口爬升 ≥0.05rad（~2.9°，可感知）',
+      R25 && R25.peak >= 0.05, 'peak=' + (R25 ? R25.peak : '?'));
 
     // ---- T3 距离衰减 ----
+    // v5.52 参数重调：AR/LMG dropoff=0（无衰减）、狙击本无衰减；用 SMG（dropoff 0.45）验证平方插值仍生效
     const R3 = parse(await evl(`(function(){
       var f1 = Game.weapons.falloffFactor(WEAPONS.ar, 60);
       var f2 = Game.weapons.falloffFactor(WEAPONS.ar, 120);
       var f3 = Game.weapons.falloffFactor(WEAPONS.sniper, 400);
       var f4 = Game.weapons.falloffFactor(WEAPONS.ar, 0);
-      return JSON.stringify({ f1:+f1.toFixed(4), f2:+f2.toFixed(4), f3:+f3.toFixed(4), f4:+f4.toFixed(4) });
+      var s1 = Game.weapons.falloffFactor(WEAPONS.smg, 45);
+      var s2 = Game.weapons.falloffFactor(WEAPONS.smg, 90);
+      return JSON.stringify({ f1:+f1.toFixed(4), f2:+f2.toFixed(4), f3:+f3.toFixed(4), f4:+f4.toFixed(4), s1:+s1.toFixed(4), s2:+s2.toFixed(4) });
     })()`));
-    check('T3 衰减：平方插值 + 狙击无衰减',
-      R3 && Math.abs(R3.f1 - 0.845) < 0.001 && Math.abs(R3.f2 - 0.38) < 0.001 && R3.f3 === 1 && R3.f4 === 1,
-      'f(60)=' + (R3 ? R3.f1 : '?') + ' f(120)=' + (R3 ? R3.f2 : '?') + ' sniper=' + (R3 ? R3.f3 : '?'));
+    check('T3 衰减：AR/狙击无衰减（dropoff 0）+ SMG 平方插值',
+      R3 && R3.f1 === 1 && R3.f2 === 1 && R3.f3 === 1 && R3.f4 === 1 &&
+      Math.abs(R3.s1 - 0.8625) < 0.001 && Math.abs(R3.s2 - 0.45) < 0.001,
+      'ar(60/120)=' + (R3 ? R3.f1 + '/' + R3.f2 : '?') + ' smg(45/90)=' + (R3 ? R3.s1 + '/' + R3.s2 : '?'));
 
     // ---- T4 部位倍率（射线直测高度带） ----
     const R4 = parse(await evl(`(function(){
@@ -176,7 +180,7 @@ function main() {
       return JSON.stringify({ fov:+fov.toFixed(1), ease:+ease.toFixed(2), sens:+sens.toFixed(3), spd:+spd.toFixed(2) });
     })()`));
     check('T5 ADS：FOV 收敛到 adsFov、灵敏度缩放、移速 -40%',
-      R5 && Math.abs(R5.fov - 42) < 1.5 && R5.ease > 0.9 && R5.sens < 0.6 && R5.sens > 0.17 && R5.spd > 3.2 && R5.spd < 4.0,
+      R5 && Math.abs(R5.fov - 47) < 1.5 && R5.ease > 0.9 && R5.sens < 0.6 && R5.sens > 0.17 && R5.spd > 4.0 && R5.spd < 4.7,
       'fov=' + (R5 ? R5.fov : '?') + ' sens=' + (R5 ? R5.sens : '?') + ' spd=' + (R5 ? R5.spd : '?'));
 
     // ---- T6 点击缓冲 ----

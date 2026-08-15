@@ -23,15 +23,15 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       '  b.pos.x=x; b.pos.z=z; b.pos.y=G.heightAt(x,z); b.vel={x:0,y:0,z:0}; b.spawnProtect=0;' +
       '  G.__pinned.push({ id: b.id, x: x, z: z }); });' +
       'mort.pos.x=-108; mort.pos.z=-8; mort.pos.y=G.heightAt(-108,-8); mort.spawnProtect=999;' +   // 无敌：防目标在炮击前反杀（保证测的是曲射路径）
-      'foe.pos.x=-108; foe.pos.z=33; foe.pos.y=G.heightAt(-108,33); foe.spawnProtect=0; foe.deaths=0;' +
+      'foe.pos.x=-108; foe.pos.z=33; foe.pos.y=G.heightAt(-108,33); foe.spawnProtect=0; foe.deaths=0; foe.health=30;' +
       'foe.spottedUntil = 99999;' +
       'G.__mortId=mort.id; G.__foeId=foe.id;' +
       'return JSON.stringify({ mortarBots: G.bots.filter(function(b){return b.clsKey==="mortar" && !b.bot.crew;}).length, ammo: mort.gadgetAmmo, gadget: GADGETS.mortar });' +
       '})()');
     const s = JSON.parse(setup);
     assert(s.mortarBots >= 1, '队伍中有迫击炮兵 (' + s.mortarBots + ')');
-    assert(s.ammo === 6, '迫击炮 6 发备弹');
-    assert(s.gadget.minRange === 15 && s.gadget.maxRange === 180 && s.gadget.damage === 300, '射程 15-180m · 溅射 300');
+    assert(s.ammo === 5, '迫击炮 5 发备弹');
+    assert(s.gadget.minRange === 20 && s.gadget.maxRange === 170 && s.gadget.damage === 40, '射程 20-170m · 溅射 40');
 
     const step = (frames) => cdp.eval('(function(){ var G=Game;' +
       'var mort=null, foe=null;' +
@@ -60,7 +60,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     const a = JSON.parse(r1);
     assert(a.fired === true && a.kind === 'mortarShell', '迫击炮弹发射（高抛弹道）');
     assert(a.vy0 > 5, '初速上扬（vy0=' + a.vy0 + '）');
-    assert(a.ammo === 5, '弹药 -1');
+    assert(a.ammo === 4, '弹药 -1');
     assert(a.launch === true, '出膛轰鸣音效（mortarLaunch）');
 
     await step(120);   // 4 秒：飞行 1.8s + 溅射
@@ -75,9 +75,9 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     // 2) AI 自动炮击（think 分支，无视线压制）
     const r3 = await cdp.eval('(function(){ var G=Game; var foe=null;' +
       'for (var k=0;k<G.soldiers.length;k++){ if(G.soldiers[k].id===G.__foeId)foe=G.soldiers[k]; }' +
-      'G.ai.respawn(foe); foe.deaths=0; foe.pos.x=-108; foe.pos.z=33; foe.pos.y=G.heightAt(-108,33); foe.spawnProtect=0; foe.spottedUntil=99999;' +
+      'G.ai.respawn(foe); foe.deaths=0; foe.pos.x=-108; foe.pos.z=33; foe.pos.y=G.heightAt(-108,33); foe.spawnProtect=0; foe.spottedUntil=99999; foe.health=30;' +
       'var mort=null; for (var j=0;j<G.soldiers.length;j++){ if(G.soldiers[j].id===G.__mortId)mort=G.soldiers[j]; }' +
-      'mort.gadgetAmmo = 6; mort.gadgetCooldown = 0; mort.bot.mortarT = undefined;' +
+      'mort.gadgetAmmo = 5; mort.gadgetCooldown = 0; mort.bot.mortarT = undefined;' +
       'return "ok"; })()');
     await step(300);   // 10 秒：索敌 + 1.5s 起手 + 炮击
     const r4 = await cdp.eval('(function(){ var G=Game; var foe=null;' +
@@ -94,9 +94,9 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'G.weapons.fireGadget(p);' +   // 扳机 → 部署（打开地图）
       'var deployed = G.Player.mortarDeployed === true;' +
       'var panelVisible = !document.getElementById("mortar-map-panel").classList.contains("hidden");' +
-      'var near = G.weapons.fireMortarAt(p, -108, 10);' +      // 10m < 15 最小射程
+      'var near = G.weapons.fireMortarAt(p, -108, 10);' +      // 10m < 20 最小射程
       'var ammoNear = p.gadgetAmmo;' +
-      'var far = G.weapons.fireMortarAt(p, -108, 180);' +      // 180m 上限
+      'var far = G.weapons.fireMortarAt(p, -108, 170);' +      // 170m 上限
       'var ammoFar = p.gadgetAmmo;' +
       'var cam0 = G.Player.mortarCam;' +
       'var camOn = !!cam0 && cam0.phase === "fly" && cam0.proj.kind === "mortarShell";' +
@@ -113,8 +113,8 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       '})()');
     const d = JSON.parse(r5);
     assert(d.deployed === true && d.panelVisible === true, '按扳机 → 部署 + 右下地图自动打开');
-    assert(d.near === 'too-close' && d.ammoNear === 6, '地图选点太近 → 拒绝且不耗弹（' + d.near + '/' + d.ammoNear + '）');
-    assert(d.far === 'ok' && d.ammoFar === 5, '地图选点 180m → 发射（' + d.far + '/' + d.ammoFar + '）');
+    assert(d.near === 'too-close' && d.ammoNear === 5, '地图选点太近 → 拒绝且不耗弹（' + d.near + '/' + d.ammoNear + '）');
+    assert(d.far === 'ok' && d.ammoFar === 4, '地图选点 170m → 发射（' + d.far + '/' + d.ammoFar + '）');
     assert(d.tooFar === 'too-far', '超出最大射程 → 拒绝');
     assert(Math.abs(d.midX) < 1 && Math.abs(d.midZ) < 1, '地图像素→世界坐标换算正确 (' + d.midX + ',' + d.midZ + ')');
     assert(d.undeployed === true, '右键/3 → 收起迫击炮并隐藏地图');

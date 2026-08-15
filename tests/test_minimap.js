@@ -111,10 +111,10 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'for (var k=0;k<G.soldiers.length;k++){ var ss=G.soldiers[k]; if(ss.id===G.__blueMortar.id)mort=ss; if(ss.id===G.__victim.id)victim=ss; }' +
       'var reveals = G.hud.mortarReveals || [];' +
       'var hit = reveals.some(function(r){ return r.s.id === mort.id && r.until > G.time; });' +
-      'return JSON.stringify({ victimDeaths: victim.deaths, reveals: reveals.length, hit: hit });' +
+      'return JSON.stringify({ victimHp: Math.round(victim.health), reveals: reveals.length, hit: hit });' +
       '})()');
     const d = JSON.parse(r3);
-    assert(d.victimDeaths >= 1, '队友被敌方迫击炮命中（阵亡 ' + d.victimDeaths + ' 次）');
+    assert(d.victimHp < 100, '队友被敌方迫击炮命中（HP ' + d.victimHp + '/100）');
     assert(d.hit === true, '敌方迫击炮手位置被高亮标注（无视视野，reveals=' + d.reveals + '）');
 
     // ---- 3) v5.26 AI 反迫击炮：敌方迫击炮暴露 → 我方迫击炮反打 + 开火自动暴露 ----

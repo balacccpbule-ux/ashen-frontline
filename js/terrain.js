@@ -182,12 +182,12 @@
     else if (T.mapId === 'fort') genFort(rng, W, flagPos);   // v5.30 钢铁防线
     else genDesert(rng, W, flagPos);
 
+    // 3.5) 建筑/掩体地基压平：布局后、地形网格生成前统一应用（地形网格/小地图/heightAt 三者严格一致，
+    //     根治「贴图与建模不匹配」——此前网格在压平前生成，坡地会顶穿建筑）
+    applyFlattens();
+
     // 4) 地形网格
     buildTerrainMesh(scene, W);
-
-    // 4.5) 建筑/掩体地基压平：addSolid 登记的压平区此前从未应用 → 建筑在坡地上悬空/下陷；
-    //     现在在网格生成前统一应用，地形与建筑严丝合缝
-    applyFlattens();
 
     // 5) 实体网格 + 树木
     for (const s of T.solids) buildSolidMesh(scene, s);
@@ -437,9 +437,18 @@
   //  - 避开旗点/基地/载具刷新点，段间留 ≥4m 通道
   // ============================================================
   function placeFortifications(rng, W, flags) {
+    // v5.48 太陡不生成墙：足迹内原始高差过大则跳过，避免穿模
+    const tooSteep = (x, z, w, d) => {
+      const hs = [rawHeight(x - w / 2, z - d / 2), rawHeight(x + w / 2, z - d / 2),
+        rawHeight(x - w / 2, z + d / 2), rawHeight(x + w / 2, z + d / 2)];
+      let mn = hs[0], mx = hs[0];
+      for (const h of hs) { if (h < mn) mn = h; if (h > mx) mx = h; }
+      return mx - mn > 2.0;
+    };
     // 轴向对齐墙段（alongZ=true 沿 z 延伸，否则沿 x）
     const wallSeg = (x, z, len, alongZ) => {
       const w = alongZ ? 0.8 : len, d = alongZ ? len : 0.8;
+      if (tooSteep(x, z, w, d)) return;   // v5.48 陡坡不生成
       for (const f of flags) if (dist2(x, z, f.x, f.z) < 9) return;
       for (const b of BASE_DEFS) if (dist2(x, z, b.x, b.z) < 24) return;
       for (const sp of VEHICLE_SPAWNS) if (dist2(x, z, sp.x, sp.z) < 7) return;
@@ -477,6 +486,23 @@
           wallSeg(mx + nx * side * off, mz + nz * side * off, segLen, alongZ);
         }
       }
+    }
+    // 3) v5.48 前线分隔墙：沿双方对攻轴（X）垂直布置（沿 Z 延伸），分隔红蓝、留通道
+    for (let k = 0; k < 7; k++) {
+      const fx = -42 + k * 14 + (rng() - 0.5) * 4;
+      const z = -52 + k * 17 + (rng() - 0.5) * 8;
+      const segLen = 7 + rng() * 4;
+      wallSeg(fx, z, segLen, true);   // 沿 Z（垂直于红蓝对攻轴）
+    }
+    // 4) v5.48 直角墙（L 形墙角）：角点在 (cx,cz)，两段垂直相接
+    const cornerWall = (cx, cz, len, dirX, dirZ) => {
+      wallSeg(cx + dirX * len / 2, cz, len, false);   // 沿 X 段
+      wallSeg(cx, cz + dirZ * len / 2, len, true);    // 沿 Z 段
+    };
+    for (const f of flags) {
+      if (rng() < 0.45) continue;
+      const len = 6 + rng() * 3, off = 13 + rng() * 4;
+      cornerWall(f.x + off, f.z + off, len, rng() < 0.5 ? 1 : -1, rng() < 0.5 ? 1 : -1);
     }
   }
 

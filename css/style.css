@@ -152,8 +152,11 @@ html, body {
 #vehicle-name { font-size: 20px; font-weight: bold; text-shadow: 0 1px 3px #000; }
 #vehicle-health { width: 260px; height: 10px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.3); margin: 6px auto; border-radius: 3px; overflow: hidden; }
 #vehicle-health-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #6ad0e0, #3a90a0); }
-#vehicle-heat { width: 200px; height: 6px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25); margin: 3px auto; border-radius: 3px; overflow: hidden; }
+#vehicle-reload { width: 220px; height: 7px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25); margin: 3px auto; border-radius: 3px; overflow: hidden; }
+#vehicle-reload-fill { height: 100%; width: 0%; background: #9ad0e0; transition: width 0.05s linear; }
+#vehicle-heat { width: 220px; height: 7px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.25); margin: 3px auto; border-radius: 3px; overflow: hidden; position: relative; }
 #vehicle-heat-fill { height: 100%; width: 0%; background: #e0c04a; transition: width 0.08s linear; }
+#vehicle-heat-label { position: absolute; left: 50%; top: 0; transform: translateX(-50%); font-size: 9px; line-height: 7px; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
 #vehicle-heat-fill.cooling { animation: heatpulse 0.6s ease-in-out infinite; }
 @keyframes heatpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 #vehicle-hint { font-size: 13px; color: #ccc; text-shadow: 0 1px 2px #000; }

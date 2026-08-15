@@ -39,7 +39,8 @@
       captureStatus: $('capture-status'), message: $('message'),
       spawnHint: $('spawn-hint'), vehicleHud: $('vehicle-hud'),
       vehicleName: $('vehicle-name'), vehicleHealthFill: $('vehicle-health-fill'), vehicleHint: $('vehicle-hint'),
-      vehicleHeat: $('vehicle-heat'), vehicleHeatFill: $('vehicle-heat-fill'),
+      vehicleHeat: $('vehicle-heat'), vehicleHeatFill: $('vehicle-heat-fill'), vehicleHeatLabel: $('vehicle-heat-label'),
+      vehicleReload: $('vehicle-reload'), vehicleReloadFill: $('vehicle-reload-fill'),
       pauseHint: $('pause-hint'),
       meritScore: $('merit-score'),   // v5.18 功绩分数缓动
       flash: $('flash'),               // v5.28 爆炸闪光
@@ -642,18 +643,38 @@
         : v.kind === 'aa'
           ? Game.t('veh.hint.aa')
           : Game.t('veh.hint.ground');
-      // v5.48 载具机枪过热/冷却读条
+      // v5.48 载具武器装填读条（炮/火箭的冷却）
+      const slot = v.weaponSlot || 'primary';
+      let reloadPct = 0, reloadShow = false;
+      if (v.kind === 'tank' && slot === 'primary' && v.cannonTimer > 0) { reloadPct = 1 - v.cannonTimer / v.def.shellReload; reloadShow = true; }
+      else if (v.kind === 'heli' && slot === 'primary' && v.rocketTimer > 0) { reloadPct = 1 - v.rocketTimer / v.def.rocketReload; reloadShow = true; }
+      else if (v.kind === 'aa' && v.cannonTimer > 0) { reloadPct = 1 - v.cannonTimer / v.def.cannonRate; reloadShow = true; }
+      else if (v.mgTimer > 0 && (v.kind === 'apc' || slot === 'secondary')) {
+        reloadPct = 1 - v.mgTimer / (v.kind === 'heli' ? v.def.cannonRate : v.def.mgRate); reloadShow = true;
+      }
+      if (el.vehicleReload) {
+        el.vehicleReload.classList.toggle('hidden', !reloadShow);
+        if (reloadShow) el.vehicleReloadFill.style.width = Math.max(0, Math.min(100, reloadPct * 100)) + '%';
+      }
+      // v5.48 载具机枪过热/冷却读条（过热后 100%→30 为冷却进程）
       const heat = v.heat || 0;
       if (el.vehicleHeat) {
         const showHeat = heat > 0 || v.mgOverheated;
         el.vehicleHeat.classList.toggle('hidden', !showHeat);
         if (showHeat) {
-          const pct = Math.max(0, Math.min(100, heat));
+          let pct;
+          if (v.mgOverheated) {
+            pct = Math.max(0, Math.min(100, (heat - 30) / 70 * 100));   // 冷却：100(热满) → 0(可再开火)
+            el.vehicleHeatFill.style.background = '#e0483a';
+            el.vehicleHeatFill.classList.add('cooling');
+            if (el.vehicleHeatLabel) el.vehicleHeatLabel.textContent = '过热·冷却';
+          } else {
+            pct = Math.max(0, Math.min(100, heat));
+            el.vehicleHeatFill.style.background = heat > 70 ? '#e09030' : '#e0c04a';
+            el.vehicleHeatFill.classList.remove('cooling');
+            if (el.vehicleHeatLabel) el.vehicleHeatLabel.textContent = heat > 70 ? '即将过热' : '';
+          }
           el.vehicleHeatFill.style.width = pct + '%';
-          el.vehicleHeatFill.style.background = v.mgOverheated
-            ? '#e0483a' : heat > 70 ? '#e09030' : '#e0c04a';   // 过热冷却(红) / 即将过热(橙) / 升温(黄)
-          if (v.mgOverheated) el.vehicleHeatFill.classList.add('cooling');
-          else el.vehicleHeatFill.classList.remove('cooling');
         }
       }
     } else {

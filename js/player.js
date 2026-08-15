@@ -15,6 +15,7 @@
     view: null, muzzleLocal: null,
     bobT: 0, viewKick: 0, lastShot: -999,
     gaitPhase: 0,            // v5.48 步态相位（与脚步同频，驱动冲刺月牙摆动）
+    firingT: 0,              // v5.48 开火后脱离冲刺横持的计时
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
     flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
@@ -313,6 +314,7 @@
   // 开火后的 viewmodel 视觉 kick（幅度来自确定性 pattern 的 pitch）
   function onShotFired(recoilDef) {
     P.viewKick = Math.min(1, (recoilDef.pitch || 0.03) * 26);
+    P.firingT = 0.25;   // v5.48 开火脱离冲刺横持（短暂保持腰射姿态）
   }
   P.onShotFired = onShotFired;
 
@@ -715,6 +717,7 @@
       }
     }
     if (P.clickBuf > 0) P.clickBuf -= dt;
+    P.firingT = Math.max(0, P.firingT - dt);   // v5.48 开火脱离计时衰减
 
     // --- 镜头后坐视觉（viewKick 已由 onShotFired 设置） ---
     if (s.lastFireTime !== P.lastShot) { P.lastShot = s.lastFireTime; }
@@ -800,8 +803,9 @@
         }
       }
     }
-    // 目标位置（瞄准 / 腰射）；v5.47 冲刺改为横持胸前
-    const sprinting = Game.player.sprinting && !(P.ads && P.adsEase > 0.5);
+    // 目标位置（瞄准 / 腰射）；v5.47 冲刺改为横持胸前；v5.48 开火时脱离横持
+    const firing = P.trigger || P.firingT > 0;
+    const sprinting = Game.player.sprinting && !firing && !(P.ads && P.adsEase > 0.5);
     // v5.48 船形/月牙路径晃动：步态相位（与脚步同频）+ 垂直峰值停留（力量感）
     const sprintSway = sprinting ? Math.sin(P.bobT * 0.85) * 0.03 : 0;          // 旋转摇晃（大幅削弱）
     let sprintCresX = 0, sprintCresY = 0;

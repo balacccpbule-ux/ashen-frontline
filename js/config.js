@@ -449,6 +449,42 @@ const MAP_DEFS = {
       ],
     },
   },
+  jungle: {
+    name: '雨林沼泽', gen: 'jungle', sky: 0x2a3a2c, sun: 0xdfe8c8, sunPos: [120, 90, 70],
+    fogNear: 45, fogFar: 150, weather: 'rain',
+    flags: {
+      conquest: [
+        { id: 'A', name: '河西营地', x: -60, z: -38 },
+        { id: 'B', name: '河东前哨', x: 60, z: -38 },
+        { id: 'C', name: '北侧渡口', x: 0, z: -52 },
+        { id: 'D', name: '南侧渡口', x: 0, z: 52 },
+        { id: 'E', name: '河中岛', x: 0, z: 0 },
+      ],
+      breakthrough: [
+        { sector: 1, name: '西岸丛林', flags: [{ id: 'S1A', x: -54, z: -36 }, { id: 'S1B', x: -54, z: 36 }] },
+        { sector: 2, name: '河道争夺', flags: [{ id: 'S2A', x: 0, z: -42 }, { id: 'S2B', x: 0, z: 42 }] },
+        { sector: 3, name: '东岸防线', flags: [{ id: 'S3A', x: 54, z: -36 }, { id: 'S3B', x: 54, z: 36 }] },
+      ],
+    },
+  },
+  city: {
+    name: '钢铁废墟', gen: 'city', sky: 0x2a2622, sun: 0xffb080, sunPos: [100, 60, 70],
+    fogNear: 40, fogFar: 150, weather: 'ash',
+    flags: {
+      conquest: [
+        { id: 'A', name: '西区广场', x: -60, z: -30 },
+        { id: 'B', name: '东区车站', x: 60, z: -30 },
+        { id: 'C', name: '中央大道', x: 0, z: -20 },
+        { id: 'D', name: '北区高架', x: 0, z: 44 },
+        { id: 'E', name: '南区钟楼', x: 0, z: 0 },
+      ],
+      breakthrough: [
+        { sector: 1, name: '西郊废墟', flags: [{ id: 'S1A', x: -54, z: -30 }, { id: 'S1B', x: -54, z: 30 }] },
+        { sector: 2, name: '中心街区', flags: [{ id: 'S2A', x: 0, z: -30 }, { id: 'S2B', x: 0, z: 30 }] },
+        { sector: 3, name: '东区要塞', flags: [{ id: 'S3A', x: 54, z: -30 }, { id: 'S3B', x: 54, z: 30 }] },
+      ],
+    },
+  },
 };
 
 // 地图上全部旗点位置（布局避让用，跨模式合并）

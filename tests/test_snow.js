@@ -35,7 +35,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(r.cabins >= 6, '林间木屋 ≥ 6 (' + r.cabins + ')');
     assert(r.ice === true, '冰湖冰面生成');
     assert(r.weather === 'snow' && r.weatherPts === 900, '降雪粒子 900 (' + r.weatherPts + ')');
-    assert(r.menuBtns === 3, '菜单三地图按钮 (' + r.menuBtns + ')');
+    assert(r.menuBtns === 5, '菜单五地图按钮 (' + r.menuBtns + ')');
 
     // 弹坑系统已移除：爆炸不雕刻地形（地面与贴图保持一致）
     const cr = await cdp.eval(`(function(){

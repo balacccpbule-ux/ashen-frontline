@@ -72,9 +72,25 @@
     h += Math.sin(z * 0.11) * 1.6 * Math.max(0, (x - 12) / 90);   // 高台起伏
     return h;
   }
+  // v5.49 雨林沼泽：低丘 + 中央河道（沿 Z 轴下凹，天然分隔西/东）
+  function jungleRawHeight(x, z) {
+    let h = 2.0 * Math.sin(x * 0.045 + 0.7) * Math.sin(z * 0.04 + 1.1);
+    h += 1.3 * Math.sin(x * 0.085 + 2.1) * Math.sin(z * 0.11 + 0.4);
+    h += 1.0 * Math.sin(x * 0.03 + z * 0.055 + 0.6);
+    h += -3.4 * Math.exp(-Math.pow(x / 16, 2));   // 中央河道
+    return h + 1.6;
+  }
+  // v5.49 城市废墟：平缓城区（微起伏，街巷高楼）
+  function cityRawHeight(x, z) {
+    let h = 0.9 * Math.sin(x * 0.04 + 0.4) * Math.cos(z * 0.05 + 0.9);
+    h += 0.5 * Math.sin(x * 0.09 + z * 0.07 + 1.1);
+    return h + 0.6;
+  }
   function rawHeight(x, z) {
     if (T.mapId === 'snow') return snowRawHeight(x, z);
     if (T.mapId === 'fort') return fortRawHeight(x, z);
+    if (T.mapId === 'jungle') return jungleRawHeight(x, z);
+    if (T.mapId === 'city') return cityRawHeight(x, z);
     return desertRawHeight(x, z);
   }
 
@@ -92,6 +108,15 @@
       else if (y < 8) c = [0xe9, 0xef, 0xf3];     // 雪
       else if (y < 18) c = [0xc9, 0xd4, 0xdd];    // 深雪
       else c = [0x8f, 0x9f, 0xad];                // 裸岩
+    } else if (T.mapId === 'jungle') {
+      if (y < 0.0) c = [0x2e, 0x5a, 0x4e];        // 河道（深绿蓝）
+      else if (y < 1.6) c = [0x4a, 0x74, 0x3a];   // 泥沼/湿地（绿）
+      else if (y < 3.6) c = [0x3c, 0x64, 0x32];   // 雨林地表（深绿）
+      else c = [0x2f, 0x50, 0x28];                // 高坡（暗绿）
+    } else if (T.mapId === 'city') {
+      if (y < 0.2) c = [0x40, 0x3e, 0x3a];        // 低洼（深灰）
+      else if (y < 1.2) c = [0x52, 0x4f, 0x4a];   // 街道（灰）
+      else c = [0x60, 0x5c, 0x56];                // 高地（浅灰）
     } else {
       if (y < -1) c = [0x5d, 0x54, 0x40];        // 泥
       else if (y < 4) c = [0x55, 0x66, 0x4a];    // 荒草
@@ -147,7 +172,7 @@
     T.mapId = mapId || 'desert';
     T.clear(scene);
     // 地图用独立确定性随机源（与战斗 rng 隔离，切图布局恒定）
-    const rng = Game.newRng((T.mapId === 'desert' ? 0x5a5a11 : T.mapId === 'fort' ? 0x7a2d2d : 0x4a11aa) >>> 0);
+    const rng = Game.newRng((T.mapId === 'desert' ? 0x5a5a11 : T.mapId === 'fort' ? 0x7a2d2d : T.mapId === 'snow' ? 0x4a11aa : T.mapId === 'jungle' ? 0x2b6a3a : 0x5a4a3a) >>> 0);
     const W = CONFIG.WORLD;
     T.N = Math.round((W * 2) / T.cell);
     T.hf = new Float32Array((T.N + 1) * (T.N + 1));
@@ -180,6 +205,8 @@
     // 3) 布局
     if (T.mapId === 'snow') genSnow(rng, W, flagPos);
     else if (T.mapId === 'fort') genFort(rng, W, flagPos);   // v5.30 钢铁防线
+    else if (T.mapId === 'jungle') genJungle(rng, W, flagPos);   // v5.49 雨林沼泽
+    else if (T.mapId === 'city') genCity(rng, W, flagPos);       // v5.49 城市废墟
     else genDesert(rng, W, flagPos);
 
     // 3.5) 建筑/掩体地基压平：布局后、地形网格生成前统一应用（地形网格/小地图/heightAt 三者严格一致，
@@ -380,6 +407,92 @@
     // 岩群 + 棕榈/枯树
     placeScenery(rng, W, flags, true);
     placeMilitary(rng, W, flags);   // v5.45 军事设施
+  }
+
+  // ============================================================
+  //  v5.49 雨林沼泽布局 — 中央河道分隔西/东，密林 + 渡口
+  // ============================================================
+  function genJungle(rng, W, flags) {
+    // 中央河道：压平为浅水带
+    T.flattenZones.push({ cx: 0, cz: 0, w: 16, d: CONFIG.WORLD * 2, baseH: -0.6, margin: 5 });
+    applyFlattens();
+    // 河两岸木屋（可毁）
+    for (let i = 0; i < 10; i++) {
+      const side = rng() < 0.5 ? -1 : 1;
+      const x = side * (20 + rng() * 30), z = M.randRange(rng, -70, 70);
+      let nearFlag = false;
+      for (const f of flags) if (dist2(x, z, f.x, f.z) < 12) nearFlag = true;
+      if (nearFlag) continue;
+      addSolid(T.buildings, 'shack', x, z, M.randRange(rng, 5, 7), M.randRange(rng, 5, 7), M.randRange(rng, 3, 4.4),
+        { destructible: true, hp: 7600, blocksLOS: true, collapse: true, rubble: true });
+    }
+    // 混凝土碉堡（河道两岸火力点）
+    for (let i = 0; i < 10; i++) {
+      const spot = findSpot(rng, 4, 6, 4, 6, 14, 26, flags);
+      if (!spot) continue;
+      addSolid(T.destructibles, 'bunker', spot.x, spot.z, spot.w, spot.d, 3.2,
+        { destructible: false, blocksLOS: true, bunker: true });
+    }
+    placeFortifications(rng, W, flags);
+    placeDestructibles(rng, W, flags);
+    placeFlagCover(rng, flags);
+    // 密林（大量绿树）
+    for (let i = 0; i < 90; i++) {
+      const x = M.randRange(rng, -W + 12, W - 12);
+      const z = M.randRange(rng, -W + 12, W - 12);
+      let ok = true;
+      for (const s of T.solids) {
+        if (dist2(x, z, s.cx, s.cz) < (s.w + 1.5) / 2) { ok = false; break; }
+      }
+      if (!ok) continue;
+      for (const f of flags) if (dist2(x, z, f.x, f.z) < 9) { ok = false; break; }
+      if (!ok) continue;
+      T.trees.push({ x, z, h: M.randRange(rng, 4, 8), s: M.randRange(rng, 0.9, 1.6), kind: 'green' });
+    }
+    // 岩石
+    for (let i = 0; i < 16; i++) {
+      const spot = findSpot(rng, 1.5, 3.5, 1.5, 3.5, 8, 20, flags);
+      if (!spot) continue;
+      addSolid(T.solids, 'rock', spot.x, spot.z, spot.w, spot.d, M.randRange(rng, 1.2, 2.8),
+        { destructible: false, blocksLOS: true, isRock: true });
+    }
+    placeMilitary(rng, W, flags);
+  }
+
+  // ============================================================
+  //  v5.49 城市废墟布局 — 成排混凝土高楼 + 街巷 + 废墟车辆
+  // ============================================================
+  function genCity(rng, W, flags) {
+    // 城区网格：成排高楼（留街道/广场空隙）
+    for (let bx = -88; bx <= 88; bx += 22) {
+      for (let bz = -82; bz <= 82; bz += 18) {
+        if (rng() < 0.18) continue;
+        const x = bx + (rng() - 0.5) * 5, z = bz + (rng() - 0.5) * 5;
+        let nearFlag = false;
+        for (const f of flags) if (dist2(x, z, f.x, f.z) < 13) nearFlag = true;
+        if (nearFlag || Math.abs(x) > W - 16 || Math.abs(z) > W - 16) continue;
+        addSolid(T.buildings, 'building', x, z, 10 + rng() * 6, 8 + rng() * 5, 8 + rng() * 10,
+          { destructible: true, hp: 16000, blocksLOS: true, stages: true, rubble: true });
+      }
+    }
+    // 废墟车辆（可殉爆）
+    for (let i = 0; i < 16; i++) {
+      const spot = findSpot(rng, 2.0, 2.2, 4.0, 4.4, 8, 18, flags);
+      if (!spot) continue;
+      addSolid(T.destructibles, 'wreck', spot.x, spot.z, spot.w, spot.d, 1.4,
+        { destructible: true, hp: 350, blocksLOS: true, explode: true, blastRadius: 6, blastDmg: 120 });
+    }
+    placeFortifications(rng, W, flags);
+    placeDestructibles(rng, W, flags);
+    placeFlagCover(rng, flags);
+    // 混凝土碉堡
+    for (let i = 0; i < 8; i++) {
+      const spot = findSpot(rng, 4, 6, 4, 6, 16, 26, flags);
+      if (!spot) continue;
+      addSolid(T.destructibles, 'bunker', spot.x, spot.z, spot.w, spot.d, 3.2,
+        { destructible: false, blocksLOS: true, bunker: true });
+    }
+    placeMilitary(rng, W, flags);
   }
 
   function adobeVillage(rng, cx, cz, seed, flags) {

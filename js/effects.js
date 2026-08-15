@@ -518,9 +518,10 @@
     if (!kind) return;
     const isSnow = kind === 'snow';
     const isAsh = kind === 'ash';
-    const N = isSnow ? 900 : isAsh ? 260 : 350;
+    const isRain = kind === 'rain';
+    const N = isSnow ? 900 : isAsh ? 260 : isRain ? 500 : 350;
     const pos = new Float32Array(N * 3);
-    const r = isSnow ? 60 : 55, h = isSnow ? 34 : 26;
+    const r = isSnow ? 60 : 55, h = isSnow ? 34 : (isRain ? 30 : 26);
     for (let i = 0; i < N; i++) {
       pos[i * 3] = (Math.random() * 2 - 1) * r;
       pos[i * 3 + 1] = Math.random() * h;
@@ -529,9 +530,9 @@
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const mat = new THREE.PointsMaterial({
-      size: isSnow ? 0.16 : isAsh ? 0.1 : 0.24, transparent: true,
-      opacity: isSnow ? 0.9 : isAsh ? 0.35 : 0.32,
-      color: isSnow ? 0xffffff : isAsh ? 0x9a958e : 0xd8c090,
+      size: isSnow ? 0.16 : isAsh ? 0.1 : isRain ? 0.11 : 0.24, transparent: true,
+      opacity: isSnow ? 0.9 : isAsh ? 0.35 : isRain ? 0.55 : 0.32,
+      color: isSnow ? 0xffffff : isAsh ? 0x9a958e : isRain ? 0x9cc8d8 : 0xd8c090,
       depthWrite: false, sizeAttenuation: true,
     });
     const pts = new THREE.Points(geo, mat);
@@ -555,6 +556,10 @@
         x += 4.5 * dt;
         y += Math.sin(Game.time * 0.9 + i) * 0.8 * dt;
         if (x > r) x -= r * 2;
+      } else if (WEATHER.kind === 'rain') {
+        y -= (6 + (i % 6) * 0.8) * dt;
+        x += Math.sin(Game.time * 1.2 + i) * 0.3 * dt;
+        if (y < -1) { y += h; x = (Math.random() * 2 - 1) * r; z = (Math.random() * 2 - 1) * r; }
       } else {
         // 灰烬：余烬缓慢上飘 + 轻微摇曳（钢铁防线氛围）
         y += 0.9 * dt;

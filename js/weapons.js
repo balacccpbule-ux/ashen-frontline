@@ -530,7 +530,11 @@
       if (!v.alive) continue;
       if (attacker && v.team === attacker.team) continue;
       const d = M.dist3(pos, v.pos);
-      if (d < radius + v.hitRadius) damageVehicle(v, dmg * vsVeh * (1 - d / (radius + v.hitRadius)), attacker);
+      if (d < radius + v.hitRadius) {
+        // v5.52 穿甲弹药（火箭筒）：对载具满额伤害（无距离衰减）；普通爆炸保留衰减
+        const fall = antiVehicle ? 1 : (1 - d / (radius + v.hitRadius));
+        damageVehicle(v, dmg * vsVeh * fall, attacker);
+      }
     }
     // 可破坏实体（含多级建筑，v4：大建筑进爆炸伤害管线）
     for (const d of Game.terrain.solids) {

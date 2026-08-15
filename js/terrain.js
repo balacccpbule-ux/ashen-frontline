@@ -1067,11 +1067,11 @@
       Game.weapons.areaDamage(
         { x: s.cx, y: s.baseH + 0.5, z: s.cz }, s.blastRadius || 7, s.blastDmg || 160, null, s.kind
       );
-      Game.sound.explosion(s.blastDmg > 100, dv);
+      Game.sound.explosion(s.blastDmg > 100, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     } else if (s.collapse) {
-      Game.sound.explosion(true, dv);
+      Game.sound.explosion(true, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     } else {
-      Game.sound.explosion(false, dv);
+      Game.sound.explosion(false, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     }
     // 倒塌建筑 → 瓦砾堆（低掩体，遮挡蹲姿视线）
     if (s.rubble) {

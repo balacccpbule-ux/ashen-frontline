@@ -1741,6 +1741,7 @@ const VEHICLE_SPAWNS = [
     noiseBuf: null,
     inited: false,
     engines: {},   // 载具循环音 { vehicleId: {gain, filter, osc} }
+    out: null,      // v5.46 空间输出母线（A.out || A.master）；spatial() 临时设为 panner
   };
 
   // 音效事件日志（测试/调试断言时序用；headless 无音频上下文也记录）
@@ -1791,6 +1792,27 @@ const VEHICLE_SPAWNS = [
 
   const ready = () => A.inited && A.ctx && A.ctx.state === 'running';
 
+  // v5.46 3D 音效：按声源相对玩家朝向计算立体声 pan（-1 左 … +1 右）
+  function panFor(pos) {
+    if (!pos || !Game.player) return 0;
+    const dx = pos.x - Game.player.pos.x, dz = pos.z - Game.player.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.6) return 0;
+    const yaw = Game.player.yaw;
+    const rx = Math.cos(yaw), rz = -Math.sin(yaw);   // 玩家右向
+    return Math.max(-1, Math.min(1, (dx * rx + dz * rz) / d));
+  }
+  // 以立体声 pan 播放一段声音（pan=0 时直连 master，零开销）
+  function spatial(pan, fn) {
+    if (!ready() || !pan || !A.ctx.createStereoPanner) { fn(A.master); return; }
+    const p = A.ctx.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, pan));
+    p.connect(A.master);
+    A.out = p;
+    try { fn(p); } finally { A.out = null; }
+  }
+  A.panFor = panFor;
+
   // 噪声爆发（枪声主体）
   function noiseBurst(freq, dur, vol, type) {
     if (!ready()) return;
@@ -1806,7 +1828,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(filt); filt.connect(g); g.connect(A.master);
+    src.connect(filt); filt.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + dur + 0.02);
   }
 
@@ -1821,7 +1843,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -1836,7 +1858,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -1851,7 +1873,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -1928,7 +1950,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + dur + 0.02);
   }
 
@@ -1946,7 +1968,7 @@ const VEHICLE_SPAWNS = [
       const g = ctx.createGain();
       g.gain.setValueAtTime(vol * (i === 0 ? 1 : 0.6), tt);
       g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.04);
-      osc.connect(g); g.connect(A.master);
+      osc.connect(g); g.connect(A.out || A.master);
       osc.start(tt); osc.stop(tt + 0.05);
     }
     const src = ctx.createBufferSource();
@@ -1956,7 +1978,7 @@ const VEHICLE_SPAWNS = [
     const g2 = ctx.createGain();
     g2.gain.setValueAtTime(vol * 0.4, t);
     g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    src.connect(f); f.connect(g2); g2.connect(A.master);
+    src.connect(f); f.connect(g2); g2.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.06);
     // v5.42 金属共鸣环（高 Q 带通"叮"声，枪机金属感）
     const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
@@ -1964,34 +1986,37 @@ const VEHICLE_SPAWNS = [
     const rg = ctx.createGain();
     rg.gain.setValueAtTime(vol * 0.1, t);
     rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.out || A.master);
     rsrc.start(t); rsrc.stop(t + 0.05);
   }
 
-  // 分层枪声主入口（vol = 距离衰减后音量；内部再做近/远混音）
-  function shot(kind, vol) {
+  // 分层枪声主入口（vol = 距离衰减后音量；pos = 声源位置用于 3D 定位）
+  function shot(kind, vol, pos) {
     const name = kind || 'rifle';
     SOUND_LOG.push({ n: 'shot:' + name, t: Game.time });
     if (SOUND_LOG.length > 200) SOUND_LOG.shift();
     vol = vol === undefined ? 1 : vol;
     if (!ready()) return;
-    const p = PROFILES[name] || PROFILES.rifle;
-    slotIdx = (slotIdx + 1) % SLOT_N;
-    const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
-    const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
-    // ①枪口爆响（近处主导）
-    crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
-    // ②火药主体（中频带通）
-    noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
-    // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
-    thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
-    thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
-    // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
-    shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
-    // ⑤机匣机械层
-    if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
-    // ⑥尾音噪声（进混响）
-    noiseBurst(jitter(1500, 0.2), p.tailDur, p.tailVol * vol, 'bandpass');
+    const pan = pos ? panFor(pos) : 0;
+    spatial(pan, () => {
+      const p = PROFILES[name] || PROFILES.rifle;
+      slotIdx = (slotIdx + 1) % SLOT_N;
+      const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
+      const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
+      // ①枪口爆响（近处主导）
+      crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
+      // ②火药主体（中频带通）
+      noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
+      // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
+      thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
+      thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
+      // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
+      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
+      // ⑤机匣机械层
+      if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
+      // ⑥尾音噪声（进混响）
+      noiseBurst(jitter(1500, 0.2), p.tailDur, p.tailVol * vol, 'bandpass');
+    });
   }
 
   // 干火（空仓咔哒）
@@ -2005,7 +2030,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.3, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.04);
   }
 
@@ -2029,7 +2054,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.32, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.18);
   }
 
@@ -2051,7 +2076,7 @@ const VEHICLE_SPAWNS = [
     g.gain.setValueAtTime(0.35, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
     src.connect(f); f.connect(g);
-    if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.master);
+    if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.18);
   }
 
@@ -2068,7 +2093,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.1, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.07);
   }
 
@@ -2094,46 +2119,49 @@ const VEHICLE_SPAWNS = [
     thump(500, 0.04, 0.22);
   }
 
-  function explosion(big, vol) {
+  function explosion(big, vol, pos) {
     if (!ready()) return;
     vol = vol === undefined ? 1 : vol;
     const v = (big ? 1.0 : 0.6) * vol;
-    const ctx = A.ctx, t = ctx.currentTime;
-    // ①冲击波瞬态（极低频冲量）
-    shockwave(big ? 34 : 44, big ? 0.5 : 0.35, v * 1.1);
-    // ②主体轰鸣（低频噪声）
-    noiseBurst(700, 0.6 * (big ? 1.4 : 1), v, 'lowpass');
-    // ③低频砰 + 隆隆（锯齿下扫）
-    thump(big ? 55 : 70, 0.7, v * 1.2);
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(big ? 40 : 55, t);
-    osc.frequency.exponentialRampToValueAtTime(25, t + 0.5);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(v * 0.5, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    osc.connect(g); g.connect(A.master);
-    osc.start(t); osc.stop(t + 0.6);
-    // ④碎片飞溅（高频噪声 crackle，随机延迟）
-    const debrisN = big ? 6 : 3;
-    for (let i = 0; i < debrisN; i++) {
-      const dt = 0.03 + Math.random() * 0.3;
-      const dsrc = ctx.createBufferSource(); dsrc.buffer = A.noiseBuf; dsrc.loop = true;
-      const df = ctx.createBiquadFilter(); df.type = 'highpass'; df.frequency.value = jitter(4500, 0.3);
-      const dg = ctx.createGain();
-      dg.gain.setValueAtTime(v * 0.12, t + dt);
-      dg.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.035);
-      dsrc.connect(df); df.connect(dg); dg.connect(A.master);
-      dsrc.start(t + dt); dsrc.stop(t + dt + 0.05);
-    }
-    // ⑤尾音隆隆（低频噪声慢衰）
-    const tail = ctx.createBufferSource(); tail.buffer = A.noiseBuf; tail.loop = true;
-    const tf = ctx.createBiquadFilter(); tf.type = 'lowpass'; tf.frequency.value = 180;
-    const tg = ctx.createGain();
-    tg.gain.setValueAtTime(v * 0.28, t);
-    tg.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 1.6 : 1.0));
-    tail.connect(tf); tf.connect(tg); tg.connect(A.master);
-    tail.start(t); tail.stop(t + (big ? 1.7 : 1.1));
+    const pan = pos ? panFor(pos) : 0;
+    spatial(pan, () => {
+      const ctx = A.ctx, t = ctx.currentTime;
+      // ①冲击波瞬态（极低频冲量）
+      shockwave(big ? 34 : 44, big ? 0.5 : 0.35, v * 1.1);
+      // ②主体轰鸣（低频噪声）
+      noiseBurst(700, 0.6 * (big ? 1.4 : 1), v, 'lowpass');
+      // ③低频砰 + 隆隆（锯齿下扫）
+      thump(big ? 55 : 70, 0.7, v * 1.2);
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(big ? 40 : 55, t);
+      osc.frequency.exponentialRampToValueAtTime(25, t + 0.5);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(v * 0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      osc.connect(g); g.connect(A.out || A.master);
+      osc.start(t); osc.stop(t + 0.6);
+      // ④碎片飞溅（高频噪声 crackle，随机延迟）
+      const debrisN = big ? 6 : 3;
+      for (let i = 0; i < debrisN; i++) {
+        const dt = 0.03 + Math.random() * 0.3;
+        const dsrc = ctx.createBufferSource(); dsrc.buffer = A.noiseBuf; dsrc.loop = true;
+        const df = ctx.createBiquadFilter(); df.type = 'highpass'; df.frequency.value = jitter(4500, 0.3);
+        const dg = ctx.createGain();
+        dg.gain.setValueAtTime(v * 0.12, t + dt);
+        dg.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.035);
+        dsrc.connect(df); df.connect(dg); dg.connect(A.out || A.master);
+        dsrc.start(t + dt); dsrc.stop(t + dt + 0.05);
+      }
+      // ⑤尾音隆隆（低频噪声慢衰）
+      const tail = ctx.createBufferSource(); tail.buffer = A.noiseBuf; tail.loop = true;
+      const tf = ctx.createBiquadFilter(); tf.type = 'lowpass'; tf.frequency.value = 180;
+      const tg = ctx.createGain();
+      tg.gain.setValueAtTime(v * 0.28, t);
+      tg.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 1.6 : 1.0));
+      tail.connect(tf); tf.connect(tg); tg.connect(A.out || A.master);
+      tail.start(t); tail.stop(t + (big ? 1.7 : 1.1));
+    });
   }
 
   function hit() { noiseBurst(1500, 0.05, 0.4, 'highpass'); thump(400, 0.05, 0.25); }
@@ -2162,7 +2190,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.16, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.08);
   }
   // 装甲/载具命中（金属"当"：带通噪声 + 低砰 + 共振尾音）
@@ -2175,7 +2203,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.34, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.06);
     thump(320, 0.06, 0.3);
     const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
@@ -2183,7 +2211,7 @@ const VEHICLE_SPAWNS = [
     const rg = ctx.createGain();
     rg.gain.setValueAtTime(0.1, t);
     rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
-    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.out || A.master);
     rsrc.start(t); rsrc.stop(t + 0.09);
   }
   // 受击（闷响 + 低频"闷哼"，伤害越大越重）
@@ -2200,7 +2228,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.22 * v, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.14);
   }
   // 护盾受击（电流"滋滋"）
@@ -2213,7 +2241,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.24, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.09);
     tone(1200, 0.04, 0.1, 0);
   }
@@ -2229,7 +2257,7 @@ const VEHICLE_SPAWNS = [
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(v, t + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.55);
   }
   // ============================================================
@@ -2247,7 +2275,7 @@ const VEHICLE_SPAWNS = [
     g1.gain.setValueAtTime(0.0001, t);
     g1.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
     g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.78);
-    src.connect(bp); bp.connect(g1); g1.connect(A.master);
+    src.connect(bp); bp.connect(g1); g1.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.8);
     const o2 = ctx.createOscillator(); o2.type = 'sine';
     o2.frequency.setValueAtTime(160, t + 0.05);
@@ -2257,7 +2285,7 @@ const VEHICLE_SPAWNS = [
     g2.gain.setValueAtTime(0.0001, t + 0.05);
     g2.gain.exponentialRampToValueAtTime(0.8, t + 0.07);
     g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o2.connect(lp); lp.connect(g2); g2.connect(A.master);
+    o2.connect(lp); lp.connect(g2); g2.connect(A.out || A.master);
     o2.start(t + 0.05); o2.stop(t + 0.6);
     const o3 = ctx.createOscillator(); o3.type = 'triangle';
     o3.frequency.setValueAtTime(660, t + 0.55);
@@ -2266,7 +2294,7 @@ const VEHICLE_SPAWNS = [
     g3.gain.setValueAtTime(0.0001, t + 0.55);
     g3.gain.exponentialRampToValueAtTime(0.14, t + 0.6);
     g3.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-    o3.connect(g3); g3.connect(A.master);
+    o3.connect(g3); g3.connect(A.out || A.master);
     o3.start(t + 0.55); o3.stop(t + 0.95);
   }
   // 死亡低鸣：正弦 110→55Hz 长衰 + 暗噪声垫（阵亡飘升时触发）
@@ -2280,7 +2308,7 @@ const VEHICLE_SPAWNS = [
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(0.32, t + 0.12);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 1.9);
     const n = ctx.createBufferSource(); n.buffer = A.noiseBuf; n.loop = true;
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
@@ -2288,7 +2316,7 @@ const VEHICLE_SPAWNS = [
     gn.gain.setValueAtTime(0.0001, t);
     gn.gain.exponentialRampToValueAtTime(0.1, t + 0.2);
     gn.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
-    n.connect(lp); lp.connect(gn); gn.connect(A.master);
+    n.connect(lp); lp.connect(gn); gn.connect(A.out || A.master);
     n.start(t); n.stop(t + 2);
   }
   // v5.38 濒死心跳（低血量反馈；urgency 0-1 控制响度）
@@ -2305,7 +2333,7 @@ const VEHICLE_SPAWNS = [
       g.gain.setValueAtTime(0.0001, tt);
       g.gain.exponentialRampToValueAtTime(0.22 * vol, tt + 0.015);
       g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.12);
-      o.connect(g); g.connect(A.master);
+      o.connect(g); g.connect(A.out || A.master);
       o.start(tt); o.stop(tt + 0.14);
     };
     thump(t, 0.7 * u);
@@ -2323,14 +2351,14 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.09 * v, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.06);
     const n = ctx.createBufferSource(); n.buffer = A.noiseBuf;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000;
     const gn = ctx.createGain();
     gn.gain.setValueAtTime(0.05 * v, t);
     gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-    n.connect(hp); hp.connect(gn); gn.connect(A.master);
+    n.connect(hp); hp.connect(gn); gn.connect(A.out || A.master);
     n.start(t); n.stop(t + 0.05);
   }
   // v5.28 功绩计分轻响（高级感：短促上滑音）
@@ -2344,7 +2372,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.1, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.1);
   }
 
@@ -2437,7 +2465,7 @@ const VEHICLE_SPAWNS = [
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.22 * vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.05);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 1.1);
   }
 
@@ -2482,7 +2510,7 @@ const VEHICLE_SPAWNS = [
       g.gain.setValueAtTime(vol, t);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
       src.connect(f); f.connect(g);
-      if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.master);
+      if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.out || A.master);
       src.start(t); src.stop(t + 1.3);
     } else {
       // 远处零星枪声（两声短促）
@@ -2495,7 +2523,7 @@ const VEHICLE_SPAWNS = [
         const ss = ctx.createBufferSource(); ss.buffer = A.noiseBuf; ss.loop = true;
         const ff = ctx.createBiquadFilter(); ff.type = 'bandpass'; ff.frequency.value = 900; ff.Q.value = 1;
         ss.connect(ff); ff.connect(gg);
-        if (pan) { gg.connect(pan); pan.connect(A.master); } else gg.connect(A.master);
+        if (pan) { gg.connect(pan); pan.connect(A.master); } else gg.connect(A.out || A.master);
         ss.start(tt); ss.stop(tt + 0.12);
       }
       // 外层节点仅用于路由（源节点即时结束）
@@ -3615,11 +3643,11 @@ const VEHICLE_SPAWNS = [
       Game.weapons.areaDamage(
         { x: s.cx, y: s.baseH + 0.5, z: s.cz }, s.blastRadius || 7, s.blastDmg || 160, null, s.kind
       );
-      Game.sound.explosion(s.blastDmg > 100, dv);
+      Game.sound.explosion(s.blastDmg > 100, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     } else if (s.collapse) {
-      Game.sound.explosion(true, dv);
+      Game.sound.explosion(true, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     } else {
-      Game.sound.explosion(false, dv);
+      Game.sound.explosion(false, dv, { x: s.cx, y: s.baseH + 1, z: s.cz });
     }
     // 倒塌建筑 → 瓦砾堆（低掩体，遮挡蹲姿视线）
     if (s.rubble) {
@@ -4583,7 +4611,7 @@ const VEHICLE_SPAWNS = [
     Game.effects.muzzleFlash(muzzle, w.flashPower || 1);
     if (Game.effects.ejectShell) Game.effects.ejectShell(muzzle, dir); // 抛壳
     const shotVol = s.isPlayer ? 1 : Game.audio.distanceVol(eye);
-    if (shotVol > 0.02) Game.sound.shot(w.sound, shotVol);
+    if (shotVol > 0.02) Game.sound.shot(w.sound, shotVol, s.isPlayer ? null : eye);   // v5.46 3D 音效
     let lastHit = null, lastDir = dir, lastEnd = at(eye, dir, w.range);
     for (let pi = 0; pi < pellets; pi++) {
       // 多弹丸：锥内随机散布（单弹丸 = 原逻辑零开销）
@@ -4940,7 +4968,7 @@ const VEHICLE_SPAWNS = [
     }
     // 爆炸
     Game.effects.explosion({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 9, true);
-    Game.sound.explosion(true, Game.audio.distanceVol(v.pos));
+    Game.sound.explosion(true, Game.audio.distanceVol(v.pos), v.pos);
     areaDamage({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 12, 240, attacker, 'vehicle');
     // 乘客处理（司机 + 机枪手都弹出；司机是玩家时先正常下车，否则引擎音残留）
     if (v.occupant) {
@@ -5040,7 +5068,7 @@ const VEHICLE_SPAWNS = [
       spawnProjectile(s.gadget, eye,
         { x: f.x * g.speed, y: f.y * g.speed + 2, z: f.z * g.speed },
         s, { gravity: g.gravity, radius: g.radius, damage: g.damage, fuse: g.fuse, antiVehicle: g.antiVehicle });
-      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye));
+      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye), s.isPlayer ? null : eye);
     } else if (g.kind === 'instant') {
       // v5.31 弹药箱：放地上持续补给（一人一个，放新的旧的销毁）
       s.gadgetCooldown = s.gadgetCdMax;
@@ -5051,7 +5079,7 @@ const VEHICLE_SPAWNS = [
       spawnProjectile('flare', eye,
         { x: f.x * 30, y: f.y * 30 + 6, z: f.z * 30 },
         s, { gravity: 18, radius: CONFIG.SPOT_RADIUS, damage: 0, fuse: 1.4 });
-      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye));
+      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye), s.isPlayer ? null : eye);
     } else if (g.kind === 'mortar') {
       // v5.7：玩家按扳机 = 部署/收起（部署后右下地图选点，见 fireMortarAt）；
       // AI 用 bot.mortarTarget 直接指定落点
@@ -5339,7 +5367,7 @@ const VEHICLE_SPAWNS = [
     }
     const big = p.damage >= 200;
     Game.effects.explosion(pos, p.radius, big);
-    Game.sound.explosion(big, Game.audio.distanceVol(pos));
+    Game.sound.explosion(big, Game.audio.distanceVol(pos), pos);
     // v5.28 氛围：近距爆炸全屏暖光一闪（玩家 45m 内）
     if (Game.player && Game.hud && Game.hud.explosionFlash &&
         M.dist3(pos, { x: Game.player.pos.x, y: Game.player.pos.y + 1, z: Game.player.pos.z }) < 45) {
@@ -6214,9 +6242,9 @@ const VEHICLE_SPAWNS = [
     P.view.position.y = M.lerp(P.view.position.y,
       target.y + bobY - P.viewKick * 0.03 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
     P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.12 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
-    // 开火后座 + 换弹/切枪旋转 + 冲刺前倾 + 落地点头 + 拉栓微倾
+    // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
-      P.viewKick * 0.2 + reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
+      reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
   }
 
   P.init = init; P.update = update;
@@ -7065,6 +7093,23 @@ const VEHICLE_SPAWNS = [
   function cyl(r, h, m, seg) { return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 10), m); }
   function normAngle(a) { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
 
+  // v5.46 载具机枪过热：持续开火升温，过热停火，越热散射越大（只是微微扩大）
+  const VEHICLE_HEAT_MAX = 100, VEHICLE_HEAT_PER_SHOT = 4, VEHICLE_HEAT_COOLDOWN_AT = 30, VEHICLE_HEAT_DECAY = 22;
+  function mgCanFire(v) {
+    if (v.mgOverheated) {
+      if ((v.heat || 0) < VEHICLE_HEAT_COOLDOWN_AT) v.mgOverheated = false;
+      else return false;
+    }
+    return true;
+  }
+  function mgSpreadOf(v, baseSpread) {
+    return baseSpread * (1 + (v.heat || 0) / VEHICLE_HEAT_MAX * 0.55);
+  }
+  function mgHeatUp(v) {
+    v.heat = Math.min(VEHICLE_HEAT_MAX, (v.heat || 0) + VEHICLE_HEAT_PER_SHOT);
+    if (v.heat >= VEHICLE_HEAT_MAX) v.mgOverheated = true;
+  }
+
   // ---- 生成全部载具 ----
   function init() {
     for (const sp of VEHICLE_SPAWNS) {
@@ -7090,6 +7135,7 @@ const VEHICLE_SPAWNS = [
       weaponSlot: 'primary',
       cannonTimer: 0, mgTimer: 0, rocketTimer: 0,
       mgBurstT: 0, mgPauseT: 0, mgLong: false, trampleT: 0,   // v5.14 点射/碾压状态
+      heat: 0, mgOverheated: false,   // v5.46 载具机枪过热
       stuckT: 0,   // v5.29 卡死检测计时
       respawnT: 0, group: null, parts: {},
       lastFireTime: -999, hitRadius: def.hitRadius,
@@ -7379,7 +7425,7 @@ const VEHICLE_SPAWNS = [
       else if (hit.type === 'solid') { if (hit.solid.destructible) Game.terrain.damageSolid(hit.solid, dmg); Game.effects.impact(hit.point, 0xcccccc); }
       else Game.effects.impact(hit.point, 0x8a7a5c);
     }
-    Game.sound.shot('rifle', shooter && shooter.isPlayer ? 1 : Game.audio.distanceVol(muzzle));
+    Game.sound.shot('rifle', shooter && shooter.isPlayer ? 1 : Game.audio.distanceVol(muzzle), shooter && shooter.isPlayer ? null : muzzle);   // v5.46 3D 音效
     v.spottedUntil = Game.time + CONFIG.SPOTTED_TIME;   // v5.19 开火自动暴露（可被标记系统捕捉）
     v.lastFireTime = Game.time;
   }
@@ -7401,13 +7447,15 @@ const VEHICLE_SPAWNS = [
       v.spottedUntil = Game.time + CONFIG.SPOTTED_TIME;   // v5.19 开火自动暴露
       v.lastFireTime = Game.time;
     } else if (v.kind === 'apc') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.mgRate;
-      hitscan(v, def.mgDamage, def.mgSpread, occ, 0xffe08a);
+      hitscan(v, def.mgDamage, mgSpreadOf(v, def.mgSpread), occ, 0xffe08a);
+      mgHeatUp(v);
     } else if (v.kind === 'aa') {
-      if (v.cannonTimer > 0) return;
+      if (v.cannonTimer > 0 || !mgCanFire(v)) return;
       v.cannonTimer = def.cannonRate;
-      hitscan(v, def.cannonDamage, def.cannonSpread, occ, 0xffd27a, 'aa', def.range || 400);
+      hitscan(v, def.cannonDamage, mgSpreadOf(v, def.cannonSpread), occ, 0xffd27a, 'aa', def.range || 400);
+      mgHeatUp(v);
       Game.effects.muzzleFlash(muzzleFor(v));
       v.lastFireTime = Game.time;
     } else if (v.kind === 'heli') {
@@ -7428,13 +7476,15 @@ const VEHICLE_SPAWNS = [
     const occ = v.occupant; if (!occ) return;
     const def = v.def;
     if (v.kind === 'tank') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.mgRate;
-      hitscan(v, def.mgDamage, def.mgSpread, occ, 0xfff0a0);
+      hitscan(v, def.mgDamage, mgSpreadOf(v, def.mgSpread), occ, 0xfff0a0);
+      mgHeatUp(v);
     } else if (v.kind === 'heli') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.cannonRate;
-      hitscan(v, def.cannonDamage, def.cannonSpread, occ, 0xfff0a0);
+      hitscan(v, def.cannonDamage, mgSpreadOf(v, def.cannonSpread), occ, 0xfff0a0);
+      mgHeatUp(v);
     }
   }
 
@@ -7778,6 +7828,7 @@ const VEHICLE_SPAWNS = [
       v.cannonTimer = Math.max(0, v.cannonTimer - dt);
       v.mgTimer = Math.max(0, v.mgTimer - dt);
       v.rocketTimer = Math.max(0, v.rocketTimer - dt);
+      v.heat = Math.max(0, (v.heat || 0) - VEHICLE_HEAT_DECAY * dt);   // v5.46 过热冷却
       if (v.occupant && v.occupant.isPlayer) {
         const P = Game.Player;
         if (P.locked) {
@@ -9731,9 +9782,21 @@ const VEHICLE_SPAWNS = [
       ['g-ammo', '备弹', 'ammo', -1, 12, 1, f0],
     ]},
     { title: '载具', type: 'veh', items: [
-      ['tank-dmg', '坦克炮弹伤害', 'tank.shellDamage', 50, 600, 10, f0],
+      ['tank-hp', '坦克血量', 'tank.hp', 200, 2500, 50, f0],
+      ['tank-spd', '坦克速度', 'tank.speed', 4, 25, 1, f0],
+      ['tank-dmg', '坦克炮弹伤害', 'tank.shellDamage', 50, 800, 10, f0],
       ['tank-rad', '坦克溅射半径', 'tank.shellRadius', 4, 25, 0.5, f2],
-      ['heli-dmg', '直升机火箭伤害', 'heli.rocketDamage', 20, 300, 5, f0],
+      ['tank-mgdmg', '坦克机枪伤害', 'tank.mgDamage', 5, 60, 1, f0],
+      ['tank-mgspread', '坦克机枪扩散', 'tank.mgSpread', 0.005, 0.1, 0.002, f3],
+      ['apc-hp', '装甲车血量', 'apc.hp', 150, 1800, 50, f0],
+      ['apc-spd', '装甲车速度', 'apc.speed', 6, 30, 1, f0],
+      ['apc-mgdmg', '装甲车机枪伤害', 'apc.mgDamage', 5, 80, 1, f0],
+      ['aa-hp', '防空车血量', 'aa.hp', 150, 1800, 50, f0],
+      ['aa-dmg', '高炮伤害', 'aa.cannonDamage', 5, 80, 1, f0],
+      ['heli-hp', '直升机血量', 'heli.hp', 150, 2000, 50, f0],
+      ['heli-spd', '直升机速度', 'heli.speed', 10, 50, 2, f0],
+      ['heli-dmg', '直升机火箭伤害', 'heli.rocketDamage', 20, 400, 5, f0],
+      ['heli-cannon', '直升机机炮伤害', 'heli.cannonDamage', 5, 80, 1, f0],
     ]},
   ];
 

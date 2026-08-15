@@ -790,9 +790,9 @@
     P.view.position.y = M.lerp(P.view.position.y,
       target.y + bobY - P.viewKick * 0.03 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
     P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.12 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
-    // 开火后座 + 换弹/切枪旋转 + 冲刺前倾 + 落地点头 + 拉栓微倾
+    // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
-      P.viewKick * 0.2 + reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
+      reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
   }
 
   P.init = init; P.update = update;

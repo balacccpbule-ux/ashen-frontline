@@ -187,7 +187,7 @@
     Game.effects.muzzleFlash(muzzle, w.flashPower || 1);
     if (Game.effects.ejectShell) Game.effects.ejectShell(muzzle, dir); // 抛壳
     const shotVol = s.isPlayer ? 1 : Game.audio.distanceVol(eye);
-    if (shotVol > 0.02) Game.sound.shot(w.sound, shotVol);
+    if (shotVol > 0.02) Game.sound.shot(w.sound, shotVol, s.isPlayer ? null : eye);   // v5.46 3D 音效
     let lastHit = null, lastDir = dir, lastEnd = at(eye, dir, w.range);
     for (let pi = 0; pi < pellets; pi++) {
       // 多弹丸：锥内随机散布（单弹丸 = 原逻辑零开销）
@@ -544,7 +544,7 @@
     }
     // 爆炸
     Game.effects.explosion({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 9, true);
-    Game.sound.explosion(true, Game.audio.distanceVol(v.pos));
+    Game.sound.explosion(true, Game.audio.distanceVol(v.pos), v.pos);
     areaDamage({ x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, 12, 240, attacker, 'vehicle');
     // 乘客处理（司机 + 机枪手都弹出；司机是玩家时先正常下车，否则引擎音残留）
     if (v.occupant) {
@@ -644,7 +644,7 @@
       spawnProjectile(s.gadget, eye,
         { x: f.x * g.speed, y: f.y * g.speed + 2, z: f.z * g.speed },
         s, { gravity: g.gravity, radius: g.radius, damage: g.damage, fuse: g.fuse, antiVehicle: g.antiVehicle });
-      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye));
+      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye), s.isPlayer ? null : eye);
     } else if (g.kind === 'instant') {
       // v5.31 弹药箱：放地上持续补给（一人一个，放新的旧的销毁）
       s.gadgetCooldown = s.gadgetCdMax;
@@ -655,7 +655,7 @@
       spawnProjectile('flare', eye,
         { x: f.x * 30, y: f.y * 30 + 6, z: f.z * 30 },
         s, { gravity: 18, radius: CONFIG.SPOT_RADIUS, damage: 0, fuse: 1.4 });
-      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye));
+      Game.sound.shot('pistol', s.isPlayer ? 1 : Game.audio.distanceVol(eye), s.isPlayer ? null : eye);
     } else if (g.kind === 'mortar') {
       // v5.7：玩家按扳机 = 部署/收起（部署后右下地图选点，见 fireMortarAt）；
       // AI 用 bot.mortarTarget 直接指定落点
@@ -943,7 +943,7 @@
     }
     const big = p.damage >= 200;
     Game.effects.explosion(pos, p.radius, big);
-    Game.sound.explosion(big, Game.audio.distanceVol(pos));
+    Game.sound.explosion(big, Game.audio.distanceVol(pos), pos);
     // v5.28 氛围：近距爆炸全屏暖光一闪（玩家 45m 内）
     if (Game.player && Game.hud && Game.hud.explosionFlash &&
         M.dist3(pos, { x: Game.player.pos.x, y: Game.player.pos.y + 1, z: Game.player.pos.z }) < 45) {

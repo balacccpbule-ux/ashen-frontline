@@ -88,9 +88,21 @@
       ['g-ammo', '备弹', 'ammo', -1, 12, 1, f0],
     ]},
     { title: '载具', type: 'veh', items: [
-      ['tank-dmg', '坦克炮弹伤害', 'tank.shellDamage', 50, 600, 10, f0],
+      ['tank-hp', '坦克血量', 'tank.hp', 200, 2500, 50, f0],
+      ['tank-spd', '坦克速度', 'tank.speed', 4, 25, 1, f0],
+      ['tank-dmg', '坦克炮弹伤害', 'tank.shellDamage', 50, 800, 10, f0],
       ['tank-rad', '坦克溅射半径', 'tank.shellRadius', 4, 25, 0.5, f2],
-      ['heli-dmg', '直升机火箭伤害', 'heli.rocketDamage', 20, 300, 5, f0],
+      ['tank-mgdmg', '坦克机枪伤害', 'tank.mgDamage', 5, 60, 1, f0],
+      ['tank-mgspread', '坦克机枪扩散', 'tank.mgSpread', 0.005, 0.1, 0.002, f3],
+      ['apc-hp', '装甲车血量', 'apc.hp', 150, 1800, 50, f0],
+      ['apc-spd', '装甲车速度', 'apc.speed', 6, 30, 1, f0],
+      ['apc-mgdmg', '装甲车机枪伤害', 'apc.mgDamage', 5, 80, 1, f0],
+      ['aa-hp', '防空车血量', 'aa.hp', 150, 1800, 50, f0],
+      ['aa-dmg', '高炮伤害', 'aa.cannonDamage', 5, 80, 1, f0],
+      ['heli-hp', '直升机血量', 'heli.hp', 150, 2000, 50, f0],
+      ['heli-spd', '直升机速度', 'heli.speed', 10, 50, 2, f0],
+      ['heli-dmg', '直升机火箭伤害', 'heli.rocketDamage', 20, 400, 5, f0],
+      ['heli-cannon', '直升机机炮伤害', 'heli.cannonDamage', 5, 80, 1, f0],
     ]},
   ];
 

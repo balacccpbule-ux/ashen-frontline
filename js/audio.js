@@ -12,6 +12,7 @@
     noiseBuf: null,
     inited: false,
     engines: {},   // 载具循环音 { vehicleId: {gain, filter, osc} }
+    out: null,      // v5.46 空间输出母线（A.out || A.master）；spatial() 临时设为 panner
   };
 
   // 音效事件日志（测试/调试断言时序用；headless 无音频上下文也记录）
@@ -62,6 +63,27 @@
 
   const ready = () => A.inited && A.ctx && A.ctx.state === 'running';
 
+  // v5.46 3D 音效：按声源相对玩家朝向计算立体声 pan（-1 左 … +1 右）
+  function panFor(pos) {
+    if (!pos || !Game.player) return 0;
+    const dx = pos.x - Game.player.pos.x, dz = pos.z - Game.player.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.6) return 0;
+    const yaw = Game.player.yaw;
+    const rx = Math.cos(yaw), rz = -Math.sin(yaw);   // 玩家右向
+    return Math.max(-1, Math.min(1, (dx * rx + dz * rz) / d));
+  }
+  // 以立体声 pan 播放一段声音（pan=0 时直连 master，零开销）
+  function spatial(pan, fn) {
+    if (!ready() || !pan || !A.ctx.createStereoPanner) { fn(A.master); return; }
+    const p = A.ctx.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, pan));
+    p.connect(A.master);
+    A.out = p;
+    try { fn(p); } finally { A.out = null; }
+  }
+  A.panFor = panFor;
+
   // 噪声爆发（枪声主体）
   function noiseBurst(freq, dur, vol, type) {
     if (!ready()) return;
@@ -77,7 +99,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(filt); filt.connect(g); g.connect(A.master);
+    src.connect(filt); filt.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + dur + 0.02);
   }
 
@@ -92,7 +114,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -107,7 +129,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -122,7 +144,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + dur + 0.02);
   }
 
@@ -199,7 +221,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + dur + 0.02);
   }
 
@@ -217,7 +239,7 @@
       const g = ctx.createGain();
       g.gain.setValueAtTime(vol * (i === 0 ? 1 : 0.6), tt);
       g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.04);
-      osc.connect(g); g.connect(A.master);
+      osc.connect(g); g.connect(A.out || A.master);
       osc.start(tt); osc.stop(tt + 0.05);
     }
     const src = ctx.createBufferSource();
@@ -227,7 +249,7 @@
     const g2 = ctx.createGain();
     g2.gain.setValueAtTime(vol * 0.4, t);
     g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    src.connect(f); f.connect(g2); g2.connect(A.master);
+    src.connect(f); f.connect(g2); g2.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.06);
     // v5.42 金属共鸣环（高 Q 带通"叮"声，枪机金属感）
     const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
@@ -235,34 +257,37 @@
     const rg = ctx.createGain();
     rg.gain.setValueAtTime(vol * 0.1, t);
     rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.out || A.master);
     rsrc.start(t); rsrc.stop(t + 0.05);
   }
 
-  // 分层枪声主入口（vol = 距离衰减后音量；内部再做近/远混音）
-  function shot(kind, vol) {
+  // 分层枪声主入口（vol = 距离衰减后音量；pos = 声源位置用于 3D 定位）
+  function shot(kind, vol, pos) {
     const name = kind || 'rifle';
     SOUND_LOG.push({ n: 'shot:' + name, t: Game.time });
     if (SOUND_LOG.length > 200) SOUND_LOG.shift();
     vol = vol === undefined ? 1 : vol;
     if (!ready()) return;
-    const p = PROFILES[name] || PROFILES.rifle;
-    slotIdx = (slotIdx + 1) % SLOT_N;
-    const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
-    const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
-    // ①枪口爆响（近处主导）
-    crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
-    // ②火药主体（中频带通）
-    noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
-    // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
-    thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
-    thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
-    // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
-    shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
-    // ⑤机匣机械层
-    if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
-    // ⑥尾音噪声（进混响）
-    noiseBurst(jitter(1500, 0.2), p.tailDur, p.tailVol * vol, 'bandpass');
+    const pan = pos ? panFor(pos) : 0;
+    spatial(pan, () => {
+      const p = PROFILES[name] || PROFILES.rifle;
+      slotIdx = (slotIdx + 1) % SLOT_N;
+      const slot = 1 + (slotIdx / SLOT_N) * 0.18;         // 轮转槽位 → 音色微差
+      const far = 1 - Math.min(1, 1 - vol);               // 近似：vol 越低 = 越远
+      // ①枪口爆响（近处主导）
+      crack(jitter(p.crackF, 0.12) * slot, p.crackDur, p.crackVol * vol * (0.35 + 0.65 * (1 - far)));
+      // ②火药主体（中频带通）
+      noiseBurst(jitter(p.bodyF, 0.15) * slot, p.bodyDur, p.bodyVol * vol, 'bandpass');
+      // ③低频砰 + ④亚低音（远处主导 → 滚雷感）
+      thump(jitter(p.thumpF, 0.08), p.thumpDur, p.thumpVol * vol);
+      thump(jitter(p.subF0, 0.08), p.subDur, p.subVol * vol * (0.3 + 0.7 * far));
+      // ④b v5.42 冲击波瞬态（极低频冲量 → 后坐物理感）
+      shockwave(p.subF0 * 0.5, p.subDur * 0.45, p.subVol * 0.5 * vol);
+      // ⑤机匣机械层
+      if (p.mech) mech(0.026, jitter(0.22, 0.2) * vol, p.mech === 2);
+      // ⑥尾音噪声（进混响）
+      noiseBurst(jitter(1500, 0.2), p.tailDur, p.tailVol * vol, 'bandpass');
+    });
   }
 
   // 干火（空仓咔哒）
@@ -276,7 +301,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.3, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.04);
   }
 
@@ -300,7 +325,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.32, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.18);
   }
 
@@ -322,7 +347,7 @@
     g.gain.setValueAtTime(0.35, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
     src.connect(f); f.connect(g);
-    if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.master);
+    if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.18);
   }
 
@@ -339,7 +364,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.1, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 0.07);
   }
 
@@ -365,46 +390,49 @@
     thump(500, 0.04, 0.22);
   }
 
-  function explosion(big, vol) {
+  function explosion(big, vol, pos) {
     if (!ready()) return;
     vol = vol === undefined ? 1 : vol;
     const v = (big ? 1.0 : 0.6) * vol;
-    const ctx = A.ctx, t = ctx.currentTime;
-    // ①冲击波瞬态（极低频冲量）
-    shockwave(big ? 34 : 44, big ? 0.5 : 0.35, v * 1.1);
-    // ②主体轰鸣（低频噪声）
-    noiseBurst(700, 0.6 * (big ? 1.4 : 1), v, 'lowpass');
-    // ③低频砰 + 隆隆（锯齿下扫）
-    thump(big ? 55 : 70, 0.7, v * 1.2);
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(big ? 40 : 55, t);
-    osc.frequency.exponentialRampToValueAtTime(25, t + 0.5);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(v * 0.5, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    osc.connect(g); g.connect(A.master);
-    osc.start(t); osc.stop(t + 0.6);
-    // ④碎片飞溅（高频噪声 crackle，随机延迟）
-    const debrisN = big ? 6 : 3;
-    for (let i = 0; i < debrisN; i++) {
-      const dt = 0.03 + Math.random() * 0.3;
-      const dsrc = ctx.createBufferSource(); dsrc.buffer = A.noiseBuf; dsrc.loop = true;
-      const df = ctx.createBiquadFilter(); df.type = 'highpass'; df.frequency.value = jitter(4500, 0.3);
-      const dg = ctx.createGain();
-      dg.gain.setValueAtTime(v * 0.12, t + dt);
-      dg.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.035);
-      dsrc.connect(df); df.connect(dg); dg.connect(A.master);
-      dsrc.start(t + dt); dsrc.stop(t + dt + 0.05);
-    }
-    // ⑤尾音隆隆（低频噪声慢衰）
-    const tail = ctx.createBufferSource(); tail.buffer = A.noiseBuf; tail.loop = true;
-    const tf = ctx.createBiquadFilter(); tf.type = 'lowpass'; tf.frequency.value = 180;
-    const tg = ctx.createGain();
-    tg.gain.setValueAtTime(v * 0.28, t);
-    tg.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 1.6 : 1.0));
-    tail.connect(tf); tf.connect(tg); tg.connect(A.master);
-    tail.start(t); tail.stop(t + (big ? 1.7 : 1.1));
+    const pan = pos ? panFor(pos) : 0;
+    spatial(pan, () => {
+      const ctx = A.ctx, t = ctx.currentTime;
+      // ①冲击波瞬态（极低频冲量）
+      shockwave(big ? 34 : 44, big ? 0.5 : 0.35, v * 1.1);
+      // ②主体轰鸣（低频噪声）
+      noiseBurst(700, 0.6 * (big ? 1.4 : 1), v, 'lowpass');
+      // ③低频砰 + 隆隆（锯齿下扫）
+      thump(big ? 55 : 70, 0.7, v * 1.2);
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(big ? 40 : 55, t);
+      osc.frequency.exponentialRampToValueAtTime(25, t + 0.5);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(v * 0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+      osc.connect(g); g.connect(A.out || A.master);
+      osc.start(t); osc.stop(t + 0.6);
+      // ④碎片飞溅（高频噪声 crackle，随机延迟）
+      const debrisN = big ? 6 : 3;
+      for (let i = 0; i < debrisN; i++) {
+        const dt = 0.03 + Math.random() * 0.3;
+        const dsrc = ctx.createBufferSource(); dsrc.buffer = A.noiseBuf; dsrc.loop = true;
+        const df = ctx.createBiquadFilter(); df.type = 'highpass'; df.frequency.value = jitter(4500, 0.3);
+        const dg = ctx.createGain();
+        dg.gain.setValueAtTime(v * 0.12, t + dt);
+        dg.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.035);
+        dsrc.connect(df); df.connect(dg); dg.connect(A.out || A.master);
+        dsrc.start(t + dt); dsrc.stop(t + dt + 0.05);
+      }
+      // ⑤尾音隆隆（低频噪声慢衰）
+      const tail = ctx.createBufferSource(); tail.buffer = A.noiseBuf; tail.loop = true;
+      const tf = ctx.createBiquadFilter(); tf.type = 'lowpass'; tf.frequency.value = 180;
+      const tg = ctx.createGain();
+      tg.gain.setValueAtTime(v * 0.28, t);
+      tg.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 1.6 : 1.0));
+      tail.connect(tf); tf.connect(tg); tg.connect(A.out || A.master);
+      tail.start(t); tail.stop(t + (big ? 1.7 : 1.1));
+    });
   }
 
   function hit() { noiseBurst(1500, 0.05, 0.4, 'highpass'); thump(400, 0.05, 0.25); }
@@ -433,7 +461,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.16, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.08);
   }
   // 装甲/载具命中（金属"当"：带通噪声 + 低砰 + 共振尾音）
@@ -446,7 +474,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.34, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.06);
     thump(320, 0.06, 0.3);
     const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
@@ -454,7 +482,7 @@
     const rg = ctx.createGain();
     rg.gain.setValueAtTime(0.1, t);
     rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
-    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.out || A.master);
     rsrc.start(t); rsrc.stop(t + 0.09);
   }
   // 受击（闷响 + 低频"闷哼"，伤害越大越重）
@@ -471,7 +499,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.22 * v, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.14);
   }
   // 护盾受击（电流"滋滋"）
@@ -484,7 +512,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.24, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
-    src.connect(f); f.connect(g); g.connect(A.master);
+    src.connect(f); f.connect(g); g.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.09);
     tone(1200, 0.04, 0.1, 0);
   }
@@ -500,7 +528,7 @@
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(v, t + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.55);
   }
   // ============================================================
@@ -518,7 +546,7 @@
     g1.gain.setValueAtTime(0.0001, t);
     g1.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
     g1.gain.exponentialRampToValueAtTime(0.0001, t + 0.78);
-    src.connect(bp); bp.connect(g1); g1.connect(A.master);
+    src.connect(bp); bp.connect(g1); g1.connect(A.out || A.master);
     src.start(t); src.stop(t + 0.8);
     const o2 = ctx.createOscillator(); o2.type = 'sine';
     o2.frequency.setValueAtTime(160, t + 0.05);
@@ -528,7 +556,7 @@
     g2.gain.setValueAtTime(0.0001, t + 0.05);
     g2.gain.exponentialRampToValueAtTime(0.8, t + 0.07);
     g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o2.connect(lp); lp.connect(g2); g2.connect(A.master);
+    o2.connect(lp); lp.connect(g2); g2.connect(A.out || A.master);
     o2.start(t + 0.05); o2.stop(t + 0.6);
     const o3 = ctx.createOscillator(); o3.type = 'triangle';
     o3.frequency.setValueAtTime(660, t + 0.55);
@@ -537,7 +565,7 @@
     g3.gain.setValueAtTime(0.0001, t + 0.55);
     g3.gain.exponentialRampToValueAtTime(0.14, t + 0.6);
     g3.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-    o3.connect(g3); g3.connect(A.master);
+    o3.connect(g3); g3.connect(A.out || A.master);
     o3.start(t + 0.55); o3.stop(t + 0.95);
   }
   // 死亡低鸣：正弦 110→55Hz 长衰 + 暗噪声垫（阵亡飘升时触发）
@@ -551,7 +579,7 @@
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(0.32, t + 0.12);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 1.9);
     const n = ctx.createBufferSource(); n.buffer = A.noiseBuf; n.loop = true;
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
@@ -559,7 +587,7 @@
     gn.gain.setValueAtTime(0.0001, t);
     gn.gain.exponentialRampToValueAtTime(0.1, t + 0.2);
     gn.gain.exponentialRampToValueAtTime(0.0001, t + 1.9);
-    n.connect(lp); lp.connect(gn); gn.connect(A.master);
+    n.connect(lp); lp.connect(gn); gn.connect(A.out || A.master);
     n.start(t); n.stop(t + 2);
   }
   // v5.38 濒死心跳（低血量反馈；urgency 0-1 控制响度）
@@ -576,7 +604,7 @@
       g.gain.setValueAtTime(0.0001, tt);
       g.gain.exponentialRampToValueAtTime(0.22 * vol, tt + 0.015);
       g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.12);
-      o.connect(g); g.connect(A.master);
+      o.connect(g); g.connect(A.out || A.master);
       o.start(tt); o.stop(tt + 0.14);
     };
     thump(t, 0.7 * u);
@@ -594,14 +622,14 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.09 * v, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.06);
     const n = ctx.createBufferSource(); n.buffer = A.noiseBuf;
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3000;
     const gn = ctx.createGain();
     gn.gain.setValueAtTime(0.05 * v, t);
     gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-    n.connect(hp); hp.connect(gn); gn.connect(A.master);
+    n.connect(hp); hp.connect(gn); gn.connect(A.out || A.master);
     n.start(t); n.stop(t + 0.05);
   }
   // v5.28 功绩计分轻响（高级感：短促上滑音）
@@ -615,7 +643,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.1, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    o.connect(g); g.connect(A.master);
+    o.connect(g); g.connect(A.out || A.master);
     o.start(t); o.stop(t + 0.1);
   }
 
@@ -708,7 +736,7 @@
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.22 * vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.05);
-    osc.connect(g); g.connect(A.master);
+    osc.connect(g); g.connect(A.out || A.master);
     osc.start(t); osc.stop(t + 1.1);
   }
 
@@ -753,7 +781,7 @@
       g.gain.setValueAtTime(vol, t);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
       src.connect(f); f.connect(g);
-      if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.master);
+      if (pan) { g.connect(pan); pan.connect(A.master); } else g.connect(A.out || A.master);
       src.start(t); src.stop(t + 1.3);
     } else {
       // 远处零星枪声（两声短促）
@@ -766,7 +794,7 @@
         const ss = ctx.createBufferSource(); ss.buffer = A.noiseBuf; ss.loop = true;
         const ff = ctx.createBiquadFilter(); ff.type = 'bandpass'; ff.frequency.value = 900; ff.Q.value = 1;
         ss.connect(ff); ff.connect(gg);
-        if (pan) { gg.connect(pan); pan.connect(A.master); } else gg.connect(A.master);
+        if (pan) { gg.connect(pan); pan.connect(A.master); } else gg.connect(A.out || A.master);
         ss.start(tt); ss.stop(tt + 0.12);
       }
       // 外层节点仅用于路由（源节点即时结束）

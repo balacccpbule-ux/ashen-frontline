@@ -12,6 +12,23 @@
   function cyl(r, h, m, seg) { return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 10), m); }
   function normAngle(a) { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
 
+  // v5.46 载具机枪过热：持续开火升温，过热停火，越热散射越大（只是微微扩大）
+  const VEHICLE_HEAT_MAX = 100, VEHICLE_HEAT_PER_SHOT = 4, VEHICLE_HEAT_COOLDOWN_AT = 30, VEHICLE_HEAT_DECAY = 22;
+  function mgCanFire(v) {
+    if (v.mgOverheated) {
+      if ((v.heat || 0) < VEHICLE_HEAT_COOLDOWN_AT) v.mgOverheated = false;
+      else return false;
+    }
+    return true;
+  }
+  function mgSpreadOf(v, baseSpread) {
+    return baseSpread * (1 + (v.heat || 0) / VEHICLE_HEAT_MAX * 0.55);
+  }
+  function mgHeatUp(v) {
+    v.heat = Math.min(VEHICLE_HEAT_MAX, (v.heat || 0) + VEHICLE_HEAT_PER_SHOT);
+    if (v.heat >= VEHICLE_HEAT_MAX) v.mgOverheated = true;
+  }
+
   // ---- 生成全部载具 ----
   function init() {
     for (const sp of VEHICLE_SPAWNS) {
@@ -37,6 +54,7 @@
       weaponSlot: 'primary',
       cannonTimer: 0, mgTimer: 0, rocketTimer: 0,
       mgBurstT: 0, mgPauseT: 0, mgLong: false, trampleT: 0,   // v5.14 点射/碾压状态
+      heat: 0, mgOverheated: false,   // v5.46 载具机枪过热
       stuckT: 0,   // v5.29 卡死检测计时
       respawnT: 0, group: null, parts: {},
       lastFireTime: -999, hitRadius: def.hitRadius,
@@ -326,7 +344,7 @@
       else if (hit.type === 'solid') { if (hit.solid.destructible) Game.terrain.damageSolid(hit.solid, dmg); Game.effects.impact(hit.point, 0xcccccc); }
       else Game.effects.impact(hit.point, 0x8a7a5c);
     }
-    Game.sound.shot('rifle', shooter && shooter.isPlayer ? 1 : Game.audio.distanceVol(muzzle));
+    Game.sound.shot('rifle', shooter && shooter.isPlayer ? 1 : Game.audio.distanceVol(muzzle), shooter && shooter.isPlayer ? null : muzzle);   // v5.46 3D 音效
     v.spottedUntil = Game.time + CONFIG.SPOTTED_TIME;   // v5.19 开火自动暴露（可被标记系统捕捉）
     v.lastFireTime = Game.time;
   }
@@ -348,13 +366,15 @@
       v.spottedUntil = Game.time + CONFIG.SPOTTED_TIME;   // v5.19 开火自动暴露
       v.lastFireTime = Game.time;
     } else if (v.kind === 'apc') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.mgRate;
-      hitscan(v, def.mgDamage, def.mgSpread, occ, 0xffe08a);
+      hitscan(v, def.mgDamage, mgSpreadOf(v, def.mgSpread), occ, 0xffe08a);
+      mgHeatUp(v);
     } else if (v.kind === 'aa') {
-      if (v.cannonTimer > 0) return;
+      if (v.cannonTimer > 0 || !mgCanFire(v)) return;
       v.cannonTimer = def.cannonRate;
-      hitscan(v, def.cannonDamage, def.cannonSpread, occ, 0xffd27a, 'aa', def.range || 400);
+      hitscan(v, def.cannonDamage, mgSpreadOf(v, def.cannonSpread), occ, 0xffd27a, 'aa', def.range || 400);
+      mgHeatUp(v);
       Game.effects.muzzleFlash(muzzleFor(v));
       v.lastFireTime = Game.time;
     } else if (v.kind === 'heli') {
@@ -375,13 +395,15 @@
     const occ = v.occupant; if (!occ) return;
     const def = v.def;
     if (v.kind === 'tank') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.mgRate;
-      hitscan(v, def.mgDamage, def.mgSpread, occ, 0xfff0a0);
+      hitscan(v, def.mgDamage, mgSpreadOf(v, def.mgSpread), occ, 0xfff0a0);
+      mgHeatUp(v);
     } else if (v.kind === 'heli') {
-      if (v.mgTimer > 0) return;
+      if (v.mgTimer > 0 || !mgCanFire(v)) return;
       v.mgTimer = def.cannonRate;
-      hitscan(v, def.cannonDamage, def.cannonSpread, occ, 0xfff0a0);
+      hitscan(v, def.cannonDamage, mgSpreadOf(v, def.cannonSpread), occ, 0xfff0a0);
+      mgHeatUp(v);
     }
   }
 
@@ -725,6 +747,7 @@
       v.cannonTimer = Math.max(0, v.cannonTimer - dt);
       v.mgTimer = Math.max(0, v.mgTimer - dt);
       v.rocketTimer = Math.max(0, v.rocketTimer - dt);
+      v.heat = Math.max(0, (v.heat || 0) - VEHICLE_HEAT_DECAY * dt);   // v5.46 过热冷却
       if (v.occupant && v.occupant.isPlayer) {
         const P = Game.Player;
         if (P.locked) {

@@ -100,7 +100,7 @@
     Game.sectors.forEach((sec, i) => {
       const d = document.createElement('div');
       d.className = 'sector-dot';
-      d.title = sec.name;
+      d.title = Game.L(sec);
       el.appendChild(d);
     });
     updateSectorBar();
@@ -124,9 +124,9 @@
     const card = document.createElement('div');
     card.className = 'cls-card' + (key === H.selectedClass ? ' selected' : '');
     card.dataset.key = key;
-    card.innerHTML = '<div class="cc-name">' + cls.name + '</div>' +
-      '<div class="cc-weapon">' + WEAPONS[cls.weapon].name + '</div>' +
-      '<div class="cc-desc">' + cls.desc + '</div>';
+    card.innerHTML = '<div class="cc-name">' + Game.L(cls) + '</div>' +
+      '<div class="cc-weapon">' + Game.L(WEAPONS[cls.weapon]) + '</div>' +
+      '<div class="cc-desc">' + Game.L(cls, 'desc') + '</div>';
     card.onclick = () => selectClass(key);
     return card;
   }
@@ -145,7 +145,7 @@
       const bar = document.createElement('div');
       bar.className = 'flag-bar';
       bar.innerHTML = '<div class="flag-fill"></div><div class="flag-label">' + f.id + '</div>';
-      bar.title = f.name || f.id;
+      bar.title = Game.L(f) || f.id;
       c.appendChild(bar);
       f.ui = { bar, fill: bar.querySelector('.flag-fill'), label: bar.querySelector('.flag-label') };
     });
@@ -171,10 +171,10 @@
     const p = Game.player, pt = p.team;
     const pts = [];
     const base = BASE_DEFS.find((b) => b.team === pt);
-    if (base) pts.push({ x: base.x, z: base.z, name: '基地', home: true });
+    if (base) pts.push({ x: base.x, z: base.z, name: Game.t('spawn.base'), home: true });
     for (const f of Game.flags) {
       // v5.40 只能复活在自己方占领点（征服/突破统一：只列己方旗帜，不再列敌方/当前扇区）
-      if (f.owner === pt) pts.push({ x: f.x, z: f.z, name: f.name || f.id, home: false });
+      if (f.owner === pt) pts.push({ x: f.x, z: f.z, name: Game.L(f) || f.id, home: false });
     }
     H.deathSpawnPts = pts;
     pts.forEach((sp, i) => {
@@ -225,8 +225,8 @@
   }
   function updateRankDisplay() {
     const total = H.save.totalScore + (Game.player ? Game.player.score : 0);
-    H.el.rankDisplay.textContent = '军衔：' + rankName(total).name + '（累计 ' + total + ' 分）';
-    H.el.rankMini.textContent = rankName(total).name;
+    H.el.rankDisplay.textContent = Game.t('menu.rank.line', Game.L(rankName(total)), total);
+    H.el.rankMini.textContent = Game.L(rankName(total));
   }
 
   // ---- 预渲染地形画布（小地图 / 迫击炮地图共用） ----
@@ -453,20 +453,20 @@
       if (slot) {
         el.ammoMag.textContent = slot.mag;
         el.ammoReserve.textContent = slot.reserve;
-        el.weaponName.textContent = slot.def.name + (p.semiMode ? ' · 单发' : '');
+        el.weaponName.textContent = Game.L(slot.def) + (p.semiMode ? ' · ' + Game.t('weapon.semi') : '');
       }
       el.reloadHint.classList.toggle('hidden', !p.reloading);
     } else if (p.slot === 'gadget') {
-      el.weaponName.textContent = p.cls.gadgetName;
+      el.weaponName.textContent = Game.L(p.cls, 'gadgetName');
       el.ammoMag.textContent = p.gadgetAmmo > 0 ? p.gadgetAmmo : '—';
       el.ammoReserve.textContent = '';
     }
     const g = GADGETS[p.gadget];
-    let gText = p.cls.gadgetName + '：';
-    if (p.gadgetCooldown > 0) gText += Math.ceil(p.gadgetCooldown) + 's 装填';
+    let gText = Game.L(p.cls, 'gadgetName') + '：';
+    if (p.gadgetCooldown > 0) gText += Math.ceil(p.gadgetCooldown) + 's ' + Game.t('gadget.reload');
     else if (g && g.ammo > 0) gText += p.gadgetAmmo;
-    else gText += '就绪';
-    el.gadgetInfo.textContent = gText + ' · 手雷 ' + p.grenades;
+    else gText += Game.t('gadget.ready');
+    el.gadgetInfo.textContent = gText + ' · ' + Game.t('gadget.grenades') + ' ' + p.grenades;
 
     // 准星：载具/狙击=十字，其他枪=红点（扩散 = 静止锥角 + 连射累积，度 → 像素）
     const isSniper = !inVehicle && p.cls.weapon === 'sniper';
@@ -481,11 +481,11 @@
     el.ticketRed.textContent = Math.ceil(Game.ticketsRed);
     el.ticketBlue.textContent = Math.ceil(Game.ticketsBlue);
     if (Game.mode === 'breakthrough') {
-      el.modeTag.textContent = p.team === TEAM_RED ? '突破·攻' : '突破·守';
+      el.modeTag.textContent = p.team === TEAM_RED ? Game.t('mode.tag.bt.att') : Game.t('mode.tag.bt.def');
       el.modeTag.style.background = p.team === TEAM_RED ? 'rgba(224,74,62,0.8)' : 'rgba(62,122,224,0.8)';
       updateSectorBar();
     } else {
-      el.modeTag.textContent = '征服';
+      el.modeTag.textContent = Game.t('mode.tag.conquest');
       el.modeTag.style.background = 'rgba(90,90,90,0.7)';
     }
 
@@ -500,7 +500,7 @@
       ui.fill.style.width = Math.abs(f.control) + '%';
       ui.fill.className = 'flag-fill ' + (f.control < 0 ? 'red' : f.control > 0 ? 'blue' : 'neutral');
       const own = f.owner;
-      ui.label.textContent = f.id + (own === TEAM_RED ? ' 赤' : own === TEAM_BLUE ? ' 蓝' : '');
+      ui.label.textContent = f.id + (own === TEAM_RED ? ' ' + Game.t('flag.red') : own === TEAM_BLUE ? ' ' + Game.t('flag.blue') : '');
       ui.label.style.color = f.locked ? '#6a6a6a' : (own === TEAM_RED ? '#ff6a5e' : own === TEAM_BLUE ? '#6aa0ff' : '#fff');
       ui.bar.style.opacity = f.locked ? 0.4 : 1;
     }
@@ -524,13 +524,13 @@
     if (inVehicle) {
       const v = p.ridingVehicle;
       el.vehicleHud.classList.remove('hidden');
-      el.vehicleName.textContent = v.def.name;
+      el.vehicleName.textContent = Game.L(v.def);
       el.vehicleHealthFill.style.width = Math.max(0, v.hp / v.maxHp * 100) + '%';
       el.vehicleHint.textContent = v.kind === 'heli'
-        ? '空格 上升 · Shift 下降 · WASD 前后左右 · 鼠标转向 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车'
+        ? Game.t('veh.hint.heli')
         : v.kind === 'aa'
-          ? 'WASD 移动 · 鼠标瞄准（大仰角对空）· 左键高炮 · V 视角 · F 下车'
-          : 'WASD 移动 · 鼠标瞄准 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车';
+          ? Game.t('veh.hint.aa')
+          : Game.t('veh.hint.ground');
     } else {
       el.vehicleHud.classList.add('hidden');
     }
@@ -571,11 +571,11 @@
     }
 
     // 目标罗盘（模式目标优先：突破=当前扇区，征服=最近敌方旗）
-    let obj = null, objD = Infinity, objLabel = '占领点';
+    let obj = null, objD = Infinity, objLabel = Game.t('obj.capture');
     if (Game.modes && Game.modes.objectiveFor) {
       const o = Game.modes.objectiveFor(p);
       obj = o; objD = M.dist2(o.x, o.z, p.pos.x, p.pos.z);
-      if (Game.mode === 'breakthrough') objLabel = '扇区 ' + Game.activeSector + ' · ' + (p.team === TEAM_RED ? '进攻' : '防守');
+      if (Game.mode === 'breakthrough') objLabel = Game.t('obj.sector', Game.activeSector) + ' · ' + (p.team === TEAM_RED ? Game.t('obj.attack') : Game.t('obj.defend'));
     }
     // v5.40 阵亡后不显示目标罗盘（扇区·进攻/防守字样只在存活时显示）
     if (obj && !inVehicle && p.alive) {
@@ -600,13 +600,13 @@
     if (!flag) { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
     let txt;
-    if (flag.owner === p.team) txt = '驻守占领点 ' + flag.id;
+    if (flag.owner === p.team) txt = Game.t('cap.hold', flag.id);
     else if (flag.redCount > 0 || flag.blueCount > 0) {
       const capping = (p.team === TEAM_RED && flag.redCount > 0 && flag.blueCount === 0)
         || (p.team === TEAM_BLUE && flag.blueCount > 0 && flag.redCount === 0);
-      txt = capping ? '正在占领 ' + flag.id : '占领点 ' + flag.id + ' · 争夺中';
+      txt = capping ? Game.t('cap.capping', flag.id) : Game.t('cap.contested', flag.id);
     } else {
-      txt = '占领点 ' + flag.id + ' · 空置';
+      txt = Game.t('cap.empty', flag.id);
     }
     el.innerHTML = txt + '<div class="cs-bar"><div class="cs-fill" style="width:' +
       Math.abs(flag.control) + '%"></div></div>';
@@ -687,16 +687,16 @@
   }
   function renderScoreboard() {
     const rows = Game.soldiers.slice().sort((a, b) => b.score - a.score).slice(0, 24);
-    let html = '<div class="sb-row head"><span class="sb-c name">玩家</span><span class="sb-c">击杀</span><span class="sb-c">死亡</span><span class="sb-c">分数</span><span class="sb-c">兵种</span></div>';
+    let html = '<div class="sb-row head"><span class="sb-c name">' + Game.t('sb.player') + '</span><span class="sb-c">' + Game.t('sb.kills') + '</span><span class="sb-c">' + Game.t('sb.deaths') + '</span><span class="sb-c">' + Game.t('sb.score') + '</span><span class="sb-c">' + Game.t('sb.class') + '</span></div>';
     for (const s of rows) {
       const isMe = s === Game.player;
       const teamCls = s.team === TEAM_RED ? 't-red' : 't-blue';
-      const name = isMe ? '你' : (s.team === TEAM_RED ? '赤焰·' : '苍穹·') + (s.name || s.id);   // v5.28 呼号
+      const name = isMe ? Game.t('sb.you') : (s.team === TEAM_RED ? Game.t('sb.team.red') : Game.t('sb.team.blue')) + '·' + Game.tn(s.name || s.id);   // v5.28 呼号
       html += '<div class="sb-row ' + teamCls + (isMe ? ' me' : '') + '">' +
         '<span class="sb-c name">' + name + '</span>' +
         '<span class="sb-c">' + s.kills + '</span><span class="sb-c">' + s.deaths + '</span>' +
         '<span class="sb-c">' + s.score + '</span>' +
-        '<span class="sb-c">' + s.cls.name + '</span></div>';
+        '<span class="sb-c">' + Game.L(s.cls) + '</span></div>';
     }
     H.el.scoreboardBody.innerHTML = html;
   }
@@ -767,7 +767,7 @@
     const el = H.el.scorefeed;
     if (!el) return;
     const def = MERIT_DEFS[kind] || { label: kind, color: '#ffd27a' };
-    const label = labelOverride || def.label;   // v5.22 动态标签（双杀/三杀/超神）
+    const label = labelOverride || Game.t('merit.' + kind) || def.label;   // v5.22 动态标签（双杀/三杀/超神）
     // 侦察标记累加：已有标记条目 → 只跳数字并续命，条目照常滚动
     if (kind === 'spot') {
       const cur = el.querySelector('.mf-entry[data-kind="spot"]');
@@ -775,7 +775,7 @@
         const n = parseInt(cur.getAttribute('data-n') || '1', 10) + 1;
         const total = parseInt(cur.getAttribute('data-total') || '0', 10) + amount;
         cur.setAttribute('data-n', String(n)); cur.setAttribute('data-total', String(total));
-        cur.innerHTML = '<span class="mf-amt">+' + total + '</span> <span class="mf-label">' + def.label + ' ×' + n + '</span>';
+        cur.innerHTML = '<span class="mf-amt">+' + total + '</span> <span class="mf-label">' + label + ' ×' + n + '</span>';
         meritEntryTimer(cur);
         meritBumpScore();
         return;
@@ -864,11 +864,11 @@
       const res = Game.weapons.fireMortarAt(p, w.x, w.z);
       if (res === 'ok') {
         H.lastMortarHit = w;
-        H.message('落点标定 · 炮弹飞行中（' + Math.round(Game.math.dist2(p.pos.x, p.pos.z, w.x, w.z)) + 'm）');
-      } else if (res === 'too-close') H.message('超出最小射程 40m');
-      else if (res === 'too-far') H.message('超出最大射程 180m');
-      else if (res === 'no-ammo') H.message('迫击炮弹药耗尽');
-      else if (res === 'cooling') H.message('装填中 ' + Math.ceil(p.gadgetCooldown) + 's');
+        H.message(Game.t('mortar.hit', Math.round(Game.math.dist2(p.pos.x, p.pos.z, w.x, w.z))));
+      } else if (res === 'too-close') H.message(Game.t('mortar.tooClose'));
+      else if (res === 'too-far') H.message(Game.t('mortar.tooFar'));
+      else if (res === 'no-ammo') H.message(Game.t('mortar.noAmmo'));
+      else if (res === 'cooling') H.message(Game.t('mortar.cooling', Math.ceil(p.gadgetCooldown)));
       drawMortarMap();
     });
     H.el.mortarMap.addEventListener('contextmenu', (e) => {
@@ -964,6 +964,20 @@
       ctx.stroke();
     }
   }
+
+  // 语言切换后重建动态文案（兵种卡/旗点/军衔/扇区条/阵亡复活点/计分板）
+  function applyLang() {
+    buildClassOptions();
+    buildFlags();
+    buildSectorBar();
+    updateRankDisplay();
+    if (H.el && H.el.deathScreen && !H.el.deathScreen.classList.contains('hidden')) {
+      buildDeathClasses();
+      buildDeathSpawns();
+    }
+    if (H.el && H.el.scoreboard && !H.el.scoreboard.classList.contains('hidden')) renderScoreboard();
+  }
+  H.applyLang = applyLang;
 
   H.init = init; H.initMinimap = initMinimap; H.update = update;
   H.buildSectorBar = buildSectorBar; H.updateSectorBar = updateSectorBar;

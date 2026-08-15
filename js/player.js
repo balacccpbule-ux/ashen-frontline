@@ -61,7 +61,7 @@
             const w = Game.weapons.activeWeapon(s);
             if (w && w.def.modes && w.def.modes.indexOf('semi') >= 0) {
               s.semiMode = !s.semiMode;
-              if (Game.hud) Game.hud.message(s.semiMode ? '切换单发模式' : '切换全自动');
+              if (Game.hud) Game.hud.message(s.semiMode ? Game.t('player.semiMode') : Game.t('player.autoMode'));
             }
           }
           break;
@@ -72,7 +72,7 @@
         case 'KeyV':
           if (s.ridingVehicle && Game.Vehicles) {
             Game.Vehicles.thirdPerson = !Game.Vehicles.thirdPerson;
-            if (Game.hud) Game.hud.message(Game.Vehicles.thirdPerson ? '第三人称视角' : '第一人称视角');
+            if (Game.hud) Game.hud.message(Game.Vehicles.thirdPerson ? Game.t('player.thirdPerson') : Game.t('player.firstPerson'));
           }
           break;
         case 'Tab': if (Game.hud) Game.hud.toggleScoreboard(true); e.preventDefault(); break;
@@ -147,7 +147,7 @@
       if (Game.hud) {
         Game.hud.showMortarMap(true);
         Game.hud.setLocked(P.locked);   // v5.13 部署时不显示「Esc 释放鼠标」提示
-        Game.hud.message('迫击炮已部署 · 点击右下地图选择落点');
+        Game.hud.message(Game.t('player.mortarDeploy'));
       }
     } else {
       P.mortarDeployed = false;

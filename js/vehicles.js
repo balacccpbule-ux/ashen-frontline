@@ -169,12 +169,12 @@
       } else {
         if (best.occupant) {
           exit(best.occupant);   // 把里面的队友赶出来
-          if (s.isPlayer && Game.hud) Game.hud.message('已请队友下车');
+          if (s.isPlayer && Game.hud) Game.hud.message(Game.t('veh.kickTeammate'));
         }
         enter(best, s);
       }
     }
-    else if (s.isPlayer && Game.hud) Game.hud.message('附近没有可用的载具');
+    else if (s.isPlayer && Game.hud) Game.hud.message(Game.t('veh.noVehicle'));
   }
 
   function enter(v, s) {
@@ -187,7 +187,7 @@
       Game.sound.engineStart(v.id, v.kind);
       if (Game.Player.view) Game.Player.view.visible = false;
       Game.Player.requestLock();
-      if (Game.hud) Game.hud.message('进入 ' + v.def.name + '（F 退出）');
+      if (Game.hud) Game.hud.message(Game.t('veh.enter', Game.L(v.def)));
     }
     if (s.group) s.group.visible = false;
   }
@@ -202,7 +202,7 @@
     if (s.isPlayer) {
       if (Game.Player.view) Game.Player.view.visible = false;
       Game.Player.requestLock();
-      if (Game.hud) Game.hud.message('坐上机枪位（鼠标开火 · F 下车）');
+      if (Game.hud) Game.hud.message(Game.t('veh.gunner'));
     }
     if (s.group) s.group.visible = false;
   }

@@ -211,9 +211,9 @@
     for (const f of active) if (f.owner !== TEAM_RED) { allCaptured = false; break; }
     if (allCaptured) {
       const maxSector = Game.sectors.length;
-      const secName = Game.sectors[Game.activeSector - 1] ? Game.sectors[Game.activeSector - 1].name : '';
+      const secName = Game.sectors[Game.activeSector - 1] ? Game.L(Game.sectors[Game.activeSector - 1]) : '';
       if (Game.activeSector >= maxSector) {
-        Game.hud.announce('红军突破最后扇区！', '#ff6a5e');
+        Game.hud.announce(Game.t('epic.finalSector'), '#ff6a5e');
         endMatch(TEAM_RED);
         return;
       }
@@ -225,12 +225,12 @@
       }
       Game.effects.addShake(0.85);
       if (Game.player && Game.hud && Game.hud.explosionFlash) Game.hud.explosionFlash(0.32);
-      const epicLines = ['红军突破「' + secName + '」——防线崩塌！', '「' + secName + '」陷落！攻势如潮！', '钢铁防线再失一环：「' + secName + '」失守！'];
+      const epicLines = [Game.t('epic.break1', secName), Game.t('epic.break2', secName), Game.t('epic.break3', secName)];
       Game.hud.announce(epicLines[(Game.activeSector - 1) % epicLines.length], '#ffd27a');
       for (const f of Game.flags) if (f.sector === Game.activeSector) f.locked = true;
       Game.activeSector++;
       if (Game.activeSector >= Game.sectors.length) {
-        Game.hud.announce('最终防线——死守堡垒！', '#ff6a5e');   // v5.30 最终扇区宣言
+        Game.hud.announce(Game.t('epic.finalStand'), '#ff6a5e');   // v5.30 最终扇区宣言
       }
       for (const f of Game.flags) {
         if (f.sector === Game.activeSector) { f.locked = false; f.control = 0; f.owner = TEAM_BLUE; }
@@ -251,19 +251,19 @@
 
   function onFlagCapture(f, prevOwner) {
     const p = Game.player, H = Game.hud;
-    const label = f.name || f.id;
+    const label = Game.L(f) || f.id;
     if (f.owner === p.team) {
       // v5.28 播报文案多样性（按旗点 id 确定性选择，不消耗随机数）
-      const caps = ['我方占领 ', '我们夺下了 ', '阵地易手：我方控制 ', '旗帜升起：我方占领 '];
+      const caps = [Game.t('cap.ours.1'), Game.t('cap.ours.2'), Game.t('cap.ours.3'), Game.t('cap.ours.4')];
       H.announce(caps[f.id.charCodeAt(0) % caps.length] + label, '#ffd27a');
       H.popup('+150', { x: f.x, y: f.y + 6, z: f.z }, '#ffd27a');
       p.score += 150;
       if (H.merit) H.merit('capture', 150);   // v5.18 占领功绩
       Game.stats.captures++;
     } else if (f.owner !== -1) {
-      H.announce('敌方占领 ' + label, '#ff6a5e');
+      H.announce(Game.t('cap.enemy', label), '#ff6a5e');
     } else {
-      H.announce(label + ' 被夺回为中立', '#cccccc');
+      H.announce(Game.t('cap.neutral', label), '#cccccc');
     }
   }
 
@@ -319,11 +319,11 @@
     H.save.bestStreak = Math.max(H.save.bestStreak, Game.stats.bestStreak);
     H.saveGame();
     if (document.exitPointerLock) { try { document.exitPointerLock(); } catch (e) {} }
-    H.el.endTitle.textContent = won ? '胜 利' : '战 败';
+    H.el.endTitle.textContent = won ? Game.t('end.victory') : Game.t('end.defeat');
     H.el.endTitle.style.color = won ? '#ffd27a' : '#ff6a5e';
-    H.el.endInfo.innerHTML = '你的分数：' + p.score + '<br>击杀 ' + Game.stats.kills + ' · 阵亡 ' + Game.stats.deaths +
-      ' · 最高连杀 ' + Game.stats.bestStreak + '<br>军衔：' + H.rankName(H.save.totalScore).name +
-      '（累计 ' + H.save.totalScore + ' 分）';
+    H.el.endInfo.innerHTML = Game.t('end.score', p.score) + '<br>' +
+      Game.t('end.stats', Game.stats.kills, Game.stats.deaths, Game.stats.bestStreak) + '<br>' +
+      Game.t('menu.rank.line', Game.L(H.rankName(H.save.totalScore)), H.save.totalScore);
     H.showScreen('end-screen');
   }
 
@@ -465,9 +465,9 @@
     if (Game.sound.ambientStop) Game.sound.ambientStop();
     if (Game.sound.ambientStart) Game.sound.ambientStart();
     if (Game.mode === 'breakthrough') {
-      Game.hud.message('部署成功 · 突破模式 · ' + (p.team === TEAM_RED ? '你是攻方——夺取扇区！' : '你是守方——守住防线！'));
+      Game.hud.message(p.team === TEAM_RED ? Game.t('msg.deploy.bt.att') : Game.t('msg.deploy.bt.def'));
     } else {
-      Game.hud.message('部署成功 · 征服模式 · 占领旗帜！');
+      Game.hud.message(Game.t('msg.deploy.conquest'));
     }
   }
 
@@ -592,8 +592,9 @@
       const p = Game.player;
       const H = Game.hud;
       const killer = p.lastHitBy;
-      H.el.deathInfo.innerHTML = '击杀者：' + (killer ? (killer.team === TEAM_BLUE ? '苍穹守卫' : '赤焰') : '战场') +
-        '<br>本局击杀 ' + p.kills + ' · 阵亡 ' + p.deaths + ' · 分数 ' + p.score;
+      const killerName = killer ? (killer.team === TEAM_BLUE ? Game.L(TEAMS[TEAM_BLUE]) : Game.L(TEAMS[TEAM_RED], 'short')) : Game.t('death.battlefield');
+      H.el.deathInfo.innerHTML = Game.t('death.killer', killerName) +
+        '<br>' + Game.t('death.stats', p.kills, p.deaths, p.score);
       H.showScreen('death-screen');
     }
     if (k >= 1) {
@@ -688,6 +689,12 @@
     // 修复：?mode=/?map= URL 参数此前对菜单选择无效（hud 求值时 Game.mode 尚未赋值）
     Game.hud.syncMenuSelection(Game.mode, Game.mapId);
 
+    // 多语言：应用初始语言 + 绑定语言切换
+    Game.applyLang();
+    document.querySelectorAll('.lang-btn').forEach((b) => {
+      b.onclick = () => Game.setLang(b.getAttribute('data-lang'));
+    });
+
     // 按钮
     document.getElementById('btn-start').onclick = () => {
       Game.audio.init();
@@ -720,7 +727,7 @@
       animate();
     }
 
-    console.log('[main] 灰烬战线 v5 启动完成 · 模式 ' + Game.mode + ' · 地图 ' + Game.mapId +
+    console.log('[main] 灰烬战线 启动完成 · 模式 ' + Game.mode + ' · 地图 ' + Game.mapId +
       ' · 士兵 ' + Game.soldiers.length + ' · 载具 ' + Game.vehicles.length + ' · 占领点 ' + Game.flags.length);
   }
 

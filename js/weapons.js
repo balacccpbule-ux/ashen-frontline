@@ -379,13 +379,13 @@
         }
         if (attacker.multikill >= 2) {
           // v5.22 多杀功绩：替代原 CF 式播报横幅（双杀 +25 / 三杀 +50 / …）
-          const labels = ['', '', '双杀', '三杀', '四杀', '五杀', '六杀', '超神'];
-          const mLabel = labels[Math.min(attacker.multikill, labels.length - 1)] || '超神';
+          const mk = Math.min(attacker.multikill, 7);
+          const mLabel = Game.t('multi.' + (mk < 2 ? 2 : mk));
           const mBonus = 25 * (attacker.multikill - 1);
           attacker.score += mBonus;
           Game.hud.merit('multi', mBonus, mLabel);
         } else if (attacker.streak >= 3 && attacker.streak % 3 === 0) {
-          Game.hud.message('连杀 x' + attacker.streak + '！');
+          Game.hud.message(Game.t('streak.msg', attacker.streak));
         }
       }
     }
@@ -522,7 +522,7 @@
         // v5.41 修复：先正常下车（exit 内部 engineStop 停止引擎音），
         // 旧代码先清空 occ.ridingVehicle 再 exit → exit 提前 return，直升机噪音一直残留
         Game.Vehicles.exit(occ);
-        if (Game.hud) Game.hud.message('载具被摧毁！');
+        if (Game.hud) Game.hud.message(Game.t('msg.vehicleDestroyed'));
       } else {
         v.occupant = null;
         occ.ridingVehicle = null; occ.vehicleSeat = -1;
@@ -586,7 +586,7 @@
     spawnProjectile('smoke', eye,
       { x: f.x * SMOKE.speed + s.vel.x * 0.5, y: f.y * SMOKE.speed + 6, z: f.z * SMOKE.speed + s.vel.z * 0.5 },
       s, { gravity: SMOKE.gravity, fuse: SMOKE.fuse, bounce: true });
-    if (s.isPlayer && Game.hud) Game.hud.message('烟雾弹投出');
+    if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.smokeThrown'));
   }
   function throwGrenade(s) {
     if (s.grenades <= 0) return;
@@ -596,7 +596,7 @@
     spawnProjectile('grenade', eye,
       { x: f.x * GRENADE.speed + s.vel.x * 0.5, y: f.y * GRENADE.speed + 7, z: f.z * GRENADE.speed + s.vel.z * 0.5 },
       s, { gravity: GRENADE.gravity, radius: GRENADE.radius, damage: GRENADE.damage, fuse: GRENADE.fuse, bounce: true });
-    if (s.isPlayer && Game.hud) Game.hud.message('手雷投出');
+    if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.grenadeThrown'));
   }
 
   function fireGadget(s) {
@@ -606,7 +606,7 @@
     const eye = getEyePos(s);
     const { f } = aimVectors(s);
     if (g.kind === 'projectile') {
-      if (s.gadgetAmmo <= 0) { if (s.isPlayer && Game.hud) Game.hud.message('装备弹药耗尽'); return; }
+      if (s.gadgetAmmo <= 0) { if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.gadgetEmpty')); return; }
       s.gadgetAmmo--;
       s.gadgetCooldown = g.reload || 0; // 装填时间（AI 与玩家一致）
       s.gadgetCdMax = g.reload || 0;    // v5.10 装填读条基准
@@ -618,7 +618,7 @@
       // v5.31 弹药箱：放地上持续补给（一人一个，放新的旧的销毁）
       s.gadgetCooldown = s.gadgetCdMax;
       placeSupplyBox(s, 'ammo');
-      if (s.isPlayer) Game.hud.message('弹药箱已部署（持续补给，60 秒）');
+      if (s.isPlayer) Game.hud.message(Game.t('msg.ammoDeployed'));
     } else if (g.kind === 'flare') {
       s.gadgetCooldown = s.gadgetCdMax;
       spawnProjectile('flare', eye,
@@ -641,7 +641,7 @@
       placeSupplyBox(s, 'medic');
       if (Game.effects) Game.effects.emit(s.pos.x, s.pos.y + 1, s.pos.z, 0x6ad06a, 14, 4, 0.7, 0.16, 10, 1);
       if (Game.sound.heal) Game.sound.heal();
-      if (s.isPlayer && Game.hud) Game.hud.message('医疗箱已部署（持续治疗，60 秒）');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.medkitDeployed'));
     }
   }
 
@@ -689,13 +689,13 @@
       if (ang < bestAng) { bestAng = ang; best = { type: 'vehicle', obj: v }; }
     }
     if (!best) {
-      if (s.isPlayer && Game.hud) Game.hud.message('准星附近没有目标');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.noTarget'));
       return;
     }
     const o = best.obj;
     const ty = best.type === 'vehicle' ? (o.pos.y + o.hitRadius * 0.5) : (o.pos.y + 1);
     if (Game.terrain.blocksLOS(eye.x, eye.y, eye.z, o.pos.x, ty, o.pos.z)) {
-      if (s.isPlayer && Game.hud) Game.hud.message('视线被遮挡，无法标记');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.spotBlocked'));
       return;
     }
     const first = !(o.spottedUntil > Game.time);
@@ -907,7 +907,7 @@
           s.spottedUntil = now + CONFIG.FLARE_SPOT_TIME;
         }
       }
-      if (p.owner && p.owner.isPlayer && Game.hud) Game.hud.message('敌军已被标记');
+      if (p.owner && p.owner.isPlayer && Game.hud) Game.hud.message(Game.t('msg.spotted'));
       return;
     }
     const big = p.damage >= 200;

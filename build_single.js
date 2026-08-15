@@ -11,25 +11,17 @@ const OUT_DIR = path.join(ROOT, 'dist');
 // 与 index.html 中的加载顺序严格一致
 const SCRIPTS = [
   'three.min.js',
-  'js/config.js', 'js/utils.js', 'js/audio.js', 'js/terrain.js', 'js/effects.js',
+  'js/config.js', 'js/lang.js', 'js/utils.js', 'js/audio.js', 'js/terrain.js', 'js/effects.js',
   'js/weapons.js', 'js/player.js', 'js/ai.js', 'js/vehicles.js', 'js/hud.js',
   'js/main.js', 'js/debug.js',
 ];
-
-const VERSION = (() => {
-  try {
-    const p = fs.readFileSync(path.join(ROOT, 'PROGRESS.md'), 'utf8');
-    const m = p.match(/状态：v([\d.]+)/);
-    return m ? 'v' + m[1] : '';
-  } catch (e) { return ''; }
-})();
 
 let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
 // 内联 css
 const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
 html = html.replace('<link rel="stylesheet" href="css/style.css">',
-  '<!-- 灰烬战线 ' + (VERSION || '') + ' 单文件版：css 已内联 -->\n  <style>\n' + css + '\n  </style>');
+  '<!-- 灰烬战线 ASHEN FRONTLINE 单文件版：css 已内联 -->\n  <style>\n' + css + '\n  </style>');
 
 // 内联 js（按顺序；</script> 序列做转义防提前闭合）
 for (const src of SCRIPTS) {

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>灰烬战线 · ASHEN FRONTLINE</title>
-  <!-- 灰烬战线 v5.42 单文件版：css 已内联 -->
+  <!-- 灰烬战线 ASHEN FRONTLINE 单文件版：css 已内联 -->
   <style>
 /* ============================================================
    灰烬战线 ASHEN FRONTLINE · 样式
@@ -159,6 +159,10 @@ html, body {
 .screen h1.title { font-size: 64px; letter-spacing: 10px; color: #ffd27a; text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
 .screen .subtitle { font-size: 18px; letter-spacing: 6px; color: #9aa4b0; }
 .screen h2 { font-size: 34px; letter-spacing: 3px; color: #eee; }
+.lang-switch { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+.lang-btn { font-size: 13px; padding: 5px 14px; cursor: pointer; letter-spacing: 1px; background: rgba(255,255,255,0.06); color: #9aa4b0; border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; transition: all 0.15s; }
+.lang-btn:hover { color: #eee; border-color: rgba(255,255,255,0.4); }
+.lang-btn.selected { border-color: #ffd27a; background: rgba(255,210,122,0.12); color: #ffd27a; }
 .menu-desc { font-size: 15px; color: #9aa4b0; }
 .rank-line { font-size: 16px; color: #ffd27a; }
 
@@ -179,7 +183,8 @@ html, body {
   font-size: 16px; padding: 10px 18px; margin: 0; letter-spacing: 2px;
   background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px;
 }
-.menu-col .btn span { display: block; font-size: 11px; letter-spacing: 1px; color: #7d8894; margin-top: 3px; }
+.menu-col .btn .bl { display: block; font-size: 16px; letter-spacing: 2px; color: #fff; }
+.menu-col .btn .bd { display: block; font-size: 11px; letter-spacing: 1px; color: #7d8894; margin-top: 3px; }
 .menu-col .btn.selected { border-color: #ffd27a; background: rgba(255,210,122,0.12); }
 .btn-primary { font-size: 22px; padding: 14px 56px; background: #c0453a; }
 
@@ -423,13 +428,13 @@ html, body {
         </div>
         <div id="sector-bar" class="hidden"></div>
         <div id="flags"></div>
-        <button id="btn-exit" title="退出对局，回主菜单重新选图">退出对局</button>
+        <button id="btn-exit" data-i18n="hud.exit" data-i18n-title="hud.exit.title">退出对局</button>
       </div>
 
       <!-- 迫击炮部署地图（右下悬空，点击选点） -->
       <div id="mortar-map-panel" class="hidden">
         <canvas id="mortar-map" width="380" height="380"></canvas>
-        <div class="mortar-hint">点击地图选择落点 · 右键或 3 收起</div>
+        <div class="mortar-hint" data-i18n="hud.mortarHint">点击地图选择落点 · 右键或 3 收起</div>
       </div>
 
       <!-- v5.18/v5.22 功绩播报（底部小字堆叠 + 上方分数缓动；原击杀播报已由功绩系统替代） -->
@@ -460,7 +465,7 @@ html, body {
         <div id="weapon-name">AR-40 突击步枪</div>
         <div id="ammo"><span id="ammo-mag">30</span><span class="ammo-sep">/</span><span id="ammo-reserve">150</span></div>
         <div id="gadget-info"></div>
-        <div id="reload-hint" class="hidden">换弹中…</div>
+        <div id="reload-hint" class="hidden" data-i18n="hud.reload">换弹中…</div>
       </div>
 
       <!-- 占领状态 -->
@@ -468,7 +473,7 @@ html, body {
       <!-- 中央消息 -->
       <div id="message" class="hidden"></div>
       <!-- 出生保护提示 -->
-      <div id="spawn-hint" class="hidden">出生保护</div>
+      <div id="spawn-hint" class="hidden" data-i18n="hud.spawnHint">出生保护</div>
 
       <!-- 载具 HUD -->
       <div id="vehicle-hud" class="hidden">
@@ -477,53 +482,57 @@ html, body {
         <div id="vehicle-hint"></div>
       </div>
 
-      <div id="pause-hint" class="hidden">点击画面锁定鼠标 · Esc 释放 · Tab 计分板</div>
+      <div id="pause-hint" class="hidden" data-i18n="hud.pauseHint">点击画面锁定鼠标 · Esc 释放 · Tab 计分板</div>
     </div>
 
     <!-- ===== 主菜单 ===== -->
     <div id="menu" class="screen">
-      <h1 class="title">灰烬战线</h1>
-      <div class="subtitle">ASHEN FRONTLINE · v5</div>
-      <p class="menu-desc">16v16 大战场 · 双模式 · 四地图 · 六兵种 · 陆空载具 · 全域破坏</p>
+      <div class="lang-switch">
+        <button class="lang-btn" data-lang="zh">简体中文</button>
+        <button class="lang-btn" data-lang="en">English</button>
+      </div>
+      <h1 class="title" data-i18n="menu.title">灰烬战线</h1>
+      <div class="subtitle" data-i18n="menu.subtitle">ASHEN FRONTLINE</div>
+      <p class="menu-desc" data-i18n="menu.desc">16v16 大战场 · 双模式 · 四地图 · 六兵种 · 陆空载具 · 全域破坏</p>
       <div class="menu-grid">
         <div class="menu-col">
-          <div class="menu-label">游戏模式</div>
-          <button class="btn mode-btn selected" data-mode="conquest">征服模式<span>占领旗帜 · 消耗敌军兵力</span></button>
-          <button class="btn mode-btn" data-mode="breakthrough">突破模式<span>扇区推进 · 攻防拉锯</span></button>
+          <div class="menu-label" data-i18n="menu.mode">游戏模式</div>
+          <button class="btn mode-btn selected" data-mode="conquest"><span class="bl" data-i18n="mode.conquest">征服模式</span><span class="bd" data-i18n="mode.conquest.desc">占领旗帜 · 消耗敌军兵力</span></button>
+          <button class="btn mode-btn" data-mode="breakthrough"><span class="bl" data-i18n="mode.breakthrough">突破模式</span><span class="bd" data-i18n="mode.breakthrough.desc">扇区推进 · 攻防拉锯</span></button>
         </div>
         <div class="menu-col">
-          <div class="menu-label">战场地图</div>
-          <button class="btn map-btn selected" data-map="city">灰烬都市<span>现代城市 · 巷战</span></button>
-          <button class="btn map-btn" data-map="desert">沙暴行动<span>中东沙漠 · 油田</span></button>
-          <button class="btn map-btn" data-map="snow">雪域要塞<span>极地雪原 · 冰湖碉堡</span></button>
-    <button class="btn map-btn" data-map="fort">钢铁防线<span>要塞攻坚 · 为突破而生</span></button>
+          <div class="menu-label" data-i18n="menu.map">战场地图</div>
+          <button class="btn map-btn selected" data-map="city"><span class="bl" data-i18n="map.name.city">灰烬都市</span><span class="bd" data-i18n="map.city.desc">现代城市 · 巷战</span></button>
+          <button class="btn map-btn" data-map="desert"><span class="bl" data-i18n="map.name.desert">沙暴行动</span><span class="bd" data-i18n="map.desert.desc">中东沙漠 · 油田</span></button>
+          <button class="btn map-btn" data-map="snow"><span class="bl" data-i18n="map.name.snow">雪域要塞</span><span class="bd" data-i18n="map.snow.desc">极地雪原 · 冰湖碉堡</span></button>
+          <button class="btn map-btn" data-map="fort"><span class="bl" data-i18n="map.name.fort">钢铁防线</span><span class="bd" data-i18n="map.fort.desc">要塞攻坚 · 为突破而生</span></button>
         </div>
         <div class="menu-col">
-          <div class="menu-label">AI 难度</div>
-          <button class="btn diff-btn" data-diff="easy">简单<span>AI 反应慢 · 枪法差</span></button>
-          <button class="btn diff-btn selected" data-diff="normal">普通<span>均衡的反应与枪法</span></button>
-          <button class="btn diff-btn" data-diff="hard">困难<span>AI 反应快 · 枪法准</span></button>
+          <div class="menu-label" data-i18n="menu.diff">AI 难度</div>
+          <button class="btn diff-btn" data-diff="easy"><span class="bl" data-i18n="diff.easy">简单</span><span class="bd" data-i18n="diff.easy.desc">AI 反应慢 · 枪法差</span></button>
+          <button class="btn diff-btn selected" data-diff="normal"><span class="bl" data-i18n="diff.normal">普通</span><span class="bd" data-i18n="diff.normal.desc">均衡的反应与枪法</span></button>
+          <button class="btn diff-btn" data-diff="hard"><span class="bl" data-i18n="diff.hard">困难</span><span class="bd" data-i18n="diff.hard.desc">AI 反应快 · 枪法准</span></button>
         </div>
       </div>
-      <button id="btn-start" class="btn btn-primary">开始游戏</button>
+      <button id="btn-start" class="btn btn-primary" data-i18n="menu.start">开始游戏</button>
       <div id="rank-display" class="rank-line">军衔：列兵</div>
       <div class="controls-hint">
-        WASD 移动 · Shift 冲刺 · C 蹲 · 空格跳跃 · 鼠标射击<br>
-        R 换弹 · 1/2/3 切换武器 · G 手雷 · Q 标记敌人 · F 上下车 · Tab 计分板
+        <span data-i18n="menu.controls.1">WASD 移动 · Shift 冲刺 · C 蹲 · 空格跳跃 · 鼠标射击</span><br>
+        <span data-i18n="menu.controls.2">R 换弹 · 1/2/3 切换武器 · G 手雷 · Q 标记敌人 · F 上下车 · Tab 计分板</span>
       </div>
     </div>
 
     <!-- ===== 选兵种 ===== -->
     <div id="class-select" class="screen hidden">
-      <h2>选择兵种</h2>
+      <h2 data-i18n="class.title">选择兵种</h2>
       <div id="class-options"></div>
-      <button id="btn-deploy" class="btn">部署</button>
+      <button id="btn-deploy" class="btn" data-i18n="class.deploy">部署</button>
     </div>
 
     <!-- ===== 阵亡/部署（v5.39 俯视选点复活，无黑底） ===== -->
     <div id="death-screen" class="screen hidden">
       <div id="death-info"></div>
-      <button id="btn-exit-dead" class="btn">退出对局</button>
+      <button id="btn-exit-dead" class="btn" data-i18n="death.exit">退出对局</button>
       <div id="death-classes"></div>
       <div id="death-spawns"></div>
     </div>
@@ -532,13 +541,13 @@ html, body {
     <div id="end-screen" class="screen hidden">
       <h2 id="end-title">胜利</h2>
       <div id="end-info"></div>
-      <button id="btn-restart" class="btn">再来一局</button>
-      <button id="btn-exit-end" class="btn">退出对局</button>
+      <button id="btn-restart" class="btn" data-i18n="end.restart">再来一局</button>
+      <button id="btn-exit-end" class="btn" data-i18n="end.exit">退出对局</button>
     </div>
 
     <!-- ===== 计分板 ===== -->
     <div id="scoreboard" class="screen hidden">
-      <h2>计分板</h2>
+      <h2 data-i18n="sb.title">计分板</h2>
       <div id="scoreboard-body"></div>
     </div>
   </div>
@@ -1059,6 +1068,410 @@ const VEHICLE_SPAWNS = [
   { team: TEAM_BLUE, kind: 'aa',   x: 96,  z: 39 },
   { team: TEAM_BLUE, kind: 'heli', x: 81,  z: 36 },
 ];
+
+  </script>
+  <!-- js/lang.js 内联 -->
+  <script>
+// ============================================================
+//  灰烬战线 · lang.js  —  多语言（简体中文 / English）
+//  加载于 config.js 之后、其余模块之前
+// ============================================================
+(function () {
+  'use strict';
+  const G = window.Game;
+
+  // 读取已保存语言（默认简体中文）
+  let saved = 'zh';
+  try { saved = localStorage.getItem('ashen_lang') || 'zh'; } catch (e) {}
+  G.lang = (saved === 'en' || saved === 'zh') ? saved : 'zh';
+
+  // ---- 界面文案字典（key → 简中 / English）----
+  const STR = {
+    zh: {
+      'menu.title': '灰烬战线',
+      'menu.subtitle': 'ASHEN FRONTLINE',
+      'menu.desc': '16v16 大战场 · 双模式 · 四地图 · 六兵种 · 陆空载具 · 全域破坏',
+      'menu.mode': '游戏模式',
+      'menu.map': '战场地图',
+      'menu.diff': 'AI 难度',
+      'mode.conquest': '征服模式',
+      'mode.conquest.desc': '占领旗帜 · 消耗敌军兵力',
+      'mode.breakthrough': '突破模式',
+      'mode.breakthrough.desc': '扇区推进 · 攻防拉锯',
+      'map.name.city': '灰烬都市',
+      'map.name.desert': '沙暴行动',
+      'map.name.snow': '雪域要塞',
+      'map.name.fort': '钢铁防线',
+      'map.city.desc': '现代城市 · 巷战',
+      'map.desert.desc': '中东沙漠 · 油田',
+      'map.snow.desc': '极地雪原 · 冰湖碉堡',
+      'map.fort.desc': '要塞攻坚 · 为突破而生',
+      'diff.easy': '简单',
+      'diff.easy.desc': 'AI 反应慢 · 枪法差',
+      'diff.normal': '普通',
+      'diff.normal.desc': '均衡的反应与枪法',
+      'diff.hard': '困难',
+      'diff.hard.desc': 'AI 反应快 · 枪法准',
+      'menu.start': '开始游戏',
+      'menu.rank': '军衔',
+      'menu.rank.points': '累计 {0} 分',
+      'menu.rank.line': '军衔：{0}（累计 {1} 分）',
+      'menu.controls.1': 'WASD 移动 · Shift 冲刺 · C 蹲 · 空格跳跃 · 鼠标射击',
+      'menu.controls.2': 'R 换弹 · 1/2/3 切换武器 · G 手雷 · Q 标记敌人 · F 上下车 · Tab 计分板',
+      'class.title': '选择兵种',
+      'class.deploy': '部署',
+      'hud.exit': '退出对局',
+      'hud.exit.title': '退出对局，回主菜单重新选图',
+      'hud.mortarHint': '点击地图选择落点 · 右键或 3 收起',
+      'hud.reload': '换弹中…',
+      'hud.spawnHint': '出生保护',
+      'hud.pauseHint': '点击画面锁定鼠标 · Esc 释放 · Tab 计分板',
+      'death.exit': '退出对局',
+      'death.killer': '击杀者：{0}',
+      'death.stats': '本局击杀 {0} · 阵亡 {1} · 分数 {2}',
+      'end.victory': '胜 利',
+      'end.defeat': '战 败',
+      'end.score': '你的分数：{0}',
+      'end.stats': '击杀 {0} · 阵亡 {1} · 最高连杀 {2}',
+      'end.restart': '再来一局',
+      'end.exit': '退出对局',
+      'sb.title': '计分板',
+      'sb.player': '玩家',
+      'sb.kills': '击杀',
+      'sb.deaths': '死亡',
+      'sb.score': '分数',
+      'sb.class': '兵种',
+      'sb.you': '你',
+      'sb.team.red': '赤焰',
+      'sb.team.blue': '苍穹',
+      'mode.tag.conquest': '征服',
+      'mode.tag.bt.att': '突破·攻',
+      'mode.tag.bt.def': '突破·守',
+      'obj.capture': '占领点',
+      'obj.sector': '扇区 {0}',
+      'obj.attack': '进攻',
+      'obj.defend': '防守',
+      'cap.hold': '驻守占领点 {0}',
+      'cap.capping': '正在占领 {0}',
+      'cap.contested': '占领点 {0} · 争夺中',
+      'cap.empty': '占领点 {0} · 空置',
+      'spawn.base': '基地',
+      'gadget.reload': '装填',
+      'gadget.ready': '就绪',
+      'gadget.grenades': '手雷',
+      'weapon.semi': '单发',
+      'veh.hint.heli': '空格 上升 · Shift 下降 · WASD 前后左右 · 鼠标转向 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车',
+      'veh.hint.aa': 'WASD 移动 · 鼠标瞄准（大仰角对空）· 左键高炮 · V 视角 · F 下车',
+      'veh.hint.ground': 'WASD 移动 · 鼠标瞄准 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车',
+      'msg.deploy.conquest': '部署成功 · 征服模式 · 占领旗帜！',
+      'msg.deploy.bt.att': '部署成功 · 突破模式 · 你是攻方——夺取扇区！',
+      'msg.deploy.bt.def': '部署成功 · 突破模式 · 你是守方——守住防线！',
+      'mortar.hit': '落点标定 · 炮弹飞行中（{0}m）',
+      'mortar.tooClose': '超出最小射程 40m',
+      'mortar.tooFar': '超出最大射程 180m',
+      'mortar.noAmmo': '迫击炮弹药耗尽',
+      'mortar.cooling': '装填中 {0}s',
+      'merit.kill': '击杀',
+      'merit.headshot': '爆头',
+      'merit.defense': '防守击杀',
+      'merit.attack': '进攻击杀',
+      'merit.revenge': '复仇',
+      'merit.streak': '连杀',
+      'merit.assist': '助攻',
+      'merit.suppress': '火力压制',
+      'merit.spot': '标记',
+      'merit.vehicle': '载具摧毁',
+      'merit.ammo': '补给弹药',
+      'merit.heal': '治疗',
+      'merit.capture': '占领',
+      'merit.multi': '多杀',
+      'merit.repair': '维修',
+      'flag.red': '赤',
+      'flag.blue': '蓝',
+      'epic.finalSector': '红军突破最后扇区！',
+      'epic.break1': '红军突破「{0}」——防线崩塌！',
+      'epic.break2': '「{0}」陷落！攻势如潮！',
+      'epic.break3': '钢铁防线再失一环：「{0}」失守！',
+      'epic.finalStand': '最终防线——死守堡垒！',
+      'cap.ours.1': '我方占领 ',
+      'cap.ours.2': '我们夺下了 ',
+      'cap.ours.3': '阵地易手：我方控制 ',
+      'cap.ours.4': '旗帜升起：我方占领 ',
+      'cap.enemy': '敌方占领 {0}',
+      'cap.neutral': '{0} 被夺回为中立',
+      'death.battlefield': '战场',
+      'streak.msg': '连杀 x{0}！',
+      'multi.2': '双杀',
+      'multi.3': '三杀',
+      'multi.4': '四杀',
+      'multi.5': '五杀',
+      'multi.6': '六杀',
+      'multi.7': '超神',
+      'msg.vehicleDestroyed': '载具被摧毁！',
+      'msg.smokeThrown': '烟雾弹投出',
+      'msg.grenadeThrown': '手雷投出',
+      'msg.gadgetEmpty': '装备弹药耗尽',
+      'msg.ammoDeployed': '弹药箱已部署（持续补给，60 秒）',
+      'msg.medkitDeployed': '医疗箱已部署（持续治疗，60 秒）',
+      'msg.noTarget': '准星附近没有目标',
+      'msg.spotBlocked': '视线被遮挡，无法标记',
+      'msg.spotted': '敌军已被标记',
+      'veh.kickTeammate': '已请队友下车',
+      'veh.noVehicle': '附近没有可用的载具',
+      'veh.enter': '进入 {0}（F 退出）',
+      'veh.gunner': '坐上机枪位（鼠标开火 · F 下车）',
+      'player.semiMode': '切换单发模式',
+      'player.autoMode': '切换全自动',
+      'player.thirdPerson': '第三人称视角',
+      'player.firstPerson': '第一人称视角',
+      'player.mortarDeploy': '迫击炮已部署 · 点击右下地图选择落点',
+    },
+    en: {
+      'menu.title': 'ASHEN FRONTLINE',
+      'menu.subtitle': 'ASHEN FRONTLINE',
+      'menu.desc': '16v16 battlefield · 2 modes · 4 maps · 6 classes · land & air vehicles · full destruction',
+      'menu.mode': 'GAME MODE',
+      'menu.map': 'BATTLEFIELD MAP',
+      'menu.diff': 'AI DIFFICULTY',
+      'mode.conquest': 'Conquest',
+      'mode.conquest.desc': 'Capture flags · drain enemy tickets',
+      'mode.breakthrough': 'Breakthrough',
+      'mode.breakthrough.desc': 'Sector push · attack & defend',
+      'map.name.city': 'Ashen City',
+      'map.name.desert': 'Operation Sandstorm',
+      'map.name.snow': 'Snow Fortress',
+      'map.name.fort': 'Iron Line',
+      'map.city.desc': 'Modern city · street combat',
+      'map.desert.desc': 'Middle-East desert · oil fields',
+      'map.snow.desc': 'Polar tundra · frozen-lake bunkers',
+      'map.fort.desc': 'Fortress assault · built for breakthrough',
+      'diff.easy': 'Easy',
+      'diff.easy.desc': 'Slow reactions · poor aim',
+      'diff.normal': 'Normal',
+      'diff.normal.desc': 'Balanced reactions and aim',
+      'diff.hard': 'Hard',
+      'diff.hard.desc': 'Fast reactions · sharp aim',
+      'menu.start': 'START GAME',
+      'menu.rank': 'RANK',
+      'menu.rank.points': '{0} points total',
+      'menu.rank.line': 'RANK: {0} ({1} pts)',
+      'menu.controls.1': 'WASD move · Shift sprint · C crouch · Space jump · mouse to shoot',
+      'menu.controls.2': 'R reload · 1/2/3 switch weapon · G grenade · Q spot enemy · F enter/exit · Tab scoreboard',
+      'class.title': 'CHOOSE CLASS',
+      'class.deploy': 'DEPLOY',
+      'hud.exit': 'LEAVE MATCH',
+      'hud.exit.title': 'Leave match, return to menu',
+      'hud.mortarHint': 'Click map to aim · RMB or 3 to stow',
+      'hud.reload': 'RELOADING…',
+      'hud.spawnHint': 'SPAWN PROTECTION',
+      'hud.pauseHint': 'Click to lock mouse · Esc to release · Tab scoreboard',
+      'death.exit': 'LEAVE MATCH',
+      'death.killer': 'Killed by: {0}',
+      'death.stats': 'Kills {0} · Deaths {1} · Score {2}',
+      'end.victory': 'VICTORY',
+      'end.defeat': 'DEFEAT',
+      'end.restart': 'PLAY AGAIN',
+      'end.exit': 'LEAVE MATCH',
+      'sb.title': 'SCOREBOARD',
+      'sb.player': 'PLAYER',
+      'sb.kills': 'KILLS',
+      'sb.deaths': 'DEATHS',
+      'sb.score': 'SCORE',
+      'sb.class': 'CLASS',
+      'sb.you': 'You',
+      'sb.team.red': 'Crimson',
+      'sb.team.blue': 'Azure',
+      'mode.tag.conquest': 'CONQUEST',
+      'mode.tag.bt.att': 'BREAKTHROUGH · ATK',
+      'mode.tag.bt.def': 'BREAKTHROUGH · DEF',
+      'obj.capture': 'OBJECTIVE',
+      'obj.sector': 'SECTOR {0}',
+      'obj.attack': 'ATTACK',
+      'obj.defend': 'DEFEND',
+      'cap.hold': 'Holding {0}',
+      'cap.capping': 'Capturing {0}',
+      'cap.contested': '{0} · contested',
+      'cap.empty': '{0} · neutral',
+      'spawn.base': 'Base',
+      'gadget.reload': 'arming',
+      'gadget.ready': 'ready',
+      'gadget.grenades': 'grenades',
+      'weapon.semi': 'semi',
+      'veh.hint.heli': 'Space ascend · Shift descend · WASD move · mouse steer · LMB fire · RMB scope · 1/2 weapon · V view · F exit',
+      'veh.hint.aa': 'WASD move · mouse aim (high angle vs air) · LMB cannon · V view · F exit',
+      'veh.hint.ground': 'WASD move · mouse aim · LMB fire · RMB scope · 1/2 weapon · V view · F exit',
+      'msg.deploy.conquest': 'Deployed · Conquest · Capture the flags!',
+      'msg.deploy.bt.att': 'Deployed · Breakthrough · You are the ATTACKER — take the sectors!',
+      'msg.deploy.bt.def': 'Deployed · Breakthrough · You are the DEFENDER — hold the line!',
+      'mortar.hit': 'Round away · in flight ({0}m)',
+      'mortar.tooClose': 'Below minimum range (40m)',
+      'mortar.tooFar': 'Beyond maximum range (180m)',
+      'mortar.noAmmo': 'Mortar out of ammo',
+      'mortar.cooling': 'Arming {0}s',
+      'merit.kill': 'Kill',
+      'merit.headshot': 'Headshot',
+      'merit.defense': 'Defense kill',
+      'merit.attack': 'Attack kill',
+      'merit.revenge': 'Revenge',
+      'merit.streak': 'Streak',
+      'merit.assist': 'Assist',
+      'merit.suppress': 'Suppression',
+      'merit.spot': 'Spot',
+      'merit.vehicle': 'Vehicle destroyed',
+      'merit.ammo': 'Ammo resupplied',
+      'merit.heal': 'Heal',
+      'merit.capture': 'Capture',
+      'merit.multi': 'Multikill',
+      'merit.repair': 'Repair',
+      'flag.red': 'R',
+      'flag.blue': 'B',
+      'epic.finalSector': 'RED ARMY BREAKS THE FINAL SECTOR!',
+      'epic.break1': 'Red Army breaks "{0}" — the line collapses!',
+      'epic.break2': '"{0}" has fallen! The assault surges!',
+      'epic.break3': 'The Iron Line loses another link: "{0}" is lost!',
+      'epic.finalStand': 'FINAL DEFENSE — HOLD THE FORTRESS!',
+      'cap.ours.1': 'We captured ',
+      'cap.ours.2': 'We took ',
+      'cap.ours.3': 'Position taken: we hold ',
+      'cap.ours.4': 'Flag raised: we hold ',
+      'cap.enemy': 'Enemy captured {0}',
+      'cap.neutral': '{0} neutralized',
+      'death.battlefield': 'Battlefield',
+      'streak.msg': '{0}-kill streak!',
+      'multi.2': 'Double Kill',
+      'multi.3': 'Triple Kill',
+      'multi.4': 'Quad Kill',
+      'multi.5': 'Penta Kill',
+      'multi.6': 'Hexa Kill',
+      'multi.7': 'Legendary',
+      'msg.vehicleDestroyed': 'Vehicle destroyed!',
+      'msg.smokeThrown': 'Smoke thrown',
+      'msg.grenadeThrown': 'Grenade thrown',
+      'msg.gadgetEmpty': 'Gadget out of ammo',
+      'msg.ammoDeployed': 'Ammo crate deployed (resupply, 60s)',
+      'msg.medkitDeployed': 'Medkit deployed (healing, 60s)',
+      'msg.noTarget': 'No target near crosshair',
+      'msg.spotBlocked': 'Line of sight blocked, cannot spot',
+      'msg.spotted': 'Enemy spotted',
+      'veh.kickTeammate': 'Teammate asked to exit',
+      'veh.noVehicle': 'No vehicle nearby',
+      'veh.enter': 'Entered {0} (F to exit)',
+      'veh.gunner': 'On the gunner seat (fire · F to exit)',
+      'player.semiMode': 'Switched to semi-auto',
+      'player.autoMode': 'Switched to full-auto',
+      'player.thirdPerson': 'Third-person view',
+      'player.firstPerson': 'First-person view',
+      'player.mortarDeploy': 'Mortar deployed · click the map to aim',
+    },
+  };
+
+  // ---- 名称翻译（config 对象 name/short/gadgetName/desc）----
+  const EN = {
+    name: {
+      '赤焰先锋': 'Crimson Vanguard', '苍穹守卫': 'Azure Guard',
+      '赤焰': 'Crimson', '苍穹': 'Azure',
+      '突击兵': 'Assault', '支援兵': 'Support', '侦察兵': 'Recon',
+      '工程兵': 'Engineer', '迫击炮兵': 'Mortarman', '医疗兵': 'Medic',
+      '下挂榴弹': 'Underbarrel GL', '弹药箱': 'Ammo Crate', '侦察信号弹': 'Spotting Flare',
+      '火箭筒': 'Rocket Launcher', '迫击炮': 'Mortar', '医疗箱': 'Medkit',
+      'AR-40 自动步枪': 'AR-40 Rifle', 'MG-80 重机枪': 'MG-80 LMG',
+      'SR-50 栓动狙击枪': 'SR-50 Sniper', 'SMG-9 冲锋枪': 'SMG-9',
+      'P-45 手枪': 'P-45 Pistol', 'SG-12 霰弹枪': 'SG-12 Shotgun',
+      'AA-12 全自动霰弹枪': 'AA-12 Shotgun', 'MK-14 精确射手步枪': 'MK-14 DMR',
+      'RPG-7 火箭筒': 'RPG-7', '60mm 迫击炮': '60mm Mortar',
+      'M67 破片手雷': 'M67 Frag Grenade', 'M18 烟雾弹': 'M18 Smoke Grenade',
+      '主战坦克': 'Main Battle Tank', '装甲运兵车': 'APC',
+      '防空炮车': 'Anti-Air Gun', '武装直升机': 'Attack Helicopter',
+      '灰烬都市': 'Ashen City', '沙暴行动': 'Operation Sandstorm',
+      '钢铁防线': 'Iron Line', '雪域要塞': 'Snow Fortress',
+      '中央广场': 'Central Plaza', '西区车站': 'West Station', '东区码头': 'East Docks',
+      '绿洲水站': 'Oasis Station', '西侧油田': 'West Oil Field', '东侧油井': 'East Oil Well',
+      '山脊观察站': 'Ridge Outpost', '西线堑壕': 'West Trenches', '中央油库': 'Central Oil Depot',
+      '东侧堡垒': 'East Fort', '北岭哨塔': 'North Ridge Tower',
+      '冰湖哨站': 'Ice Lake Outpost', '西线碉堡': 'West Bunker', '东线碉堡': 'East Bunker',
+      '山地雷达站': 'Mountain Radar', '钢铁堡垒': 'Steel Fortress', '要塞大门': 'Fortress Gate',
+      '西郊哨站': 'West Outpost', '中央街区': 'Central District', '东岸指挥所': 'East Bank HQ',
+      '沙丘前线': 'Dune Front', '油田腹地': 'Oilfield Heartland', '绿洲要塞': 'Oasis Fortress',
+      '冰川前线': 'Glacier Front', '雪林腹地': 'Snowwood Heartland',
+      '列兵': 'Private', '上等兵': 'PFC', '下士': 'Corporal', '中士': 'Sergeant',
+      '上士': 'Staff Sgt', '少尉': '2nd Lt', '中尉': '1st Lt', '上尉': 'Captain',
+      '少校': 'Major', '中校': 'Lt Col', '上校': 'Colonel', '少将': 'Maj Gen',
+      '中将': 'Lt Gen', '上将': 'General', '元帅': 'Marshal',
+      '简单': 'Easy', '普通': 'Normal', '困难': 'Hard',
+      '猎鹰': 'Falcon', '夜枭': 'Night Owl', '铁砧': 'Anvil', '霜刃': 'Frostblade',
+      '灰狼': 'Grey Wolf', '渡鸦': 'Raven', '山魈': 'Macaque', '火狐': 'Firefox',
+      '磐石': 'Boulder', '利齿': 'Fang', '白鼬': 'Stoat', '黑豹': 'Panther',
+      '疾风': 'Gale', '惊雷': 'Thunder', '毒蛇': 'Viper', '孤星': 'Lone Star',
+      '破晓': 'Dawn', '凛冬': 'Winter', '赤狐': 'Red Fox', '苍鹭': 'Heron',
+    },
+    desc: {
+      '自动步枪 + 下挂榴弹发射器，正面突破': 'Assault rifle + underbarrel grenade launcher, frontal breakthrough',
+      '重机枪火力压制，部署弹药箱补给队友': 'LMG suppression, deploys ammo crates for teammates',
+      '栓动狙击远距猎杀，信号弹标记敌军': 'Bolt-action sniper for long-range kills, flare to spot enemies',
+      '冲锋枪近战 + 火箭筒反载具，可维修载具（按住 E）+ 烟雾弹掩护（H）': 'SMG + rocket launcher vs vehicles, repairs vehicles (hold E) + smoke cover (H)',
+      'MK-14 精确射手步枪自卫 + 60mm 迫击炮曲射压制（40-180m 高抛弹道）': 'MK-14 DMR for self-defense + 60mm mortar for indirect fire (40-180m)',
+      'AA-12 全自动霰弹枪近战自卫 + 医疗箱治疗队友 + 呼吸回血（无救援，阵亡立即重生）': 'AA-12 auto shotgun + medkit to heal teammates + passive regen',
+      'AI 反应慢、枪法差，适合熟悉战场': 'Slow reactions and poor aim — good for learning',
+      '均衡的 AI 反应与枪法': 'Balanced AI reactions and aim',
+      'AI 反应快、枪法准，老兵挑战': 'Fast reactions and sharp aim — a veteran challenge',
+    },
+  };
+
+  G.STR = STR;
+  G.EN = EN;
+
+  // 取文案
+  G.t = function (key) {
+    let s = (STR[G.lang] && STR[G.lang][key]);
+    if (s == null) s = STR.zh[key];
+    if (s == null) return key;
+    for (let i = 1; i < arguments.length; i++) {
+      s = s.split('{' + (i - 1) + '}').join(String(arguments[i]));
+    }
+    return s;
+  };
+
+  // 翻译一个裸中文字符串（bot 呼号等）
+  G.tn = function (zh) {
+    if (G.lang === 'en' && EN.name[zh] != null) return EN.name[zh];
+    return zh;
+  };
+
+  // 取 config 对象本地化字段（name / desc / short / gadgetName）
+  G.L = function (obj, field) {
+    if (!obj) return '';
+    field = field || 'name';
+    const v = obj[field];
+    if (G.lang === 'en' && v != null) {
+      const map = EN[field === 'desc' ? 'desc' : 'name'];
+      if (map && map[v] != null) return map[v];
+    }
+    return v == null ? '' : v;
+  };
+
+  // 切换语言
+  G.setLang = function (code) {
+    if (code !== 'zh' && code !== 'en') return;
+    G.lang = code;
+    try { localStorage.setItem('ashen_lang', code); } catch (e) {}
+    G.applyLang();
+  };
+
+  // 应用语言到静态 DOM + 高亮语言按钮 + 让 HUD 重建动态文案
+  G.applyLang = function () {
+    document.documentElement.lang = (G.lang === 'en') ? 'en' : 'zh-CN';
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      el.textContent = G.t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      el.title = G.t(el.getAttribute('data-i18n-title'));
+    });
+    document.querySelectorAll('.lang-btn').forEach(function (b) {
+      b.classList.toggle('selected', b.getAttribute('data-lang') === G.lang);
+    });
+    if (G.hud && G.hud.applyLang) G.hud.applyLang();
+  };
+})();
 
   </script>
   <!-- js/utils.js 内联 -->
@@ -4202,13 +4615,13 @@ const VEHICLE_SPAWNS = [
         }
         if (attacker.multikill >= 2) {
           // v5.22 多杀功绩：替代原 CF 式播报横幅（双杀 +25 / 三杀 +50 / …）
-          const labels = ['', '', '双杀', '三杀', '四杀', '五杀', '六杀', '超神'];
-          const mLabel = labels[Math.min(attacker.multikill, labels.length - 1)] || '超神';
+          const mk = Math.min(attacker.multikill, 7);
+          const mLabel = Game.t('multi.' + (mk < 2 ? 2 : mk));
           const mBonus = 25 * (attacker.multikill - 1);
           attacker.score += mBonus;
           Game.hud.merit('multi', mBonus, mLabel);
         } else if (attacker.streak >= 3 && attacker.streak % 3 === 0) {
-          Game.hud.message('连杀 x' + attacker.streak + '！');
+          Game.hud.message(Game.t('streak.msg', attacker.streak));
         }
       }
     }
@@ -4345,7 +4758,7 @@ const VEHICLE_SPAWNS = [
         // v5.41 修复：先正常下车（exit 内部 engineStop 停止引擎音），
         // 旧代码先清空 occ.ridingVehicle 再 exit → exit 提前 return，直升机噪音一直残留
         Game.Vehicles.exit(occ);
-        if (Game.hud) Game.hud.message('载具被摧毁！');
+        if (Game.hud) Game.hud.message(Game.t('msg.vehicleDestroyed'));
       } else {
         v.occupant = null;
         occ.ridingVehicle = null; occ.vehicleSeat = -1;
@@ -4409,7 +4822,7 @@ const VEHICLE_SPAWNS = [
     spawnProjectile('smoke', eye,
       { x: f.x * SMOKE.speed + s.vel.x * 0.5, y: f.y * SMOKE.speed + 6, z: f.z * SMOKE.speed + s.vel.z * 0.5 },
       s, { gravity: SMOKE.gravity, fuse: SMOKE.fuse, bounce: true });
-    if (s.isPlayer && Game.hud) Game.hud.message('烟雾弹投出');
+    if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.smokeThrown'));
   }
   function throwGrenade(s) {
     if (s.grenades <= 0) return;
@@ -4419,7 +4832,7 @@ const VEHICLE_SPAWNS = [
     spawnProjectile('grenade', eye,
       { x: f.x * GRENADE.speed + s.vel.x * 0.5, y: f.y * GRENADE.speed + 7, z: f.z * GRENADE.speed + s.vel.z * 0.5 },
       s, { gravity: GRENADE.gravity, radius: GRENADE.radius, damage: GRENADE.damage, fuse: GRENADE.fuse, bounce: true });
-    if (s.isPlayer && Game.hud) Game.hud.message('手雷投出');
+    if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.grenadeThrown'));
   }
 
   function fireGadget(s) {
@@ -4429,7 +4842,7 @@ const VEHICLE_SPAWNS = [
     const eye = getEyePos(s);
     const { f } = aimVectors(s);
     if (g.kind === 'projectile') {
-      if (s.gadgetAmmo <= 0) { if (s.isPlayer && Game.hud) Game.hud.message('装备弹药耗尽'); return; }
+      if (s.gadgetAmmo <= 0) { if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.gadgetEmpty')); return; }
       s.gadgetAmmo--;
       s.gadgetCooldown = g.reload || 0; // 装填时间（AI 与玩家一致）
       s.gadgetCdMax = g.reload || 0;    // v5.10 装填读条基准
@@ -4441,7 +4854,7 @@ const VEHICLE_SPAWNS = [
       // v5.31 弹药箱：放地上持续补给（一人一个，放新的旧的销毁）
       s.gadgetCooldown = s.gadgetCdMax;
       placeSupplyBox(s, 'ammo');
-      if (s.isPlayer) Game.hud.message('弹药箱已部署（持续补给，60 秒）');
+      if (s.isPlayer) Game.hud.message(Game.t('msg.ammoDeployed'));
     } else if (g.kind === 'flare') {
       s.gadgetCooldown = s.gadgetCdMax;
       spawnProjectile('flare', eye,
@@ -4464,7 +4877,7 @@ const VEHICLE_SPAWNS = [
       placeSupplyBox(s, 'medic');
       if (Game.effects) Game.effects.emit(s.pos.x, s.pos.y + 1, s.pos.z, 0x6ad06a, 14, 4, 0.7, 0.16, 10, 1);
       if (Game.sound.heal) Game.sound.heal();
-      if (s.isPlayer && Game.hud) Game.hud.message('医疗箱已部署（持续治疗，60 秒）');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.medkitDeployed'));
     }
   }
 
@@ -4512,13 +4925,13 @@ const VEHICLE_SPAWNS = [
       if (ang < bestAng) { bestAng = ang; best = { type: 'vehicle', obj: v }; }
     }
     if (!best) {
-      if (s.isPlayer && Game.hud) Game.hud.message('准星附近没有目标');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.noTarget'));
       return;
     }
     const o = best.obj;
     const ty = best.type === 'vehicle' ? (o.pos.y + o.hitRadius * 0.5) : (o.pos.y + 1);
     if (Game.terrain.blocksLOS(eye.x, eye.y, eye.z, o.pos.x, ty, o.pos.z)) {
-      if (s.isPlayer && Game.hud) Game.hud.message('视线被遮挡，无法标记');
+      if (s.isPlayer && Game.hud) Game.hud.message(Game.t('msg.spotBlocked'));
       return;
     }
     const first = !(o.spottedUntil > Game.time);
@@ -4730,7 +5143,7 @@ const VEHICLE_SPAWNS = [
           s.spottedUntil = now + CONFIG.FLARE_SPOT_TIME;
         }
       }
-      if (p.owner && p.owner.isPlayer && Game.hud) Game.hud.message('敌军已被标记');
+      if (p.owner && p.owner.isPlayer && Game.hud) Game.hud.message(Game.t('msg.spotted'));
       return;
     }
     const big = p.damage >= 200;
@@ -4881,7 +5294,7 @@ const VEHICLE_SPAWNS = [
             const w = Game.weapons.activeWeapon(s);
             if (w && w.def.modes && w.def.modes.indexOf('semi') >= 0) {
               s.semiMode = !s.semiMode;
-              if (Game.hud) Game.hud.message(s.semiMode ? '切换单发模式' : '切换全自动');
+              if (Game.hud) Game.hud.message(s.semiMode ? Game.t('player.semiMode') : Game.t('player.autoMode'));
             }
           }
           break;
@@ -4892,7 +5305,7 @@ const VEHICLE_SPAWNS = [
         case 'KeyV':
           if (s.ridingVehicle && Game.Vehicles) {
             Game.Vehicles.thirdPerson = !Game.Vehicles.thirdPerson;
-            if (Game.hud) Game.hud.message(Game.Vehicles.thirdPerson ? '第三人称视角' : '第一人称视角');
+            if (Game.hud) Game.hud.message(Game.Vehicles.thirdPerson ? Game.t('player.thirdPerson') : Game.t('player.firstPerson'));
           }
           break;
         case 'Tab': if (Game.hud) Game.hud.toggleScoreboard(true); e.preventDefault(); break;
@@ -4967,7 +5380,7 @@ const VEHICLE_SPAWNS = [
       if (Game.hud) {
         Game.hud.showMortarMap(true);
         Game.hud.setLocked(P.locked);   // v5.13 部署时不显示「Esc 释放鼠标」提示
-        Game.hud.message('迫击炮已部署 · 点击右下地图选择落点');
+        Game.hud.message(Game.t('player.mortarDeploy'));
       }
     } else {
       P.mortarDeployed = false;
@@ -6512,12 +6925,12 @@ const VEHICLE_SPAWNS = [
       } else {
         if (best.occupant) {
           exit(best.occupant);   // 把里面的队友赶出来
-          if (s.isPlayer && Game.hud) Game.hud.message('已请队友下车');
+          if (s.isPlayer && Game.hud) Game.hud.message(Game.t('veh.kickTeammate'));
         }
         enter(best, s);
       }
     }
-    else if (s.isPlayer && Game.hud) Game.hud.message('附近没有可用的载具');
+    else if (s.isPlayer && Game.hud) Game.hud.message(Game.t('veh.noVehicle'));
   }
 
   function enter(v, s) {
@@ -6530,7 +6943,7 @@ const VEHICLE_SPAWNS = [
       Game.sound.engineStart(v.id, v.kind);
       if (Game.Player.view) Game.Player.view.visible = false;
       Game.Player.requestLock();
-      if (Game.hud) Game.hud.message('进入 ' + v.def.name + '（F 退出）');
+      if (Game.hud) Game.hud.message(Game.t('veh.enter', Game.L(v.def)));
     }
     if (s.group) s.group.visible = false;
   }
@@ -6545,7 +6958,7 @@ const VEHICLE_SPAWNS = [
     if (s.isPlayer) {
       if (Game.Player.view) Game.Player.view.visible = false;
       Game.Player.requestLock();
-      if (Game.hud) Game.hud.message('坐上机枪位（鼠标开火 · F 下车）');
+      if (Game.hud) Game.hud.message(Game.t('veh.gunner'));
     }
     if (s.group) s.group.visible = false;
   }
@@ -7216,7 +7629,7 @@ const VEHICLE_SPAWNS = [
     Game.sectors.forEach((sec, i) => {
       const d = document.createElement('div');
       d.className = 'sector-dot';
-      d.title = sec.name;
+      d.title = Game.L(sec);
       el.appendChild(d);
     });
     updateSectorBar();
@@ -7240,9 +7653,9 @@ const VEHICLE_SPAWNS = [
     const card = document.createElement('div');
     card.className = 'cls-card' + (key === H.selectedClass ? ' selected' : '');
     card.dataset.key = key;
-    card.innerHTML = '<div class="cc-name">' + cls.name + '</div>' +
-      '<div class="cc-weapon">' + WEAPONS[cls.weapon].name + '</div>' +
-      '<div class="cc-desc">' + cls.desc + '</div>';
+    card.innerHTML = '<div class="cc-name">' + Game.L(cls) + '</div>' +
+      '<div class="cc-weapon">' + Game.L(WEAPONS[cls.weapon]) + '</div>' +
+      '<div class="cc-desc">' + Game.L(cls, 'desc') + '</div>';
     card.onclick = () => selectClass(key);
     return card;
   }
@@ -7261,7 +7674,7 @@ const VEHICLE_SPAWNS = [
       const bar = document.createElement('div');
       bar.className = 'flag-bar';
       bar.innerHTML = '<div class="flag-fill"></div><div class="flag-label">' + f.id + '</div>';
-      bar.title = f.name || f.id;
+      bar.title = Game.L(f) || f.id;
       c.appendChild(bar);
       f.ui = { bar, fill: bar.querySelector('.flag-fill'), label: bar.querySelector('.flag-label') };
     });
@@ -7287,10 +7700,10 @@ const VEHICLE_SPAWNS = [
     const p = Game.player, pt = p.team;
     const pts = [];
     const base = BASE_DEFS.find((b) => b.team === pt);
-    if (base) pts.push({ x: base.x, z: base.z, name: '基地', home: true });
+    if (base) pts.push({ x: base.x, z: base.z, name: Game.t('spawn.base'), home: true });
     for (const f of Game.flags) {
       // v5.40 只能复活在自己方占领点（征服/突破统一：只列己方旗帜，不再列敌方/当前扇区）
-      if (f.owner === pt) pts.push({ x: f.x, z: f.z, name: f.name || f.id, home: false });
+      if (f.owner === pt) pts.push({ x: f.x, z: f.z, name: Game.L(f) || f.id, home: false });
     }
     H.deathSpawnPts = pts;
     pts.forEach((sp, i) => {
@@ -7341,8 +7754,8 @@ const VEHICLE_SPAWNS = [
   }
   function updateRankDisplay() {
     const total = H.save.totalScore + (Game.player ? Game.player.score : 0);
-    H.el.rankDisplay.textContent = '军衔：' + rankName(total).name + '（累计 ' + total + ' 分）';
-    H.el.rankMini.textContent = rankName(total).name;
+    H.el.rankDisplay.textContent = Game.t('menu.rank.line', Game.L(rankName(total)), total);
+    H.el.rankMini.textContent = Game.L(rankName(total));
   }
 
   // ---- 预渲染地形画布（小地图 / 迫击炮地图共用） ----
@@ -7569,20 +7982,20 @@ const VEHICLE_SPAWNS = [
       if (slot) {
         el.ammoMag.textContent = slot.mag;
         el.ammoReserve.textContent = slot.reserve;
-        el.weaponName.textContent = slot.def.name + (p.semiMode ? ' · 单发' : '');
+        el.weaponName.textContent = Game.L(slot.def) + (p.semiMode ? ' · ' + Game.t('weapon.semi') : '');
       }
       el.reloadHint.classList.toggle('hidden', !p.reloading);
     } else if (p.slot === 'gadget') {
-      el.weaponName.textContent = p.cls.gadgetName;
+      el.weaponName.textContent = Game.L(p.cls, 'gadgetName');
       el.ammoMag.textContent = p.gadgetAmmo > 0 ? p.gadgetAmmo : '—';
       el.ammoReserve.textContent = '';
     }
     const g = GADGETS[p.gadget];
-    let gText = p.cls.gadgetName + '：';
-    if (p.gadgetCooldown > 0) gText += Math.ceil(p.gadgetCooldown) + 's 装填';
+    let gText = Game.L(p.cls, 'gadgetName') + '：';
+    if (p.gadgetCooldown > 0) gText += Math.ceil(p.gadgetCooldown) + 's ' + Game.t('gadget.reload');
     else if (g && g.ammo > 0) gText += p.gadgetAmmo;
-    else gText += '就绪';
-    el.gadgetInfo.textContent = gText + ' · 手雷 ' + p.grenades;
+    else gText += Game.t('gadget.ready');
+    el.gadgetInfo.textContent = gText + ' · ' + Game.t('gadget.grenades') + ' ' + p.grenades;
 
     // 准星：载具/狙击=十字，其他枪=红点（扩散 = 静止锥角 + 连射累积，度 → 像素）
     const isSniper = !inVehicle && p.cls.weapon === 'sniper';
@@ -7597,11 +8010,11 @@ const VEHICLE_SPAWNS = [
     el.ticketRed.textContent = Math.ceil(Game.ticketsRed);
     el.ticketBlue.textContent = Math.ceil(Game.ticketsBlue);
     if (Game.mode === 'breakthrough') {
-      el.modeTag.textContent = p.team === TEAM_RED ? '突破·攻' : '突破·守';
+      el.modeTag.textContent = p.team === TEAM_RED ? Game.t('mode.tag.bt.att') : Game.t('mode.tag.bt.def');
       el.modeTag.style.background = p.team === TEAM_RED ? 'rgba(224,74,62,0.8)' : 'rgba(62,122,224,0.8)';
       updateSectorBar();
     } else {
-      el.modeTag.textContent = '征服';
+      el.modeTag.textContent = Game.t('mode.tag.conquest');
       el.modeTag.style.background = 'rgba(90,90,90,0.7)';
     }
 
@@ -7616,7 +8029,7 @@ const VEHICLE_SPAWNS = [
       ui.fill.style.width = Math.abs(f.control) + '%';
       ui.fill.className = 'flag-fill ' + (f.control < 0 ? 'red' : f.control > 0 ? 'blue' : 'neutral');
       const own = f.owner;
-      ui.label.textContent = f.id + (own === TEAM_RED ? ' 赤' : own === TEAM_BLUE ? ' 蓝' : '');
+      ui.label.textContent = f.id + (own === TEAM_RED ? ' ' + Game.t('flag.red') : own === TEAM_BLUE ? ' ' + Game.t('flag.blue') : '');
       ui.label.style.color = f.locked ? '#6a6a6a' : (own === TEAM_RED ? '#ff6a5e' : own === TEAM_BLUE ? '#6aa0ff' : '#fff');
       ui.bar.style.opacity = f.locked ? 0.4 : 1;
     }
@@ -7640,13 +8053,13 @@ const VEHICLE_SPAWNS = [
     if (inVehicle) {
       const v = p.ridingVehicle;
       el.vehicleHud.classList.remove('hidden');
-      el.vehicleName.textContent = v.def.name;
+      el.vehicleName.textContent = Game.L(v.def);
       el.vehicleHealthFill.style.width = Math.max(0, v.hp / v.maxHp * 100) + '%';
       el.vehicleHint.textContent = v.kind === 'heli'
-        ? '空格 上升 · Shift 下降 · WASD 前后左右 · 鼠标转向 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车'
+        ? Game.t('veh.hint.heli')
         : v.kind === 'aa'
-          ? 'WASD 移动 · 鼠标瞄准（大仰角对空）· 左键高炮 · V 视角 · F 下车'
-          : 'WASD 移动 · 鼠标瞄准 · 左键开火 · 右键开镜 · 1/2 切换武器 · V 视角 · F 下车';
+          ? Game.t('veh.hint.aa')
+          : Game.t('veh.hint.ground');
     } else {
       el.vehicleHud.classList.add('hidden');
     }
@@ -7687,11 +8100,11 @@ const VEHICLE_SPAWNS = [
     }
 
     // 目标罗盘（模式目标优先：突破=当前扇区，征服=最近敌方旗）
-    let obj = null, objD = Infinity, objLabel = '占领点';
+    let obj = null, objD = Infinity, objLabel = Game.t('obj.capture');
     if (Game.modes && Game.modes.objectiveFor) {
       const o = Game.modes.objectiveFor(p);
       obj = o; objD = M.dist2(o.x, o.z, p.pos.x, p.pos.z);
-      if (Game.mode === 'breakthrough') objLabel = '扇区 ' + Game.activeSector + ' · ' + (p.team === TEAM_RED ? '进攻' : '防守');
+      if (Game.mode === 'breakthrough') objLabel = Game.t('obj.sector', Game.activeSector) + ' · ' + (p.team === TEAM_RED ? Game.t('obj.attack') : Game.t('obj.defend'));
     }
     // v5.40 阵亡后不显示目标罗盘（扇区·进攻/防守字样只在存活时显示）
     if (obj && !inVehicle && p.alive) {
@@ -7716,13 +8129,13 @@ const VEHICLE_SPAWNS = [
     if (!flag) { el.classList.add('hidden'); return; }
     el.classList.remove('hidden');
     let txt;
-    if (flag.owner === p.team) txt = '驻守占领点 ' + flag.id;
+    if (flag.owner === p.team) txt = Game.t('cap.hold', flag.id);
     else if (flag.redCount > 0 || flag.blueCount > 0) {
       const capping = (p.team === TEAM_RED && flag.redCount > 0 && flag.blueCount === 0)
         || (p.team === TEAM_BLUE && flag.blueCount > 0 && flag.redCount === 0);
-      txt = capping ? '正在占领 ' + flag.id : '占领点 ' + flag.id + ' · 争夺中';
+      txt = capping ? Game.t('cap.capping', flag.id) : Game.t('cap.contested', flag.id);
     } else {
-      txt = '占领点 ' + flag.id + ' · 空置';
+      txt = Game.t('cap.empty', flag.id);
     }
     el.innerHTML = txt + '<div class="cs-bar"><div class="cs-fill" style="width:' +
       Math.abs(flag.control) + '%"></div></div>';
@@ -7803,16 +8216,16 @@ const VEHICLE_SPAWNS = [
   }
   function renderScoreboard() {
     const rows = Game.soldiers.slice().sort((a, b) => b.score - a.score).slice(0, 24);
-    let html = '<div class="sb-row head"><span class="sb-c name">玩家</span><span class="sb-c">击杀</span><span class="sb-c">死亡</span><span class="sb-c">分数</span><span class="sb-c">兵种</span></div>';
+    let html = '<div class="sb-row head"><span class="sb-c name">' + Game.t('sb.player') + '</span><span class="sb-c">' + Game.t('sb.kills') + '</span><span class="sb-c">' + Game.t('sb.deaths') + '</span><span class="sb-c">' + Game.t('sb.score') + '</span><span class="sb-c">' + Game.t('sb.class') + '</span></div>';
     for (const s of rows) {
       const isMe = s === Game.player;
       const teamCls = s.team === TEAM_RED ? 't-red' : 't-blue';
-      const name = isMe ? '你' : (s.team === TEAM_RED ? '赤焰·' : '苍穹·') + (s.name || s.id);   // v5.28 呼号
+      const name = isMe ? Game.t('sb.you') : (s.team === TEAM_RED ? Game.t('sb.team.red') : Game.t('sb.team.blue')) + '·' + Game.tn(s.name || s.id);   // v5.28 呼号
       html += '<div class="sb-row ' + teamCls + (isMe ? ' me' : '') + '">' +
         '<span class="sb-c name">' + name + '</span>' +
         '<span class="sb-c">' + s.kills + '</span><span class="sb-c">' + s.deaths + '</span>' +
         '<span class="sb-c">' + s.score + '</span>' +
-        '<span class="sb-c">' + s.cls.name + '</span></div>';
+        '<span class="sb-c">' + Game.L(s.cls) + '</span></div>';
     }
     H.el.scoreboardBody.innerHTML = html;
   }
@@ -7883,7 +8296,7 @@ const VEHICLE_SPAWNS = [
     const el = H.el.scorefeed;
     if (!el) return;
     const def = MERIT_DEFS[kind] || { label: kind, color: '#ffd27a' };
-    const label = labelOverride || def.label;   // v5.22 动态标签（双杀/三杀/超神）
+    const label = labelOverride || Game.t('merit.' + kind) || def.label;   // v5.22 动态标签（双杀/三杀/超神）
     // 侦察标记累加：已有标记条目 → 只跳数字并续命，条目照常滚动
     if (kind === 'spot') {
       const cur = el.querySelector('.mf-entry[data-kind="spot"]');
@@ -7891,7 +8304,7 @@ const VEHICLE_SPAWNS = [
         const n = parseInt(cur.getAttribute('data-n') || '1', 10) + 1;
         const total = parseInt(cur.getAttribute('data-total') || '0', 10) + amount;
         cur.setAttribute('data-n', String(n)); cur.setAttribute('data-total', String(total));
-        cur.innerHTML = '<span class="mf-amt">+' + total + '</span> <span class="mf-label">' + def.label + ' ×' + n + '</span>';
+        cur.innerHTML = '<span class="mf-amt">+' + total + '</span> <span class="mf-label">' + label + ' ×' + n + '</span>';
         meritEntryTimer(cur);
         meritBumpScore();
         return;
@@ -7980,11 +8393,11 @@ const VEHICLE_SPAWNS = [
       const res = Game.weapons.fireMortarAt(p, w.x, w.z);
       if (res === 'ok') {
         H.lastMortarHit = w;
-        H.message('落点标定 · 炮弹飞行中（' + Math.round(Game.math.dist2(p.pos.x, p.pos.z, w.x, w.z)) + 'm）');
-      } else if (res === 'too-close') H.message('超出最小射程 40m');
-      else if (res === 'too-far') H.message('超出最大射程 180m');
-      else if (res === 'no-ammo') H.message('迫击炮弹药耗尽');
-      else if (res === 'cooling') H.message('装填中 ' + Math.ceil(p.gadgetCooldown) + 's');
+        H.message(Game.t('mortar.hit', Math.round(Game.math.dist2(p.pos.x, p.pos.z, w.x, w.z))));
+      } else if (res === 'too-close') H.message(Game.t('mortar.tooClose'));
+      else if (res === 'too-far') H.message(Game.t('mortar.tooFar'));
+      else if (res === 'no-ammo') H.message(Game.t('mortar.noAmmo'));
+      else if (res === 'cooling') H.message(Game.t('mortar.cooling', Math.ceil(p.gadgetCooldown)));
       drawMortarMap();
     });
     H.el.mortarMap.addEventListener('contextmenu', (e) => {
@@ -8080,6 +8493,20 @@ const VEHICLE_SPAWNS = [
       ctx.stroke();
     }
   }
+
+  // 语言切换后重建动态文案（兵种卡/旗点/军衔/扇区条/阵亡复活点/计分板）
+  function applyLang() {
+    buildClassOptions();
+    buildFlags();
+    buildSectorBar();
+    updateRankDisplay();
+    if (H.el && H.el.deathScreen && !H.el.deathScreen.classList.contains('hidden')) {
+      buildDeathClasses();
+      buildDeathSpawns();
+    }
+    if (H.el && H.el.scoreboard && !H.el.scoreboard.classList.contains('hidden')) renderScoreboard();
+  }
+  H.applyLang = applyLang;
 
   H.init = init; H.initMinimap = initMinimap; H.update = update;
   H.buildSectorBar = buildSectorBar; H.updateSectorBar = updateSectorBar;
@@ -8309,9 +8736,9 @@ const VEHICLE_SPAWNS = [
     for (const f of active) if (f.owner !== TEAM_RED) { allCaptured = false; break; }
     if (allCaptured) {
       const maxSector = Game.sectors.length;
-      const secName = Game.sectors[Game.activeSector - 1] ? Game.sectors[Game.activeSector - 1].name : '';
+      const secName = Game.sectors[Game.activeSector - 1] ? Game.L(Game.sectors[Game.activeSector - 1]) : '';
       if (Game.activeSector >= maxSector) {
-        Game.hud.announce('红军突破最后扇区！', '#ff6a5e');
+        Game.hud.announce(Game.t('epic.finalSector'), '#ff6a5e');
         endMatch(TEAM_RED);
         return;
       }
@@ -8323,12 +8750,12 @@ const VEHICLE_SPAWNS = [
       }
       Game.effects.addShake(0.85);
       if (Game.player && Game.hud && Game.hud.explosionFlash) Game.hud.explosionFlash(0.32);
-      const epicLines = ['红军突破「' + secName + '」——防线崩塌！', '「' + secName + '」陷落！攻势如潮！', '钢铁防线再失一环：「' + secName + '」失守！'];
+      const epicLines = [Game.t('epic.break1', secName), Game.t('epic.break2', secName), Game.t('epic.break3', secName)];
       Game.hud.announce(epicLines[(Game.activeSector - 1) % epicLines.length], '#ffd27a');
       for (const f of Game.flags) if (f.sector === Game.activeSector) f.locked = true;
       Game.activeSector++;
       if (Game.activeSector >= Game.sectors.length) {
-        Game.hud.announce('最终防线——死守堡垒！', '#ff6a5e');   // v5.30 最终扇区宣言
+        Game.hud.announce(Game.t('epic.finalStand'), '#ff6a5e');   // v5.30 最终扇区宣言
       }
       for (const f of Game.flags) {
         if (f.sector === Game.activeSector) { f.locked = false; f.control = 0; f.owner = TEAM_BLUE; }
@@ -8349,19 +8776,19 @@ const VEHICLE_SPAWNS = [
 
   function onFlagCapture(f, prevOwner) {
     const p = Game.player, H = Game.hud;
-    const label = f.name || f.id;
+    const label = Game.L(f) || f.id;
     if (f.owner === p.team) {
       // v5.28 播报文案多样性（按旗点 id 确定性选择，不消耗随机数）
-      const caps = ['我方占领 ', '我们夺下了 ', '阵地易手：我方控制 ', '旗帜升起：我方占领 '];
+      const caps = [Game.t('cap.ours.1'), Game.t('cap.ours.2'), Game.t('cap.ours.3'), Game.t('cap.ours.4')];
       H.announce(caps[f.id.charCodeAt(0) % caps.length] + label, '#ffd27a');
       H.popup('+150', { x: f.x, y: f.y + 6, z: f.z }, '#ffd27a');
       p.score += 150;
       if (H.merit) H.merit('capture', 150);   // v5.18 占领功绩
       Game.stats.captures++;
     } else if (f.owner !== -1) {
-      H.announce('敌方占领 ' + label, '#ff6a5e');
+      H.announce(Game.t('cap.enemy', label), '#ff6a5e');
     } else {
-      H.announce(label + ' 被夺回为中立', '#cccccc');
+      H.announce(Game.t('cap.neutral', label), '#cccccc');
     }
   }
 
@@ -8417,11 +8844,11 @@ const VEHICLE_SPAWNS = [
     H.save.bestStreak = Math.max(H.save.bestStreak, Game.stats.bestStreak);
     H.saveGame();
     if (document.exitPointerLock) { try { document.exitPointerLock(); } catch (e) {} }
-    H.el.endTitle.textContent = won ? '胜 利' : '战 败';
+    H.el.endTitle.textContent = won ? Game.t('end.victory') : Game.t('end.defeat');
     H.el.endTitle.style.color = won ? '#ffd27a' : '#ff6a5e';
-    H.el.endInfo.innerHTML = '你的分数：' + p.score + '<br>击杀 ' + Game.stats.kills + ' · 阵亡 ' + Game.stats.deaths +
-      ' · 最高连杀 ' + Game.stats.bestStreak + '<br>军衔：' + H.rankName(H.save.totalScore).name +
-      '（累计 ' + H.save.totalScore + ' 分）';
+    H.el.endInfo.innerHTML = Game.t('end.score', p.score) + '<br>' +
+      Game.t('end.stats', Game.stats.kills, Game.stats.deaths, Game.stats.bestStreak) + '<br>' +
+      Game.t('menu.rank.line', Game.L(H.rankName(H.save.totalScore)), H.save.totalScore);
     H.showScreen('end-screen');
   }
 
@@ -8563,9 +8990,9 @@ const VEHICLE_SPAWNS = [
     if (Game.sound.ambientStop) Game.sound.ambientStop();
     if (Game.sound.ambientStart) Game.sound.ambientStart();
     if (Game.mode === 'breakthrough') {
-      Game.hud.message('部署成功 · 突破模式 · ' + (p.team === TEAM_RED ? '你是攻方——夺取扇区！' : '你是守方——守住防线！'));
+      Game.hud.message(p.team === TEAM_RED ? Game.t('msg.deploy.bt.att') : Game.t('msg.deploy.bt.def'));
     } else {
-      Game.hud.message('部署成功 · 征服模式 · 占领旗帜！');
+      Game.hud.message(Game.t('msg.deploy.conquest'));
     }
   }
 
@@ -8690,8 +9117,9 @@ const VEHICLE_SPAWNS = [
       const p = Game.player;
       const H = Game.hud;
       const killer = p.lastHitBy;
-      H.el.deathInfo.innerHTML = '击杀者：' + (killer ? (killer.team === TEAM_BLUE ? '苍穹守卫' : '赤焰') : '战场') +
-        '<br>本局击杀 ' + p.kills + ' · 阵亡 ' + p.deaths + ' · 分数 ' + p.score;
+      const killerName = killer ? (killer.team === TEAM_BLUE ? Game.L(TEAMS[TEAM_BLUE]) : Game.L(TEAMS[TEAM_RED], 'short')) : Game.t('death.battlefield');
+      H.el.deathInfo.innerHTML = Game.t('death.killer', killerName) +
+        '<br>' + Game.t('death.stats', p.kills, p.deaths, p.score);
       H.showScreen('death-screen');
     }
     if (k >= 1) {
@@ -8786,6 +9214,12 @@ const VEHICLE_SPAWNS = [
     // 修复：?mode=/?map= URL 参数此前对菜单选择无效（hud 求值时 Game.mode 尚未赋值）
     Game.hud.syncMenuSelection(Game.mode, Game.mapId);
 
+    // 多语言：应用初始语言 + 绑定语言切换
+    Game.applyLang();
+    document.querySelectorAll('.lang-btn').forEach((b) => {
+      b.onclick = () => Game.setLang(b.getAttribute('data-lang'));
+    });
+
     // 按钮
     document.getElementById('btn-start').onclick = () => {
       Game.audio.init();
@@ -8818,7 +9252,7 @@ const VEHICLE_SPAWNS = [
       animate();
     }
 
-    console.log('[main] 灰烬战线 v5 启动完成 · 模式 ' + Game.mode + ' · 地图 ' + Game.mapId +
+    console.log('[main] 灰烬战线 启动完成 · 模式 ' + Game.mode + ' · 地图 ' + Game.mapId +
       ' · 士兵 ' + Game.soldiers.length + ' · 载具 ' + Game.vehicles.length + ' · 占领点 ' + Game.flags.length);
   }
 

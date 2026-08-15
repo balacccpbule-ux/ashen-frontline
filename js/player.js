@@ -663,19 +663,19 @@
     // v5.49 疾跑滑铲：最高速按 C 触发（瞬间加速 + 快速减速 + 锁定方向滑动）
     s.slideCd = Math.max(0, (s.slideCd || 0) - dt);
     if (!s.sliding && s.sprinting && P.keys.has('KeyC') && s.slideCd <= 0 && Math.hypot(s.vel.x, s.vel.z) > CONFIG.SPRINT_SPEED * 0.8) {
-      s.sliding = true; s.slideT = 0.7;
+      s.sliding = true; s.slideT = 0.9;
       const dl = Math.hypot(s.vel.x, s.vel.z) || 1;
-      s.vel.x = (s.vel.x / dl) * CONFIG.SPRINT_SPEED * 1.4;   // 瞬间加速
-      s.vel.z = (s.vel.z / dl) * CONFIG.SPRINT_SPEED * 1.4;
+      s.vel.x = (s.vel.x / dl) * CONFIG.SPRINT_SPEED * 1.75;   // 瞬间加速（更大）
+      s.vel.z = (s.vel.z / dl) * CONFIG.SPRINT_SPEED * 1.75;
     }
     if (s.sliding) {
       s.crouching = true;
       s.slideT -= dt;
-      const dec = Math.exp(-5 * dt);   // 快速减速
+      const dec = Math.exp(-2.2 * dt);   // 温和减速（不再那么狠）
       s.vel.x *= dec; s.vel.z *= dec;
       s.pos.x += s.vel.x * dt;
       s.pos.z += s.vel.z * dt;
-      if (s.slideT <= 0 || Math.hypot(s.vel.x, s.vel.z) < 2.0) { s.sliding = false; s.slideCd = 0.4; }
+      if (s.slideT <= 0 || Math.hypot(s.vel.x, s.vel.z) < 1.8) { s.sliding = false; s.slideCd = 0.4; }
     } else {
       // 疾跑加速过程：指数衰减增长，1s 达到最高速（k≈4）；其余用 k=12
       const k = 1 - Math.exp(-(s.sprinting ? 4 : 12) * dt);

@@ -216,7 +216,7 @@
       if (sec.type === 'gadget') {
         html += '<div class="row"><select id="dbg-gadget">' +
           '<option value="grenadeLauncher">下挂榴弹</option>' +
-          '<option value="rocket">RPG-7 火箭筒</option>' +
+          '<option value="rocket" selected>RPG-7 火箭筒</option>' +
           '<option value="mortar">60mm 迫击炮</option>' +
           '<option value="medkit">医疗箱</option>' +
           '<option value="ammo">弹药箱</option>' +

@@ -498,11 +498,30 @@
     const metal = mat(0x2a2e34, 0.35, 0.85);
     const dark = mat(0x14171b, 0.4, 0.7);
     if (key === 'rocket') {
-      const tube = cyl(0.09, 0.62, metal); tube.rotation.x = Math.PI / 2; tube.position.set(0, 0.03, -0.3);
-      const muzzle = cyl(0.11, 0.1, dark); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.03, -0.64);
-      const grip = box(0.05, 0.13, 0.06, dark); grip.position.set(0, -0.13, 0.12);
-      const sight = box(0.03, 0.05, 0.06, dark); sight.position.set(0, 0.13, 0.05);
-      g.add(tube, muzzle, grip, sight);
+      // v5.50 细长火箭筒 + 矩形瞄准镜（镂空镜管 + 集成十字线 + 镜座）
+      const tube = cyl(0.055, 0.9, metal); tube.rotation.x = Math.PI / 2; tube.position.set(0, 0.03, -0.32);
+      const muzzle = cyl(0.075, 0.1, dark); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.03, -0.78);
+      const rearCone = cyl(0.078, 0.14, dark); rearCone.rotation.x = Math.PI / 2; rearCone.position.set(0, 0.03, 0.2);
+      const grip = box(0.05, 0.13, 0.06, dark); grip.position.set(0, -0.12, 0.12);
+      const scope = new THREE.Group();
+      { const st = 0.008, tl = 0.2, tw = 0.065, th = 0.05;
+        const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+        const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+        const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+        const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+        scope.add(wT, wB, wL, wR);
+        const rm = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, depthWrite: false, transparent: true, opacity: 0.92 });
+        const t = 0.0014;
+        const v = box(t, th - 0.012, t, rm); v.position.z = -tl / 2 + 0.005;
+        const h = box(tw - 0.012, t, t, rm); h.position.z = -tl / 2 + 0.005;
+        scope.add(v, h);
+        const mount = box(tw * 0.5, 0.07, tl * 0.4, dark); mount.position.set(0, -th / 2 - 0.035, 0);
+        scope.add(mount);
+      }
+      scope.position.set(0, 0.14, -0.05);
+      g.add(tube, muzzle, rearCone, grip, scope);
+      g.userData.scopeLocal = { x: 0, y: 0.14, z: -0.05 };
+      g.userData.scopeMesh = scope;
     } else if (key === 'ammo') {
       const body = box(0.24, 0.16, 0.34, mat(0x4a4a3a, 0.8, 0.1)); body.position.set(0, -0.06, -0.2);
       const lid = box(0.26, 0.04, 0.36, mat(0x3a3a2e, 0.8, 0.1)); lid.position.set(0, 0.05, -0.2);
@@ -601,8 +620,12 @@
     }
     // v5.45 镜枪：读取枪模上的镜管位置，用于开镜时对准屏幕中心
     P.scopeLocal = null;
-    if (wdef && wdef.scope && wslot && P.models && P.models[wdef.key] && P.models[wdef.key].userData.scopeLocal) {
-      P.scopeLocal = P.models[wdef.key].userData.scopeLocal;
+    if (wdef && wdef.scope) {
+      if (wslot && P.models && P.models[wdef.key] && P.models[wdef.key].userData.scopeLocal) {
+        P.scopeLocal = P.models[wdef.key].userData.scopeLocal;
+      } else if (s.slot === 'gadget' && P.gadgetModels && P.gadgetModels[s.gadget] && P.gadgetModels[s.gadget].userData.scopeLocal) {
+        P.scopeLocal = P.gadgetModels[s.gadget].userData.scopeLocal;   // v5.50 RPG 镜枪
+      }
     }
 
     // --- ADS 缓动（adsK 线性爬升 + easeInOutCubic 塑形；出镜快 1.25×） ---
@@ -845,10 +868,6 @@
     // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
     if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {
       target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
-    }
-    // v5.48 RPG 开镜：火箭筒模型放低，防止挡视野
-    if (P.ads && P.adsEase > 0.5 && Game.player.slot === 'gadget' && Game.player.gadget === 'rocket') {
-      target = { x: 0, y: -0.22, z: -0.34 };
     }
     const k = 1 - Math.exp(-14 * dt);
     // v5.48 冲刺横持：整体再往左 + 船形绝对位置水平晃动

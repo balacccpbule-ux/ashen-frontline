@@ -201,7 +201,7 @@ const CLASSES = {
   },
   engineer: {
     name: '工程兵', key: 'engineer', weapon: 'smg',
-    gadget: 'rocket', gadgetName: '火箭筒', gadgetAmmo: 4, gadgetCooldown: 0,
+    gadget: 'rocket', gadgetName: 'RPG-7 火箭筒', gadgetAmmo: 4, gadgetCooldown: 0,
     desc: '冲锋枪近战 + 火箭筒反载具，可维修载具（按住 E）+ 烟雾弹掩护（H）',
   },
   mortar: {

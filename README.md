@@ -32,7 +32,8 @@
 | R | 换弹 |
 | 1 / 2 / 3 | 主武器 / 副武器 / 兵种装备 |
 | G / H | 手雷 / 烟雾弹（工程兵） |
-| Q | 标记准星附近敌人 |
+| Q / E | 歪头（左 / 右） |
+| T | 维修载具（工程兵） |
 | F | 进入/离开载具（队友驾驶中会请其下车） |
 | V | 载具第三人称视角 |
 | Tab | 计分板 |
@@ -130,7 +131,8 @@ node tests/run_all.js test_spot.js   # 单项
 | R | Reload |
 | 1 / 2 / 3 | Primary / secondary / class gadget |
 | G / H | Grenade / smoke (Engineer) |
-| Q | Spot enemies near crosshair |
+| Q / E | Lean (left / right) |
+| T | Repair vehicle (engineer) |
 | F | Enter/exit vehicle |
 | V | Vehicle third-person view |
 | Tab | Scoreboard |

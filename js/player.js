@@ -16,6 +16,7 @@
     bobT: 0, viewKick: 0, lastShot: -999,
     gaitPhase: 0,            // v5.48 步态相位（与脚步同频，驱动冲刺月牙摆动）
     firingT: 0,              // v5.48 开火后脱离冲刺横持的计时
+    lean: 0,                  // v5.49 歪头（-1 左 / +1 右，平滑）
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
     flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
@@ -70,7 +71,7 @@
           break;
         case 'KeyG': if (!s.ridingVehicle) Game.weapons.throwGrenade(s); break;
         case 'KeyH': if (!s.ridingVehicle && Game.weapons.throwSmoke) Game.weapons.throwSmoke(s); break;   // v5.38 烟雾弹
-        case 'KeyQ': if (!s.ridingVehicle) Game.weapons.trySpot(s); break;   // v5.12 侦察标记
+        // v5.49 Q 标记已暂时搁置（Q/E 改为歪头）
         case 'KeyF': if (Game.Vehicles) Game.Vehicles.tryInteract(s); break;
         case 'KeyV':
           if (s.ridingVehicle && Game.Vehicles) {
@@ -283,6 +284,7 @@
     P.clickBuf = 0; P.trigger = false; P.scoped = false;
     P.mortarDeployed = false;
     P.mortarCam = null;
+    P.lean = 0;
   }
   P.resetInput = resetInput;
 
@@ -682,8 +684,8 @@
       }
     }
 
-    // v5.38 工程兵维修载具（按住 E：停在受损友军载具旁持续维修）
-    if (s.clsKey === 'engineer' && P.keys.has('KeyE')) {
+    // v5.38 工程兵维修载具（v5.49 改为按住 T；E 已让位给歪头）
+    if (s.clsKey === 'engineer' && P.keys.has('KeyT')) {
       let best = null, bd = 6.5;
       for (const v of Game.vehicles) {
         if (!v.alive || v.hp >= v.maxHp || v.team !== s.team) continue;
@@ -695,6 +697,10 @@
         Game.Vehicles.repairVehicle(best, s, dt);
       }
     }
+
+    // v5.49 歪头（Q 左 / E 右）：高加速度启动 + 指数渐缓，最终侧倾 30°
+    const leanTarget = M.clamp((P.keys.has('KeyQ') ? -1 : 0) + (P.keys.has('KeyE') ? 1 : 0), -1, 1);
+    P.lean = M.lerp(P.lean, leanTarget, 1 - Math.exp(-16 * dt));
 
     // 速度比（bob 用）；移动扩散惩罚在 weapons.restSpreadDeg 按姿态实时计算
     const spdRatio = Math.hypot(s.vel.x, s.vel.z) / CONFIG.WALK_SPEED;
@@ -750,7 +756,7 @@
       Game.camera.rotation.set(
         M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
         s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
-        (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
+        P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);

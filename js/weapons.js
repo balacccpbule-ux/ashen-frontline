@@ -105,7 +105,14 @@
   }
   function getEyePos(s) {
     const ey = s.crouching ? CONFIG.CROUCH_EYE : CONFIG.EYE_HEIGHT;
-    return { x: s.pos.x, y: s.pos.y + ey, z: s.pos.z };
+    // v5.49 歪头：玩家视角/子弹源沿右向量横向偏移（探出墙角）
+    let ex = s.pos.x, ez = s.pos.z;
+    if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
+      const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
+      ex += rx * Game.Player.lean * CONFIG.LEAN_SHIFT;
+      ez += rz * Game.Player.lean * CONFIG.LEAN_SHIFT;
+    }
+    return { x: ex, y: s.pos.y + ey, z: ez };
   }
   function getAimDir(s, adsEase) {
     // 锥角扩散：rest（姿态惩罚）+ 连射累积，圆盘均匀采样 + tan 映射

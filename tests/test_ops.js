@@ -48,19 +48,19 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'var tank = G.vehicles.filter(function(v){ return v.kind==="tank" && v.team===0; })[0];' +
       'tank.pos.x = -108; tank.pos.z = 3; tank.pos.y = G.heightAt(-108,3); tank.vel={x:0,y:0,z:0};' +
       'tank.hp = 300;' +
-      'G.Player.keys.add("KeyE");' +
+      'G.Player.keys.add("KeyT");' +
       'var t0 = Game.time; var hp0 = tank.hp; var s0 = p.score;' +
       'for (var i=0;i<90;i++){ var dt=1/30; G.time+=dt;' +
       '  if (G.player.alive) G.Player.update(dt);' +
       '  G.ai.update(dt); G.Vehicles.update(dt); G.weapons.update(dt);' +
       '  G.updateConquest(dt); G.effects.update(dt); G.terrain.update(dt); G.hud.update(dt); }' +
-      'G.Player.keys.delete("KeyE");' +
+      'G.Player.keys.delete("KeyT");' +
       'var repairMerit = false; var kids = document.getElementById("scorefeed").children;' +
       'for (var k=0;k<kids.length;k++){ if (kids[k].getAttribute("data-kind")==="repair") repairMerit = true; }' +
       'return JSON.stringify({ hpGain: Math.round(tank.hp - hp0), scoreGain: p.score - s0, repairMerit: repairMerit, heartbeat: typeof Game.sound.heartbeat === "function" });' +
       '})()');
     const a = JSON.parse(r1);
-    assert(a.hpGain >= 50, '工程兵按住 E 维修载具（3 秒回血 +' + a.hpGain + '）');
+    assert(a.hpGain >= 50, '工程兵按住 T 维修载具（3 秒回血 +' + a.hpGain + '）');
     assert(a.scoreGain > 0 && a.repairMerit === true, '维修计分并进功绩（+ ' + a.scoreGain + '）');
     assert(a.heartbeat === true, '濒死心跳音已接入');
 
@@ -122,7 +122,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
 
     // ---- 4) 濒死反馈 ----
     const r6 = await cdp.eval('(function(){ var G=Game;' +
-      'G.Player.keys.delete("KeyE"); G.hud.selectClass("assault"); G.deployPlayer();' +
+      'G.Player.keys.delete("KeyT"); G.hud.selectClass("assault"); G.deployPlayer();' +
       'var p=G.player; p.spawnProtect = 0; p.health = 30;' +
       'G.hud.update(1/30);' +
       'var on = !document.getElementById("lowhp").classList.contains("hidden");' +

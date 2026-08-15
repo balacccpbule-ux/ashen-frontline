@@ -677,6 +677,8 @@ const CONFIG = {
   SPRINT_SPEED: 9.2,
   CROUCH_SPEED: 3.0,
   ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
+  LEAN_ANGLE_DEG: 30,         // v5.49 歪头侧倾角度（度）
+  LEAN_SHIFT: 0.4,            // v5.49 歪头横向偏移（米，探出墙角）
   JUMP_VEL: 8.8,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,
@@ -1141,7 +1143,7 @@ const VEHICLE_SPAWNS = [
       'menu.rank.points': '累计 {0} 分',
       'menu.rank.line': '军衔：{0}（累计 {1} 分）',
       'menu.controls.1': 'WASD 移动 · Shift 冲刺 · C 蹲 · 空格跳跃 · 鼠标射击',
-      'menu.controls.2': 'R 换弹 · 1/2/3 切换武器 · G 手雷 · Q 标记敌人 · F 上下车 · Tab 计分板',
+      'menu.controls.2': 'R 换弹 · 1/2/3 切换武器 · G 手雷 · Q/E 歪头 · F 上下车 · Tab 计分板',
       'class.title': '选择兵种',
       'class.deploy': '部署',
       'hud.exit': '退出对局',
@@ -1280,7 +1282,7 @@ const VEHICLE_SPAWNS = [
       'menu.rank.points': '{0} points total',
       'menu.rank.line': 'RANK: {0} ({1} pts)',
       'menu.controls.1': 'WASD move · Shift sprint · C crouch · Space jump · mouse to shoot',
-      'menu.controls.2': 'R reload · 1/2/3 switch weapon · G grenade · Q spot enemy · F enter/exit · Tab scoreboard',
+      'menu.controls.2': 'R reload · 1/2/3 switch weapon · G grenade · Q/E lean · F enter/exit · Tab scoreboard',
       'class.title': 'CHOOSE CLASS',
       'class.deploy': 'DEPLOY',
       'hud.exit': 'LEAVE MATCH',
@@ -1435,7 +1437,7 @@ const VEHICLE_SPAWNS = [
       '自动步枪 + 下挂榴弹发射器，正面突破': 'Assault rifle + underbarrel grenade launcher, frontal breakthrough',
       '重机枪火力压制，部署弹药箱补给队友': 'LMG suppression, deploys ammo crates for teammates',
       '栓动狙击远距猎杀，信号弹标记敌军': 'Bolt-action sniper for long-range kills, flare to spot enemies',
-      '冲锋枪近战 + 火箭筒反载具，可维修载具（按住 E）+ 烟雾弹掩护（H）': 'SMG + rocket launcher vs vehicles, repairs vehicles (hold E) + smoke cover (H)',
+      '冲锋枪近战 + 火箭筒反载具，可维修载具（按住 T）+ 烟雾弹掩护（H）': 'SMG + rocket launcher vs vehicles, repairs vehicles (hold T) + smoke cover (H)',
       'MK-14 精确射手步枪自卫 + 60mm 迫击炮曲射压制（40-180m 高抛弹道）': 'MK-14 DMR for self-defense + 60mm mortar for indirect fire (40-180m)',
       'AA-12 全自动霰弹枪近战自卫 + 医疗箱治疗队友 + 呼吸回血（无救援，阵亡立即重生）': 'AA-12 auto shotgun + medkit to heal teammates + passive regen',
       'AI 反应慢、枪法差，适合熟悉战场': 'Slow reactions and poor aim — good for learning',
@@ -4611,7 +4613,14 @@ const VEHICLE_SPAWNS = [
   }
   function getEyePos(s) {
     const ey = s.crouching ? CONFIG.CROUCH_EYE : CONFIG.EYE_HEIGHT;
-    return { x: s.pos.x, y: s.pos.y + ey, z: s.pos.z };
+    // v5.49 歪头：玩家视角/子弹源沿右向量横向偏移（探出墙角）
+    let ex = s.pos.x, ez = s.pos.z;
+    if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
+      const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
+      ex += rx * Game.Player.lean * CONFIG.LEAN_SHIFT;
+      ez += rz * Game.Player.lean * CONFIG.LEAN_SHIFT;
+    }
+    return { x: ex, y: s.pos.y + ey, z: ez };
   }
   function getAimDir(s, adsEase) {
     // 锥角扩散：rest（姿态惩罚）+ 连射累积，圆盘均匀采样 + tan 映射
@@ -5608,6 +5617,7 @@ const VEHICLE_SPAWNS = [
     bobT: 0, viewKick: 0, lastShot: -999,
     gaitPhase: 0,            // v5.48 步态相位（与脚步同频，驱动冲刺月牙摆动）
     firingT: 0,              // v5.48 开火后脱离冲刺横持的计时
+    lean: 0,                  // v5.49 歪头（-1 左 / +1 右，平滑）
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
     flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
@@ -5662,7 +5672,7 @@ const VEHICLE_SPAWNS = [
           break;
         case 'KeyG': if (!s.ridingVehicle) Game.weapons.throwGrenade(s); break;
         case 'KeyH': if (!s.ridingVehicle && Game.weapons.throwSmoke) Game.weapons.throwSmoke(s); break;   // v5.38 烟雾弹
-        case 'KeyQ': if (!s.ridingVehicle) Game.weapons.trySpot(s); break;   // v5.12 侦察标记
+        // v5.49 Q 标记已暂时搁置（Q/E 改为歪头）
         case 'KeyF': if (Game.Vehicles) Game.Vehicles.tryInteract(s); break;
         case 'KeyV':
           if (s.ridingVehicle && Game.Vehicles) {
@@ -5875,6 +5885,7 @@ const VEHICLE_SPAWNS = [
     P.clickBuf = 0; P.trigger = false; P.scoped = false;
     P.mortarDeployed = false;
     P.mortarCam = null;
+    P.lean = 0;
   }
   P.resetInput = resetInput;
 
@@ -6274,8 +6285,8 @@ const VEHICLE_SPAWNS = [
       }
     }
 
-    // v5.38 工程兵维修载具（按住 E：停在受损友军载具旁持续维修）
-    if (s.clsKey === 'engineer' && P.keys.has('KeyE')) {
+    // v5.38 工程兵维修载具（v5.49 改为按住 T；E 已让位给歪头）
+    if (s.clsKey === 'engineer' && P.keys.has('KeyT')) {
       let best = null, bd = 6.5;
       for (const v of Game.vehicles) {
         if (!v.alive || v.hp >= v.maxHp || v.team !== s.team) continue;
@@ -6287,6 +6298,10 @@ const VEHICLE_SPAWNS = [
         Game.Vehicles.repairVehicle(best, s, dt);
       }
     }
+
+    // v5.49 歪头（Q 左 / E 右）：高加速度启动 + 指数渐缓，最终侧倾 30°
+    const leanTarget = M.clamp((P.keys.has('KeyQ') ? -1 : 0) + (P.keys.has('KeyE') ? 1 : 0), -1, 1);
+    P.lean = M.lerp(P.lean, leanTarget, 1 - Math.exp(-16 * dt));
 
     // 速度比（bob 用）；移动扩散惩罚在 weapons.restSpreadDeg 按姿态实时计算
     const spdRatio = Math.hypot(s.vel.x, s.vel.z) / CONFIG.WALK_SPEED;
@@ -6342,7 +6357,7 @@ const VEHICLE_SPAWNS = [
       Game.camera.rotation.set(
         M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
         s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
-        (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
+        P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);
@@ -7525,6 +7540,7 @@ const VEHICLE_SPAWNS = [
     if (s.isPlayer) {
       Game.sound.engineStart(v.id, v.kind);
       if (Game.Player.view) Game.Player.view.visible = false;
+      Game.Player.lean = 0;   // v5.49 上车复位歪头
       Game.Player.requestLock();
       if (Game.hud) Game.hud.message(Game.t('veh.enter', Game.L(v.def)));
     }

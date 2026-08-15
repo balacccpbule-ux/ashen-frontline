@@ -210,14 +210,25 @@
         const mult = CONFIG.BODY_PARTS[hit.part] || 1;
         applyDamage(hit.soldier, w.damage * falloff * mult, s, hit.point, headshot);
         if (s.isPlayer) {
-          if (Game.sound.hitBeep) Game.sound.hitBeep(headshot);
-          if (Game.hud) Game.hud.hitmarker(false, headshot);
+          const killed = !hit.soldier.alive;
+          // 分层命中音效：爆头清脆"叮" / 血肉"噗"
+          if (headshot) { if (Game.sound.hitHead) Game.sound.hitHead(); }
+          else if (Game.sound.hitFlesh) Game.sound.hitFlesh(shotVol);
+          // 非击杀命中才在此标记（击杀由 kill() 的 hitmarker 处理，避免覆盖）
+          if (!killed && Game.hud) Game.hud.hitmarker(false, headshot);
+          // 命中顿帧：击杀最重、单发武器爆头次之（自动连射不打顿帧，防卡顿）
+          if (killed) Game.hitStop(0.09, 0.05);
+          else if (headshot && !w.auto) Game.hitStop(0.05, 0.22);
         }
         if (Game.effects.impactFlesh) Game.effects.impactFlesh(hit.point, pdir, headshot, s);
         else Game.effects.impact(hit.point, headshot ? 0xffd700 : 0xe05550);
       } else if (hit.type === 'vehicle') {
         // v5 克制环：枪械伤害按载具装甲类型折算（v5.34 分级减伤，栓狙可穿坦克）
         damageVehicle(hit.vehicle, w.damage, s, 'smallarms', w);
+        if (s.isPlayer) {
+          if (Game.sound.hitArmor) Game.sound.hitArmor();
+          if (Game.hud) Game.hud.hitmarker(false, false, true);   // 装甲命中反馈（琥珀色）
+        }
         if (Game.effects.impactWall) Game.effects.impactWall(hit.point, null, s, hit.t);
         else Game.effects.impact(hit.point, 0xffd27a);
       } else if (hit.type === 'solid') {
@@ -243,7 +254,12 @@
     s.recoilPitch.kick(pat[s.patternIdx * 2]);
     s.recoilYaw.kick(pat[s.patternIdx * 2 + 1]);
     if (s.isPlayer) {
-      Game.effects.setShake(w.recoilDef.pitch * 2.2 + 0.06); // 玩家轻微震屏，不累加
+      // v5.43 重武器更明显震屏：狙击/霰弹/DMR 更有"重量感"
+      let shakeAmt = w.recoilDef.pitch * 2.2 + 0.06;
+      if (w.sound === 'shotgun') shakeAmt += 0.22;
+      else if (w.sound === 'sniper') shakeAmt += 0.18;
+      else if (w.sound === 'dmr') shakeAmt += 0.08;
+      Game.effects.setShake(shakeAmt);
       Game.Player.onShotFired(w.recoilDef);
     }
     return true;
@@ -273,15 +289,19 @@
   function applyDamage(s, dmg, attacker, point, headshot, sourceName) {
     if (!s.alive || s.spawnProtect > 0) return;
     if (s.isPlayer && Game.godMode) return; // 调试：无敌
+    const rawDmg = dmg;
+    let shieldDrained = false;
     // v5.10 突击兵护盾：每 1 点伤害消耗 2 点护盾（120 护盾 ≈ 60 血），无法补充
     if (s.shield > 0) {
       const drain = Math.min(s.shield, dmg * CONFIG.SHIELD_DRAIN_RATE);
       s.shield -= drain;
       dmg -= drain / CONFIG.SHIELD_DRAIN_RATE;
+      shieldDrained = true;
     }
     s.health -= dmg;
     s.lastHitBy = attacker;
     s.lastHurtTime = Game.time;
+    s.lastHitDmg = rawDmg;   // 受击方向指示/红晕按伤害缩放
     // v5.23 准星跳伤害数字（玩家造成的伤害；护盾全吸则不显示）
     if (attacker && attacker.isPlayer && Game.hud && Game.hud.damagePop && dmg > 0) {
       Game.hud.damagePop(dmg, headshot ? '#ffd75e' : '#ffe9a8');
@@ -295,8 +315,18 @@
       else s.recentDamage[attacker.id] = { amount: dmg, t: Game.time };
     }
     if (point) Game.effects.impact(point, 0xd03030);
-    if (s.isPlayer && Game.hud) Game.hud.flashDamage();
-    if (s.isPlayer) Game.effects.addShake(0.45); // 受击震屏
+    // v5.43 被打击感：红晕随伤害缩放 + 受击音效 + 护盾电流 + 镜头 Flinch + 硬直减速
+    if (s.isPlayer) {
+      if (Game.hud) Game.hud.flashDamage(rawDmg);
+      if (Game.sound) {
+        if (shieldDrained && Game.sound.shieldHit) Game.sound.shieldHit();
+        if (Game.sound.hurt) Game.sound.hurt(rawDmg);
+        if (rawDmg >= 60 && Game.sound.tinnitus) Game.sound.tinnitus(rawDmg);
+      }
+      if (Game.Player && Game.Player.flinch) Game.Player.flinch(rawDmg, point);
+      Game.effects.addShake(Math.min(0.9, 0.3 + rawDmg / 90));   // 受击震屏随伤害缩放
+      if (rawDmg >= 60 && Game.hitStop) Game.hitStop(0.05, 0.4); // 大伤害短暂硬直
+    }
     if (s.isPlayer && attacker) {
       const dx = attacker.pos.x - s.pos.x, dz = attacker.pos.z - s.pos.z;
       s.lastHitYaw = Math.atan2(-dx, -dz); // 面对攻击者的朝向
@@ -364,7 +394,8 @@
         Game.stats.kills++;
         Game.stats.bestStreak = Math.max(Game.stats.bestStreak, attacker.streak);
         Game.sound.kill();
-        if (Game.hud) Game.hud.hitmarker(true);
+        if (Game.hud) Game.hud.hitmarker(true, headshot);
+        if (Game.hitStop) Game.hitStop(0.09, 0.05);   // v5.43 击杀顿帧
         if (Game.hud) Game.hud.popup('+' + gained, { x: s.pos.x, y: s.pos.y + 2, z: s.pos.z }, '#ffd27a');
         if (Game.hud) {
           // v5.18 功绩播报（只播玩家本人）

@@ -542,7 +542,9 @@
       const rel = normAngle(p.lastHitYaw - p.yaw);
       const ang = -rel, r = 66;
       const rx = Math.sin(ang) * r, ry = -Math.cos(ang) * r;
-      hi.style.transform = 'translate(-50%,-50%) translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px) rotate(' + (ang * 180 / Math.PI).toFixed(1) + 'deg)';
+      // v5.43 受击方向指示按伤害缩放：大伤害更亮更大
+      const dmgK = M.clamp((p.lastHitDmg || 10) / 60, 0.55, 1.4);
+      hi.style.transform = 'translate(-50%,-50%) translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px) rotate(' + (ang * 180 / Math.PI).toFixed(1) + 'deg) scale(' + dmgK.toFixed(2) + ')';
       hi.style.opacity = Math.max(0, 1 - (Game.time - p.lastHitTime) / 0.8);
     } else {
       hi.classList.add('hidden');
@@ -553,6 +555,8 @@
       const k = 1 - p.health / 45;
       el.lowhp.classList.remove('hidden');
       el.lowhp.style.opacity = (0.22 + 0.5 * k + 0.12 * Math.sin(Game.time * (5 + k * 4))).toFixed(2);
+      // v5.43 濒死去饱和（血量越低战场越灰）
+      if (Game.renderer && Game.renderer.domElement) Game.renderer.domElement.style.filter = 'saturate(' + (1 - 0.5 * k).toFixed(3) + ')';
       H.hbT = (H.hbT || 0) - dt;
       if (H.hbT <= 0) {
         H.hbT = 1.25 - k * 0.75;
@@ -560,6 +564,7 @@
       }
     } else {
       el.lowhp.classList.add('hidden');
+      if (Game.renderer && Game.renderer.domElement) Game.renderer.domElement.style.filter = '';
     }
 
     // v5.41 烟雾弹内视野极差：白色浓雾遮罩（站在烟区内几乎看不清）
@@ -613,20 +618,25 @@
   }
 
   // ---- 即时反馈 ----
-  function flashDamage() {
+  function flashDamage(dmg) {
     const el = H.el.damageFlash;
     el.classList.remove('hidden');
-    el.style.opacity = '1';
+    // v5.43 受击红晕随伤害缩放：擦伤轻微泛红、大伤害满屏
+    el.style.opacity = String(Math.min(0.9, 0.35 + (dmg || 0) / 70));
     clearTimeout(H.dmgTimer);
-    H.dmgTimer = setTimeout(() => { el.style.opacity = '0'; }, 120);
+    H.dmgTimer = setTimeout(() => { el.style.opacity = '0'; }, Math.min(300, 120 + (dmg || 0)));
   }
-  function hitmarker(kill, headshot) {
+  function hitmarker(kill, headshot, armor) {
     const el = H.el.hitmarker;
-    el.classList.remove('hidden');
-    el.style.color = kill ? '#ff2211' : (headshot ? '#ffcc00' : '#ff5544');
-    el.style.textShadow = headshot ? '0 0 5px #ffcc00' : '0 0 2px #000';
+    el.classList.remove('hidden', 'hm-pop', 'hm-kill', 'hm-head', 'hm-armor');
+    void el.offsetWidth;   // 强制 reflow 重放弹跳动画
+    el.classList.add('hm-pop');
+    if (kill) { el.classList.add('hm-kill'); el.style.color = '#ff2211'; el.style.textShadow = '0 0 7px #ff2211'; }
+    else if (headshot) { el.classList.add('hm-head'); el.style.color = '#ffcc00'; el.style.textShadow = '0 0 7px #ffcc00'; }
+    else if (armor) { el.classList.add('hm-armor'); el.style.color = '#ffb340'; el.style.textShadow = '0 0 3px #000'; }
+    else { el.style.color = '#ff5544'; el.style.textShadow = '0 0 2px #000'; }
     clearTimeout(H.hmTimer);
-    H.hmTimer = setTimeout(() => el.classList.add('hidden'), 130);
+    H.hmTimer = setTimeout(() => el.classList.add('hidden'), kill ? 300 : (headshot ? 170 : 130));
   }
   function showReload() { H.el.reloadHint.classList.remove('hidden'); }
   function hideReload() { H.el.reloadHint.classList.add('hidden'); }

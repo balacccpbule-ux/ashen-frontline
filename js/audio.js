@@ -409,6 +409,100 @@
 
   function hit() { noiseBurst(1500, 0.05, 0.4, 'highpass'); thump(400, 0.05, 0.25); }
   function kill() { killChime(); noiseBurst(1200, 0.12, 0.5); thump(600, 0.1, 0.35); }
+
+  // ============================================================
+  //  打击感音效分层：血肉命中 / 爆头 / 装甲 / 受击 / 护盾 / 耳鸣
+  // ============================================================
+  // 血肉命中（低频"噗"：沉闷 + 短噪声）
+  function hitFlesh(vol) {
+    SOUND_LOG.push({ n: 'hitFlesh', t: Game.time });
+    if (!ready()) return;
+    const v = vol === undefined ? 1 : vol;
+    noiseBurst(900, 0.06, 0.42 * v, 'lowpass');
+    thump(180, 0.07, 0.4 * v);
+  }
+  // 爆头命中（清脆"叮"：高频短促 + 金属共振）
+  function hitHead() {
+    SOUND_LOG.push({ n: 'hitHead', t: Game.time });
+    if (!ready()) return;
+    tone(2350, 0.05, 0.34, 0);
+    tone(3200, 0.04, 0.22, 0.03);
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 20;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.16, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.08);
+  }
+  // 装甲/载具命中（金属"当"：带通噪声 + 低砰 + 共振尾音）
+  function hitArmor() {
+    SOUND_LOG.push({ n: 'hitArmor', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = 6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.34, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.06);
+    thump(320, 0.06, 0.3);
+    const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
+    const rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 5200; rf.Q.value = 14;
+    const rg = ctx.createGain();
+    rg.gain.setValueAtTime(0.1, t);
+    rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.start(t); rsrc.stop(t + 0.09);
+  }
+  // 受击（闷响 + 低频"闷哼"，伤害越大越重）
+  function hurt(dmg) {
+    SOUND_LOG.push({ n: 'hurt', t: Game.time });
+    if (!ready()) return;
+    const v = Math.min(1, 0.4 + (dmg || 0) / 100);
+    thump(120, 0.12, 0.5 * v);
+    noiseBurst(500, 0.09, 0.32 * v, 'lowpass');
+    const ctx = A.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(160, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + 0.1);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.22 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.connect(g); g.connect(A.master);
+    o.start(t); o.stop(t + 0.14);
+  }
+  // 护盾受击（电流"滋滋"）
+  function shieldHit() {
+    SOUND_LOG.push({ n: 'shieldHit', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1800;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.24, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.09);
+    tone(1200, 0.04, 0.1, 0);
+  }
+  // 耳鸣（重伤高频"嗡"，短暂）
+  function tinnitus(dmg) {
+    SOUND_LOG.push({ n: 'tinnitus', t: Game.time });
+    if (!ready()) return;
+    const v = Math.min(0.22, 0.08 + (dmg || 0) / 300);
+    const ctx = A.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(5600, t);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g); g.connect(A.master);
+    o.start(t); o.stop(t + 0.55);
+  }
   // ============================================================
   //  v5.33 专用音效（由 tools/音效工坊_soundlab.html 设计）
   // ============================================================
@@ -709,7 +803,7 @@
   Game.sound = {
     shot, reloadStart, reloadMagIn, reloadBolt, reload: reloadStart,
     dryFire, hitBeep, killChime, whizz, shellDrop,
-    explosion, hit, kill, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
+    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
     engineStart, engineUpdate, engineStop,
     heal,
     mortarLaunch, mortarWhistle,

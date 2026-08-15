@@ -41,6 +41,11 @@ html, body {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-size: 22px; color: #ff5544; font-weight: bold; text-shadow: 0 0 4px #000;
 }
+/* v5.43 命中准星弹跳（打击感） */
+@keyframes hm-pop { 0% { transform: translate(-50%, -50%) scale(0.65); } 45% { transform: translate(-50%, -50%) scale(1.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
+#hitmarker.hm-pop { animation: hm-pop 0.12s ease-out; }
+#hitmarker.hm-kill { font-size: 30px; }
+#hitmarker.hm-head { font-size: 26px; }
 
 #damage-flash {
   position: absolute; inset: 0; pointer-events: none;

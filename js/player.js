@@ -15,6 +15,7 @@
     view: null, muzzleLocal: null,
     bobT: 0, viewKick: 0, lastShot: -999,
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
+    flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
     fov: 75,
     mortarDeployed: false,   // v5.7 迫击炮部署状态（部署后右下地图选点）
@@ -313,6 +314,28 @@
     P.viewKick = Math.min(1, (recoilDef.pitch || 0.03) * 26);
   }
   P.onShotFired = onShotFired;
+
+  // v5.43 受击镜头 Flinch：向命中方向猛甩一下再回中（被打击感核心）
+  function flinch(dmg, point) {
+    const s = Game.player;
+    if (!s || !s.alive || s.ridingVehicle) return;
+    const strength = M.clamp((dmg || 0) / 90, 0.25, 1);
+    let hitYaw = s.yaw;
+    if (point) {
+      const dx = point.x - s.pos.x, dz = point.z - s.pos.z;
+      if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) hitYaw = Math.atan2(-dx, -dz);
+    }
+    let rel = hitYaw - s.yaw;
+    while (rel > Math.PI) rel -= Math.PI * 2;
+    while (rel < -Math.PI) rel += Math.PI * 2;
+    // 向命中侧甩 + 轻微上抬
+    P.flinchYaw += -Math.sin(rel) * (0.05 + 0.07 * strength);
+    P.flinchPitch += 0.05 + 0.06 * strength;
+    P.flinchT = 0.18;
+    P.flinchPitch = M.clamp(P.flinchPitch, -0.14, 0.14);
+    P.flinchYaw = M.clamp(P.flinchYaw, -0.14, 0.14);
+  }
+  P.flinch = flinch;
 
   function box(w, h, d, m) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); }
   function cyl(r, h, m, seg) { return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), m); }
@@ -652,14 +675,28 @@
     P.fov += (targetFov - P.fov) * (1 - Math.exp(-12 * dt));
     Game.camera.fov = P.fov;
     Game.camera.updateProjectionMatrix();
+    // v5.43 受击 Flinch 衰减（快速回中）
+    if (P.flinchT > 0) {
+      P.flinchT -= dt;
+      const fk = 1 - Math.exp(-16 * dt);
+      P.flinchPitch *= (1 - fk);
+      P.flinchYaw *= (1 - fk);
+      if (P.flinchT <= 0) { P.flinchT = 0; P.flinchPitch = 0; P.flinchYaw = 0; }
+    }
+    // v5.43 濒死呼吸晃动（低血量镜头随"呼吸"轻微起伏）
+    let breath = 0;
+    if (s.health <= 45 && s.alive) {
+      const bk = 1 - s.health / 45;
+      breath = Math.sin(Game.time * (2.2 + bk * 2.5)) * 0.004 * (0.4 + bk);
+    }
     if (!P.mortarCam && !P.camFly) {   // v5.13/v5.32 跟随/飞行视角期间由专用逻辑接管相机
       const sh = Game.shake;
       const sx = (Math.random() * 2 - 1) * sh * 0.05, sy = (Math.random() * 2 - 1) * sh * 0.05;
       const rsh = sh * 0.08; // 角度摇晃
       Game.camera.position.set(eye.x + sx, eye.y + sy, eye.z);
       Game.camera.rotation.set(
-        M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0), -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
-        s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + (Math.random() * 2 - 1) * rsh,
+        M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
+        s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
         (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 

@@ -17,6 +17,14 @@
   Game.supplyBoxes = [];     // v5.31 地面补给箱（医疗/弹药）
   Game.matchTimeLimit = CONFIG.MATCH_TIME_LIMIT;
 
+  // ---- 命中顿帧（hit-stop）：命中瞬间冻结一小段，提升打击感 ----
+  Game.hitStopScale = 1;
+  Game.hitStopT = 0;
+  Game.hitStop = function (dur, scale) {
+    Game.hitStopT = Math.max(Game.hitStopT || 0, dur);
+    Game.hitStopScale = Math.min(Game.hitStopScale || 1, scale);
+  };
+
   // ================= 场景初始化 =================
   function initScene() {
     const md = MAP_DEFS[Game.mapId];
@@ -607,7 +615,13 @@
   // ================= 主循环 =================
   function animate() {
     requestAnimationFrame(animate);
-    const dt = Math.min(0.05, Game.clock.getDelta()) * (Game.timeScale || 1);
+    const rawDt = Math.min(0.05, Game.clock.getDelta());
+    // 命中顿帧：真实时间计时，到期恢复时间流速（不影响 debug 慢动作的 timeScale）
+    if (Game.hitStopT > 0) {
+      Game.hitStopT -= rawDt;
+      if (Game.hitStopT <= 0) { Game.hitStopT = 0; Game.hitStopScale = 1; }
+    }
+    const dt = rawDt * (Game.timeScale || 1) * (Game.hitStopScale || 1);
     updateFog(dt);   // v5.40 迷雾渐变
     const phase = Game.phase;
     if (phase === 'playing' || phase === 'dead') {

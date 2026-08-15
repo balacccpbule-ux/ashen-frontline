@@ -49,6 +49,11 @@ html, body {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-size: 22px; color: #ff5544; font-weight: bold; text-shadow: 0 0 4px #000;
 }
+/* v5.43 命中准星弹跳（打击感） */
+@keyframes hm-pop { 0% { transform: translate(-50%, -50%) scale(0.65); } 45% { transform: translate(-50%, -50%) scale(1.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
+#hitmarker.hm-pop { animation: hm-pop 0.12s ease-out; }
+#hitmarker.hm-kill { font-size: 30px; }
+#hitmarker.hm-head { font-size: 26px; }
 
 #damage-flash {
   position: absolute; inset: 0; pointer-events: none;
@@ -2125,6 +2130,100 @@ const VEHICLE_SPAWNS = [
 
   function hit() { noiseBurst(1500, 0.05, 0.4, 'highpass'); thump(400, 0.05, 0.25); }
   function kill() { killChime(); noiseBurst(1200, 0.12, 0.5); thump(600, 0.1, 0.35); }
+
+  // ============================================================
+  //  打击感音效分层：血肉命中 / 爆头 / 装甲 / 受击 / 护盾 / 耳鸣
+  // ============================================================
+  // 血肉命中（低频"噗"：沉闷 + 短噪声）
+  function hitFlesh(vol) {
+    SOUND_LOG.push({ n: 'hitFlesh', t: Game.time });
+    if (!ready()) return;
+    const v = vol === undefined ? 1 : vol;
+    noiseBurst(900, 0.06, 0.42 * v, 'lowpass');
+    thump(180, 0.07, 0.4 * v);
+  }
+  // 爆头命中（清脆"叮"：高频短促 + 金属共振）
+  function hitHead() {
+    SOUND_LOG.push({ n: 'hitHead', t: Game.time });
+    if (!ready()) return;
+    tone(2350, 0.05, 0.34, 0);
+    tone(3200, 0.04, 0.22, 0.03);
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 20;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.16, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.08);
+  }
+  // 装甲/载具命中（金属"当"：带通噪声 + 低砰 + 共振尾音）
+  function hitArmor() {
+    SOUND_LOG.push({ n: 'hitArmor', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2600; f.Q.value = 6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.34, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.06);
+    thump(320, 0.06, 0.3);
+    const rsrc = ctx.createBufferSource(); rsrc.buffer = A.noiseBuf; rsrc.loop = true;
+    const rf = ctx.createBiquadFilter(); rf.type = 'bandpass'; rf.frequency.value = 5200; rf.Q.value = 14;
+    const rg = ctx.createGain();
+    rg.gain.setValueAtTime(0.1, t);
+    rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    rsrc.connect(rf); rf.connect(rg); rg.connect(A.master);
+    rsrc.start(t); rsrc.stop(t + 0.09);
+  }
+  // 受击（闷响 + 低频"闷哼"，伤害越大越重）
+  function hurt(dmg) {
+    SOUND_LOG.push({ n: 'hurt', t: Game.time });
+    if (!ready()) return;
+    const v = Math.min(1, 0.4 + (dmg || 0) / 100);
+    thump(120, 0.12, 0.5 * v);
+    noiseBurst(500, 0.09, 0.32 * v, 'lowpass');
+    const ctx = A.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(160, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + 0.1);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.22 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.connect(g); g.connect(A.master);
+    o.start(t); o.stop(t + 0.14);
+  }
+  // 护盾受击（电流"滋滋"）
+  function shieldHit() {
+    SOUND_LOG.push({ n: 'shieldHit', t: Game.time });
+    if (!ready()) return;
+    const ctx = A.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1800;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.24, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    src.connect(f); f.connect(g); g.connect(A.master);
+    src.start(t); src.stop(t + 0.09);
+    tone(1200, 0.04, 0.1, 0);
+  }
+  // 耳鸣（重伤高频"嗡"，短暂）
+  function tinnitus(dmg) {
+    SOUND_LOG.push({ n: 'tinnitus', t: Game.time });
+    if (!ready()) return;
+    const v = Math.min(0.22, 0.08 + (dmg || 0) / 300);
+    const ctx = A.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(5600, t);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    o.connect(g); g.connect(A.master);
+    o.start(t); o.stop(t + 0.55);
+  }
   // ============================================================
   //  v5.33 专用音效（由 tools/音效工坊_soundlab.html 设计）
   // ============================================================
@@ -2425,7 +2524,7 @@ const VEHICLE_SPAWNS = [
   Game.sound = {
     shot, reloadStart, reloadMagIn, reloadBolt, reload: reloadStart,
     dryFire, hitBeep, killChime, whizz, shellDrop,
-    explosion, hit, kill, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
+    explosion, hit, kill, hitFlesh, hitHead, hitArmor, hurt, shieldHit, tinnitus, killBanner, multi, death, footstep, scoreTick, deploy, deathSting, repairTick, heartbeat,
     engineStart, engineUpdate, engineStop,
     heal,
     mortarLaunch, mortarWhistle,
@@ -3671,6 +3770,39 @@ const VEHICLE_SPAWNS = [
     }
   }
 
+  // v5.43 方向性粒子喷射（命中血肉：沿弹道方向喷溅血雾）
+  function emitDir(x, y, z, dx, dy, dz, color, count, speed, life, size, gravity, spread) {
+    const rng = Game.rng;
+    const cr = ((color >> 16) & 255) / 255, cg = ((color >> 8) & 255) / 255, cb = (color & 255) / 255;
+    const dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    dx /= dl; dy /= dl; dz /= dl;
+    // 正交基（以 dir 为主轴构造锥形）
+    const bx = 0, by = 0, bz = Math.abs(dz) < 0.9 ? 1 : 0, bx2 = Math.abs(dz) < 0.9 ? 0 : 1;
+    let ux = dy * bz - dz * by, uy = dz * bx - dx * bz, uz = dx * by - dy * bx;
+    if (Math.abs(dz) >= 0.9) { ux = dy * bz - dz * by; uy = dz * bx2 - dx * bz; uz = dx * by - dy * bx2; }
+    let ul = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1; ux /= ul; uy /= ul; uz /= ul;
+    const vx = dy * uz - dz * uy, vy = dz * ux - dx * uz, vz = dx * uy - dy * ux;
+    const sp = spread === undefined ? 0.8 : spread;
+    for (let n = 0; n < count; n++) {
+      if (!E.free.length) return;
+      const idx = E.free.pop();
+      const p = E.p[idx];
+      const a = rng() * Math.PI * 2;
+      const c = (rng() - 0.5) * sp;
+      const r = Math.sin(c), cs = Math.cos(c);
+      const vvx = dx * cs + (ux * Math.cos(a) + vx * Math.sin(a)) * r;
+      const vvy = dy * cs + (uy * Math.cos(a) + vy * Math.sin(a)) * r;
+      const vvz = dz * cs + (uz * Math.cos(a) + vz * Math.sin(a)) * r;
+      const spd = speed * (0.4 + rng() * 0.6);
+      p.x = x; p.y = y; p.z = z;
+      p.vx = vvx * spd; p.vy = vvy * spd; p.vz = vvz * spd;
+      p.life = p.maxLife = life * (0.5 + rng() * 0.7);
+      p.r = cr; p.g = cg; p.b = cb;
+      p.size = size;
+      p.grav = gravity;
+    }
+  }
+
   // 曳光（瞬时光束，池化：单位圆柱缩放复用，零几何分配）
   function tracer(a, b, color, life) {
     if (!E.scene || !E.tracerPool) return;
@@ -3833,6 +3965,8 @@ const VEHICLE_SPAWNS = [
     const n = head ? 18 : 11;
     const m = head ? 9 : 5;
     emit(point.x, point.y, point.z, 0xc02020, n, 4.5, 0.45, 0.16, 10, 1);
+    // v5.43 方向性血雾：沿弹道方向喷溅（出口伤）
+    if (dir) emitDir(point.x, point.y, point.z, dir.x, dir.y, dir.z, 0xa01010, head ? 14 : 8, 6, 0.35, 0.12, 6, 0.9);
     emit(point.x - dir.x * 0.15, point.y - dir.y * 0.15, point.z - dir.z * 0.15,
       0xa01010, m, 5.5, 0.5, 0.15, 12, 0.8);
     const r0 = head ? 0.42 : 0.3;
@@ -4389,14 +4523,25 @@ const VEHICLE_SPAWNS = [
         const mult = CONFIG.BODY_PARTS[hit.part] || 1;
         applyDamage(hit.soldier, w.damage * falloff * mult, s, hit.point, headshot);
         if (s.isPlayer) {
-          if (Game.sound.hitBeep) Game.sound.hitBeep(headshot);
-          if (Game.hud) Game.hud.hitmarker(false, headshot);
+          const killed = !hit.soldier.alive;
+          // 分层命中音效：爆头清脆"叮" / 血肉"噗"
+          if (headshot) { if (Game.sound.hitHead) Game.sound.hitHead(); }
+          else if (Game.sound.hitFlesh) Game.sound.hitFlesh(shotVol);
+          // 非击杀命中才在此标记（击杀由 kill() 的 hitmarker 处理，避免覆盖）
+          if (!killed && Game.hud) Game.hud.hitmarker(false, headshot);
+          // 命中顿帧：击杀最重、单发武器爆头次之（自动连射不打顿帧，防卡顿）
+          if (killed) Game.hitStop(0.09, 0.05);
+          else if (headshot && !w.auto) Game.hitStop(0.05, 0.22);
         }
         if (Game.effects.impactFlesh) Game.effects.impactFlesh(hit.point, pdir, headshot, s);
         else Game.effects.impact(hit.point, headshot ? 0xffd700 : 0xe05550);
       } else if (hit.type === 'vehicle') {
         // v5 克制环：枪械伤害按载具装甲类型折算（v5.34 分级减伤，栓狙可穿坦克）
         damageVehicle(hit.vehicle, w.damage, s, 'smallarms', w);
+        if (s.isPlayer) {
+          if (Game.sound.hitArmor) Game.sound.hitArmor();
+          if (Game.hud) Game.hud.hitmarker(false, false, true);   // 装甲命中反馈（琥珀色）
+        }
         if (Game.effects.impactWall) Game.effects.impactWall(hit.point, null, s, hit.t);
         else Game.effects.impact(hit.point, 0xffd27a);
       } else if (hit.type === 'solid') {
@@ -4422,7 +4567,12 @@ const VEHICLE_SPAWNS = [
     s.recoilPitch.kick(pat[s.patternIdx * 2]);
     s.recoilYaw.kick(pat[s.patternIdx * 2 + 1]);
     if (s.isPlayer) {
-      Game.effects.setShake(w.recoilDef.pitch * 2.2 + 0.06); // 玩家轻微震屏，不累加
+      // v5.43 重武器更明显震屏：狙击/霰弹/DMR 更有"重量感"
+      let shakeAmt = w.recoilDef.pitch * 2.2 + 0.06;
+      if (w.sound === 'shotgun') shakeAmt += 0.22;
+      else if (w.sound === 'sniper') shakeAmt += 0.18;
+      else if (w.sound === 'dmr') shakeAmt += 0.08;
+      Game.effects.setShake(shakeAmt);
       Game.Player.onShotFired(w.recoilDef);
     }
     return true;
@@ -4452,15 +4602,19 @@ const VEHICLE_SPAWNS = [
   function applyDamage(s, dmg, attacker, point, headshot, sourceName) {
     if (!s.alive || s.spawnProtect > 0) return;
     if (s.isPlayer && Game.godMode) return; // 调试：无敌
+    const rawDmg = dmg;
+    let shieldDrained = false;
     // v5.10 突击兵护盾：每 1 点伤害消耗 2 点护盾（120 护盾 ≈ 60 血），无法补充
     if (s.shield > 0) {
       const drain = Math.min(s.shield, dmg * CONFIG.SHIELD_DRAIN_RATE);
       s.shield -= drain;
       dmg -= drain / CONFIG.SHIELD_DRAIN_RATE;
+      shieldDrained = true;
     }
     s.health -= dmg;
     s.lastHitBy = attacker;
     s.lastHurtTime = Game.time;
+    s.lastHitDmg = rawDmg;   // 受击方向指示/红晕按伤害缩放
     // v5.23 准星跳伤害数字（玩家造成的伤害；护盾全吸则不显示）
     if (attacker && attacker.isPlayer && Game.hud && Game.hud.damagePop && dmg > 0) {
       Game.hud.damagePop(dmg, headshot ? '#ffd75e' : '#ffe9a8');
@@ -4474,8 +4628,18 @@ const VEHICLE_SPAWNS = [
       else s.recentDamage[attacker.id] = { amount: dmg, t: Game.time };
     }
     if (point) Game.effects.impact(point, 0xd03030);
-    if (s.isPlayer && Game.hud) Game.hud.flashDamage();
-    if (s.isPlayer) Game.effects.addShake(0.45); // 受击震屏
+    // v5.43 被打击感：红晕随伤害缩放 + 受击音效 + 护盾电流 + 镜头 Flinch + 硬直减速
+    if (s.isPlayer) {
+      if (Game.hud) Game.hud.flashDamage(rawDmg);
+      if (Game.sound) {
+        if (shieldDrained && Game.sound.shieldHit) Game.sound.shieldHit();
+        if (Game.sound.hurt) Game.sound.hurt(rawDmg);
+        if (rawDmg >= 60 && Game.sound.tinnitus) Game.sound.tinnitus(rawDmg);
+      }
+      if (Game.Player && Game.Player.flinch) Game.Player.flinch(rawDmg, point);
+      Game.effects.addShake(Math.min(0.9, 0.3 + rawDmg / 90));   // 受击震屏随伤害缩放
+      if (rawDmg >= 60 && Game.hitStop) Game.hitStop(0.05, 0.4); // 大伤害短暂硬直
+    }
     if (s.isPlayer && attacker) {
       const dx = attacker.pos.x - s.pos.x, dz = attacker.pos.z - s.pos.z;
       s.lastHitYaw = Math.atan2(-dx, -dz); // 面对攻击者的朝向
@@ -4543,7 +4707,8 @@ const VEHICLE_SPAWNS = [
         Game.stats.kills++;
         Game.stats.bestStreak = Math.max(Game.stats.bestStreak, attacker.streak);
         Game.sound.kill();
-        if (Game.hud) Game.hud.hitmarker(true);
+        if (Game.hud) Game.hud.hitmarker(true, headshot);
+        if (Game.hitStop) Game.hitStop(0.09, 0.05);   // v5.43 击杀顿帧
         if (Game.hud) Game.hud.popup('+' + gained, { x: s.pos.x, y: s.pos.y + 2, z: s.pos.z }, '#ffd27a');
         if (Game.hud) {
           // v5.18 功绩播报（只播玩家本人）
@@ -5191,6 +5356,7 @@ const VEHICLE_SPAWNS = [
     view: null, muzzleLocal: null,
     bobT: 0, viewKick: 0, lastShot: -999,
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
+    flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
     fov: 75,
     mortarDeployed: false,   // v5.7 迫击炮部署状态（部署后右下地图选点）
@@ -5489,6 +5655,28 @@ const VEHICLE_SPAWNS = [
     P.viewKick = Math.min(1, (recoilDef.pitch || 0.03) * 26);
   }
   P.onShotFired = onShotFired;
+
+  // v5.43 受击镜头 Flinch：向命中方向猛甩一下再回中（被打击感核心）
+  function flinch(dmg, point) {
+    const s = Game.player;
+    if (!s || !s.alive || s.ridingVehicle) return;
+    const strength = M.clamp((dmg || 0) / 90, 0.25, 1);
+    let hitYaw = s.yaw;
+    if (point) {
+      const dx = point.x - s.pos.x, dz = point.z - s.pos.z;
+      if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) hitYaw = Math.atan2(-dx, -dz);
+    }
+    let rel = hitYaw - s.yaw;
+    while (rel > Math.PI) rel -= Math.PI * 2;
+    while (rel < -Math.PI) rel += Math.PI * 2;
+    // 向命中侧甩 + 轻微上抬
+    P.flinchYaw += -Math.sin(rel) * (0.05 + 0.07 * strength);
+    P.flinchPitch += 0.05 + 0.06 * strength;
+    P.flinchT = 0.18;
+    P.flinchPitch = M.clamp(P.flinchPitch, -0.14, 0.14);
+    P.flinchYaw = M.clamp(P.flinchYaw, -0.14, 0.14);
+  }
+  P.flinch = flinch;
 
   function box(w, h, d, m) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); }
   function cyl(r, h, m, seg) { return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), m); }
@@ -5828,14 +6016,28 @@ const VEHICLE_SPAWNS = [
     P.fov += (targetFov - P.fov) * (1 - Math.exp(-12 * dt));
     Game.camera.fov = P.fov;
     Game.camera.updateProjectionMatrix();
+    // v5.43 受击 Flinch 衰减（快速回中）
+    if (P.flinchT > 0) {
+      P.flinchT -= dt;
+      const fk = 1 - Math.exp(-16 * dt);
+      P.flinchPitch *= (1 - fk);
+      P.flinchYaw *= (1 - fk);
+      if (P.flinchT <= 0) { P.flinchT = 0; P.flinchPitch = 0; P.flinchYaw = 0; }
+    }
+    // v5.43 濒死呼吸晃动（低血量镜头随"呼吸"轻微起伏）
+    let breath = 0;
+    if (s.health <= 45 && s.alive) {
+      const bk = 1 - s.health / 45;
+      breath = Math.sin(Game.time * (2.2 + bk * 2.5)) * 0.004 * (0.4 + bk);
+    }
     if (!P.mortarCam && !P.camFly) {   // v5.13/v5.32 跟随/飞行视角期间由专用逻辑接管相机
       const sh = Game.shake;
       const sx = (Math.random() * 2 - 1) * sh * 0.05, sy = (Math.random() * 2 - 1) * sh * 0.05;
       const rsh = sh * 0.08; // 角度摇晃
       Game.camera.position.set(eye.x + sx, eye.y + sy, eye.z);
       Game.camera.rotation.set(
-        M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0), -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
-        s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + (Math.random() * 2 - 1) * rsh,
+        M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
+        s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
         (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 
@@ -8014,7 +8216,9 @@ const VEHICLE_SPAWNS = [
       const rel = normAngle(p.lastHitYaw - p.yaw);
       const ang = -rel, r = 66;
       const rx = Math.sin(ang) * r, ry = -Math.cos(ang) * r;
-      hi.style.transform = 'translate(-50%,-50%) translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px) rotate(' + (ang * 180 / Math.PI).toFixed(1) + 'deg)';
+      // v5.43 受击方向指示按伤害缩放：大伤害更亮更大
+      const dmgK = M.clamp((p.lastHitDmg || 10) / 60, 0.55, 1.4);
+      hi.style.transform = 'translate(-50%,-50%) translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px) rotate(' + (ang * 180 / Math.PI).toFixed(1) + 'deg) scale(' + dmgK.toFixed(2) + ')';
       hi.style.opacity = Math.max(0, 1 - (Game.time - p.lastHitTime) / 0.8);
     } else {
       hi.classList.add('hidden');
@@ -8025,6 +8229,8 @@ const VEHICLE_SPAWNS = [
       const k = 1 - p.health / 45;
       el.lowhp.classList.remove('hidden');
       el.lowhp.style.opacity = (0.22 + 0.5 * k + 0.12 * Math.sin(Game.time * (5 + k * 4))).toFixed(2);
+      // v5.43 濒死去饱和（血量越低战场越灰）
+      if (Game.renderer && Game.renderer.domElement) Game.renderer.domElement.style.filter = 'saturate(' + (1 - 0.5 * k).toFixed(3) + ')';
       H.hbT = (H.hbT || 0) - dt;
       if (H.hbT <= 0) {
         H.hbT = 1.25 - k * 0.75;
@@ -8032,6 +8238,7 @@ const VEHICLE_SPAWNS = [
       }
     } else {
       el.lowhp.classList.add('hidden');
+      if (Game.renderer && Game.renderer.domElement) Game.renderer.domElement.style.filter = '';
     }
 
     // v5.41 烟雾弹内视野极差：白色浓雾遮罩（站在烟区内几乎看不清）
@@ -8085,20 +8292,25 @@ const VEHICLE_SPAWNS = [
   }
 
   // ---- 即时反馈 ----
-  function flashDamage() {
+  function flashDamage(dmg) {
     const el = H.el.damageFlash;
     el.classList.remove('hidden');
-    el.style.opacity = '1';
+    // v5.43 受击红晕随伤害缩放：擦伤轻微泛红、大伤害满屏
+    el.style.opacity = String(Math.min(0.9, 0.35 + (dmg || 0) / 70));
     clearTimeout(H.dmgTimer);
-    H.dmgTimer = setTimeout(() => { el.style.opacity = '0'; }, 120);
+    H.dmgTimer = setTimeout(() => { el.style.opacity = '0'; }, Math.min(300, 120 + (dmg || 0)));
   }
-  function hitmarker(kill, headshot) {
+  function hitmarker(kill, headshot, armor) {
     const el = H.el.hitmarker;
-    el.classList.remove('hidden');
-    el.style.color = kill ? '#ff2211' : (headshot ? '#ffcc00' : '#ff5544');
-    el.style.textShadow = headshot ? '0 0 5px #ffcc00' : '0 0 2px #000';
+    el.classList.remove('hidden', 'hm-pop', 'hm-kill', 'hm-head', 'hm-armor');
+    void el.offsetWidth;   // 强制 reflow 重放弹跳动画
+    el.classList.add('hm-pop');
+    if (kill) { el.classList.add('hm-kill'); el.style.color = '#ff2211'; el.style.textShadow = '0 0 7px #ff2211'; }
+    else if (headshot) { el.classList.add('hm-head'); el.style.color = '#ffcc00'; el.style.textShadow = '0 0 7px #ffcc00'; }
+    else if (armor) { el.classList.add('hm-armor'); el.style.color = '#ffb340'; el.style.textShadow = '0 0 3px #000'; }
+    else { el.style.color = '#ff5544'; el.style.textShadow = '0 0 2px #000'; }
     clearTimeout(H.hmTimer);
-    H.hmTimer = setTimeout(() => el.classList.add('hidden'), 130);
+    H.hmTimer = setTimeout(() => el.classList.add('hidden'), kill ? 300 : (headshot ? 170 : 130));
   }
   function showReload() { H.el.reloadHint.classList.remove('hidden'); }
   function hideReload() { H.el.reloadHint.classList.add('hidden'); }
@@ -8484,6 +8696,14 @@ const VEHICLE_SPAWNS = [
   Game.activeSector = 1;
   Game.supplyBoxes = [];     // v5.31 地面补给箱（医疗/弹药）
   Game.matchTimeLimit = CONFIG.MATCH_TIME_LIMIT;
+
+  // ---- 命中顿帧（hit-stop）：命中瞬间冻结一小段，提升打击感 ----
+  Game.hitStopScale = 1;
+  Game.hitStopT = 0;
+  Game.hitStop = function (dur, scale) {
+    Game.hitStopT = Math.max(Game.hitStopT || 0, dur);
+    Game.hitStopScale = Math.min(Game.hitStopScale || 1, scale);
+  };
 
   // ================= 场景初始化 =================
   function initScene() {
@@ -9075,7 +9295,13 @@ const VEHICLE_SPAWNS = [
   // ================= 主循环 =================
   function animate() {
     requestAnimationFrame(animate);
-    const dt = Math.min(0.05, Game.clock.getDelta()) * (Game.timeScale || 1);
+    const rawDt = Math.min(0.05, Game.clock.getDelta());
+    // 命中顿帧：真实时间计时，到期恢复时间流速（不影响 debug 慢动作的 timeScale）
+    if (Game.hitStopT > 0) {
+      Game.hitStopT -= rawDt;
+      if (Game.hitStopT <= 0) { Game.hitStopT = 0; Game.hitStopScale = 1; }
+    }
+    const dt = rawDt * (Game.timeScale || 1) * (Game.hitStopScale || 1);
     updateFog(dt);   // v5.40 迷雾渐变
     const phase = Game.phase;
     if (phase === 'playing' || phase === 'dead') {

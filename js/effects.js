@@ -193,6 +193,39 @@
     }
   }
 
+  // v5.43 方向性粒子喷射（命中血肉：沿弹道方向喷溅血雾）
+  function emitDir(x, y, z, dx, dy, dz, color, count, speed, life, size, gravity, spread) {
+    const rng = Game.rng;
+    const cr = ((color >> 16) & 255) / 255, cg = ((color >> 8) & 255) / 255, cb = (color & 255) / 255;
+    const dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    dx /= dl; dy /= dl; dz /= dl;
+    // 正交基（以 dir 为主轴构造锥形）
+    const bx = 0, by = 0, bz = Math.abs(dz) < 0.9 ? 1 : 0, bx2 = Math.abs(dz) < 0.9 ? 0 : 1;
+    let ux = dy * bz - dz * by, uy = dz * bx - dx * bz, uz = dx * by - dy * bx;
+    if (Math.abs(dz) >= 0.9) { ux = dy * bz - dz * by; uy = dz * bx2 - dx * bz; uz = dx * by - dy * bx2; }
+    let ul = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1; ux /= ul; uy /= ul; uz /= ul;
+    const vx = dy * uz - dz * uy, vy = dz * ux - dx * uz, vz = dx * uy - dy * ux;
+    const sp = spread === undefined ? 0.8 : spread;
+    for (let n = 0; n < count; n++) {
+      if (!E.free.length) return;
+      const idx = E.free.pop();
+      const p = E.p[idx];
+      const a = rng() * Math.PI * 2;
+      const c = (rng() - 0.5) * sp;
+      const r = Math.sin(c), cs = Math.cos(c);
+      const vvx = dx * cs + (ux * Math.cos(a) + vx * Math.sin(a)) * r;
+      const vvy = dy * cs + (uy * Math.cos(a) + vy * Math.sin(a)) * r;
+      const vvz = dz * cs + (uz * Math.cos(a) + vz * Math.sin(a)) * r;
+      const spd = speed * (0.4 + rng() * 0.6);
+      p.x = x; p.y = y; p.z = z;
+      p.vx = vvx * spd; p.vy = vvy * spd; p.vz = vvz * spd;
+      p.life = p.maxLife = life * (0.5 + rng() * 0.7);
+      p.r = cr; p.g = cg; p.b = cb;
+      p.size = size;
+      p.grav = gravity;
+    }
+  }
+
   // 曳光（瞬时光束，池化：单位圆柱缩放复用，零几何分配）
   function tracer(a, b, color, life) {
     if (!E.scene || !E.tracerPool) return;
@@ -355,6 +388,8 @@
     const n = head ? 18 : 11;
     const m = head ? 9 : 5;
     emit(point.x, point.y, point.z, 0xc02020, n, 4.5, 0.45, 0.16, 10, 1);
+    // v5.43 方向性血雾：沿弹道方向喷溅（出口伤）
+    if (dir) emitDir(point.x, point.y, point.z, dir.x, dir.y, dir.z, 0xa01010, head ? 14 : 8, 6, 0.35, 0.12, 6, 0.9);
     emit(point.x - dir.x * 0.15, point.y - dir.y * 0.15, point.z - dir.z * 0.15,
       0xa01010, m, 5.5, 0.5, 0.15, 12, 0.8);
     const r0 = head ? 0.42 : 0.3;

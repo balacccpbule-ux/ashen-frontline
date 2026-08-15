@@ -77,8 +77,8 @@ const CONFIG = {
   SPRINT_SPEED: 9.2,
   CROUCH_SPEED: 3.0,
   ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
-  LEAN_ANGLE_DEG: 20,         // v5.49 歪头侧倾角度（度）
-  KNEE_HEIGHT: 0.5,           // v5.49 膝盖高度（歪头以膝盖为枢轴转动）
+  LEAN_ANGLE_DEG: 15,         // v5.49 歪头侧倾角度（度）
+  LEAN_PIVOT_HEIGHT: 0,        // v5.49 歪头枢轴高度（0 = 脚底）
   JUMP_VEL: 8.8,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,

@@ -111,7 +111,7 @@
     if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
       const lean = Game.Player.lean;   // -1 左 / +1 右
       const ang = lean * CONFIG.LEAN_ANGLE_DEG * Math.PI / 180;
-      const arm = ey - CONFIG.KNEE_HEIGHT;   // 头到膝盖距离
+      const arm = ey - CONFIG.LEAN_PIVOT_HEIGHT;   // 头到脚底距离（脚底为枢轴）
       const lat = Math.sin(ang) * arm;
       const drop = (1 - Math.cos(ang)) * arm;
       const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);

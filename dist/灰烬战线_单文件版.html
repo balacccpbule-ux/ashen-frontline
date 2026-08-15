@@ -677,8 +677,8 @@ const CONFIG = {
   SPRINT_SPEED: 9.2,
   CROUCH_SPEED: 3.0,
   ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
-  LEAN_ANGLE_DEG: 20,         // v5.49 歪头侧倾角度（度）
-  KNEE_HEIGHT: 0.5,           // v5.49 膝盖高度（歪头以膝盖为枢轴转动）
+  LEAN_ANGLE_DEG: 15,         // v5.49 歪头侧倾角度（度）
+  LEAN_PIVOT_HEIGHT: 0,        // v5.49 歪头枢轴高度（0 = 脚底）
   JUMP_VEL: 8.8,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,
@@ -4667,7 +4667,7 @@ const VEHICLE_SPAWNS = [
     if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
       const lean = Game.Player.lean;   // -1 左 / +1 右
       const ang = lean * CONFIG.LEAN_ANGLE_DEG * Math.PI / 180;
-      const arm = ey - CONFIG.KNEE_HEIGHT;   // 头到膝盖距离
+      const arm = ey - CONFIG.LEAN_PIVOT_HEIGHT;   // 头到脚底距离（脚底为枢轴）
       const lat = Math.sin(ang) * arm;
       const drop = (1 - Math.cos(ang)) * arm;
       const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);

@@ -756,7 +756,7 @@
       Game.camera.rotation.set(
         M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
         s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
-        P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
+        -P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);

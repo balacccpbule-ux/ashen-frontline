@@ -105,14 +105,20 @@
   }
   function getEyePos(s) {
     const ey = s.crouching ? CONFIG.CROUCH_EYE : CONFIG.EYE_HEIGHT;
-    // v5.49 歪头：玩家视角/子弹源沿右向量横向偏移（探出墙角）
-    let ex = s.pos.x, ez = s.pos.z;
+    // v5.49 歪头：以胯为枢轴转动——头部（眼睛）沿弧线横向偏移 + 略下沉
+    let ex = s.pos.x, ez = s.pos.z, eyw = s.pos.y + ey;
     if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
+      const lean = Game.Player.lean;   // -1 左 / +1 右
+      const ang = lean * CONFIG.LEAN_ANGLE_DEG * Math.PI / 180;
+      const arm = ey - CONFIG.HIP_HEIGHT;   // 头到胯距离
+      const lat = Math.sin(ang) * arm;
+      const drop = (1 - Math.cos(ang)) * arm;
       const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
-      ex += rx * Game.Player.lean * CONFIG.LEAN_SHIFT;
-      ez += rz * Game.Player.lean * CONFIG.LEAN_SHIFT;
+      ex += rx * lat;
+      ez += rz * lat;
+      eyw -= drop;
     }
-    return { x: ex, y: s.pos.y + ey, z: ez };
+    return { x: ex, y: eyw, z: ez };
   }
   function getAimDir(s, adsEase) {
     // 锥角扩散：rest（姿态惩罚）+ 连射累积，圆盘均匀采样 + tan 映射

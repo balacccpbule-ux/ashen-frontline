@@ -677,8 +677,8 @@ const CONFIG = {
   SPRINT_SPEED: 9.2,
   CROUCH_SPEED: 3.0,
   ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
-  LEAN_ANGLE_DEG: 30,         // v5.49 歪头侧倾角度（度）
-  LEAN_SHIFT: 0.4,            // v5.49 歪头横向偏移（米，探出墙角）
+  LEAN_ANGLE_DEG: 20,         // v5.49 歪头侧倾角度（度）
+  HIP_HEIGHT: 0.9,            // v5.49 胯部高度（歪头以胯为枢轴转动）
   JUMP_VEL: 8.8,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,
@@ -4613,14 +4613,20 @@ const VEHICLE_SPAWNS = [
   }
   function getEyePos(s) {
     const ey = s.crouching ? CONFIG.CROUCH_EYE : CONFIG.EYE_HEIGHT;
-    // v5.49 歪头：玩家视角/子弹源沿右向量横向偏移（探出墙角）
-    let ex = s.pos.x, ez = s.pos.z;
+    // v5.49 歪头：以胯为枢轴转动——头部（眼睛）沿弧线横向偏移 + 略下沉
+    let ex = s.pos.x, ez = s.pos.z, eyw = s.pos.y + ey;
     if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
+      const lean = Game.Player.lean;   // -1 左 / +1 右
+      const ang = lean * CONFIG.LEAN_ANGLE_DEG * Math.PI / 180;
+      const arm = ey - CONFIG.HIP_HEIGHT;   // 头到胯距离
+      const lat = Math.sin(ang) * arm;
+      const drop = (1 - Math.cos(ang)) * arm;
       const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
-      ex += rx * Game.Player.lean * CONFIG.LEAN_SHIFT;
-      ez += rz * Game.Player.lean * CONFIG.LEAN_SHIFT;
+      ex += rx * lat;
+      ez += rz * lat;
+      eyw -= drop;
     }
-    return { x: ex, y: s.pos.y + ey, z: ez };
+    return { x: ex, y: eyw, z: ez };
   }
   function getAimDir(s, adsEase) {
     // 锥角扩散：rest（姿态惩罚）+ 连射累积，圆盘均匀采样 + tan 映射
@@ -6357,7 +6363,7 @@ const VEHICLE_SPAWNS = [
       Game.camera.rotation.set(
         M.clamp(s.pitch + (s.recoilPitch ? s.recoilPitch.value : 0) + P.flinchPitch + breath, -1.5, 1.5) + (Math.random() * 2 - 1) * rsh,
         s.yaw + (s.recoilYaw ? s.recoilYaw.value : 0) + P.flinchYaw + (Math.random() * 2 - 1) * rsh,
-        P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
+        -P.lean * (CONFIG.LEAN_ANGLE_DEG * Math.PI / 180) + (Math.random() * 2 - 1) * rsh * 0.5, 'YXZ');
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);

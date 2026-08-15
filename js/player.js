@@ -647,19 +647,43 @@
     const strafe = (P.keys.has('KeyD') ? 1 : 0) - (P.keys.has('KeyA') ? 1 : 0);
     s.sprinting = (P.keys.has('ShiftLeft') || P.keys.has('ShiftRight')) && fwd > 0 && P.adsEase < 0.05;
     s.crouching = P.keys.has('KeyC') || P.keys.has('ControlLeft');
-    let speed = s.crouching ? CONFIG.CROUCH_SPEED : (s.sprinting ? CONFIG.SPRINT_SPEED : CONFIG.WALK_SPEED);
+    // v5.49 歪头（Q 左 / E 右）：高加速度启动 + 指数渐缓；疾跑时取消侧身
+    let leanTarget = M.clamp((P.keys.has('KeyQ') ? -1 : 0) + (P.keys.has('KeyE') ? 1 : 0), -1, 1);
+    if (s.sprinting) leanTarget = 0;
+    P.lean = M.lerp(P.lean, leanTarget, 1 - Math.exp(-16 * dt));
+    const leaning = Math.abs(P.lean) > 0.05;
+    let speed = s.crouching ? CONFIG.CROUCH_SPEED : (s.sprinting ? CONFIG.SPRINT_SPEED : (leaning ? CONFIG.WALK_SPEED * 0.5 : CONFIG.WALK_SPEED));
     speed *= 1 - 0.40 * P.adsEase;
     const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw);
     const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
     let mx = fx * fwd + rx * strafe, mz = fz * fwd + rz * strafe;
     const ml = Math.hypot(mx, mz);
     if (ml > 0) { mx /= ml; mz /= ml; }
-    const k = 1 - Math.exp(-12 * dt);
-    s.vel.x += (mx * speed - s.vel.x) * k;
-    s.vel.z += (mz * speed - s.vel.z) * k;
     s.moving = ml > 0.1;
-    s.pos.x += s.vel.x * dt;
-    s.pos.z += s.vel.z * dt;
+    // v5.49 疾跑滑铲：最高速按 C 触发（瞬间加速 + 快速减速 + 锁定方向滑动）
+    s.slideCd = Math.max(0, (s.slideCd || 0) - dt);
+    if (!s.sliding && s.sprinting && P.keys.has('KeyC') && s.slideCd <= 0 && Math.hypot(s.vel.x, s.vel.z) > CONFIG.SPRINT_SPEED * 0.8) {
+      s.sliding = true; s.slideT = 0.7;
+      const dl = Math.hypot(s.vel.x, s.vel.z) || 1;
+      s.vel.x = (s.vel.x / dl) * CONFIG.SPRINT_SPEED * 1.4;   // 瞬间加速
+      s.vel.z = (s.vel.z / dl) * CONFIG.SPRINT_SPEED * 1.4;
+    }
+    if (s.sliding) {
+      s.crouching = true;
+      s.slideT -= dt;
+      const dec = Math.exp(-5 * dt);   // 快速减速
+      s.vel.x *= dec; s.vel.z *= dec;
+      s.pos.x += s.vel.x * dt;
+      s.pos.z += s.vel.z * dt;
+      if (s.slideT <= 0 || Math.hypot(s.vel.x, s.vel.z) < 2.0) { s.sliding = false; s.slideCd = 0.4; }
+    } else {
+      // 疾跑加速过程：指数衰减增长，1s 达到最高速（k≈4）；其余用 k=12
+      const k = 1 - Math.exp(-(s.sprinting ? 4 : 12) * dt);
+      s.vel.x += (mx * speed - s.vel.x) * k;
+      s.vel.z += (mz * speed - s.vel.z) * k;
+      s.pos.x += s.vel.x * dt;
+      s.pos.z += s.vel.z * dt;
+    }
     Game.terrain.resolveCircle(s.pos, s.radius);
     // 边界
     s.pos.x = M.clamp(s.pos.x, -CONFIG.WORLD + 1, CONFIG.WORLD - 1);
@@ -697,10 +721,6 @@
         Game.Vehicles.repairVehicle(best, s, dt);
       }
     }
-
-    // v5.49 歪头（Q 左 / E 右）：高加速度启动 + 指数渐缓，最终侧倾 30°
-    const leanTarget = M.clamp((P.keys.has('KeyQ') ? -1 : 0) + (P.keys.has('KeyE') ? 1 : 0), -1, 1);
-    P.lean = M.lerp(P.lean, leanTarget, 1 - Math.exp(-16 * dt));
 
     // 速度比（bob 用）；移动扩散惩罚在 weapons.restSpreadDeg 按姿态实时计算
     const spdRatio = Math.hypot(s.vel.x, s.vel.z) / CONFIG.WALK_SPEED;

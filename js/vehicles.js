@@ -255,6 +255,7 @@
       Game.sound.engineStart(v.id, v.kind);
       if (Game.Player.view) Game.Player.view.visible = false;
       Game.Player.lean = 0;   // v5.49 上车复位歪头
+      s.sliding = false; s.slideT = 0; s.slideCd = 0;   // v5.49 上车复位滑铲
       Game.Player.requestLock();
       if (Game.hud) Game.hud.message(Game.t('veh.enter', Game.L(v.def)));
     }

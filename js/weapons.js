@@ -19,6 +19,7 @@
       health: 100, maxHealth: 100,
       radius: CONFIG.PLAYER_RADIUS, height: CONFIG.SOLDIER_HEIGHT, eyeHeight: CONFIG.EYE_HEIGHT,
       grounded: true, sprinting: false, crouching: false, moving: false,
+      sliding: false, slideT: 0, slideCd: 0,   // v5.49 疾跑滑铲
       slot: 'primary',
       slots: {
         primary: { def: wdef, mag: wdef.mag, reserve: wdef.reserve },
@@ -110,7 +111,7 @@
     if (s.isPlayer && !s.ridingVehicle && Game.Player && Game.Player.lean) {
       const lean = Game.Player.lean;   // -1 左 / +1 右
       const ang = lean * CONFIG.LEAN_ANGLE_DEG * Math.PI / 180;
-      const arm = ey - CONFIG.HIP_HEIGHT;   // 头到胯距离
+      const arm = ey - CONFIG.KNEE_HEIGHT;   // 头到膝盖距离
       const lat = Math.sin(ang) * arm;
       const drop = (1 - Math.cos(ang)) * arm;
       const rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);

@@ -542,6 +542,7 @@
       Game.weapons.initShield(s);
       s.ridingVehicle = null; s.vehicleSeat = -1;
       s.reloading = false; s.fireTimer = 0; s.bloom = 0; s.spawnProtect = 0;
+      s.sliding = false; s.slideT = 0; s.slideCd = 0;   // v5.49 滑铲复位
       s.corpseT = -1;
       Game.weapons.refillAmmo(s);
       if (!s.isPlayer) Game.ai.respawn(s);

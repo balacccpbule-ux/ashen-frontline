@@ -1,11 +1,11 @@
 /* ============================================================
- * tests/test_64.js — 16v16 32人规模压力测试（30 秒高强度战斗 + tick 性能）
+ * tests/test_64.js — 24v24 48人规模压力测试（30 秒高强度战斗 + tick 性能）
  * ============================================================ */
 'use strict';
 const { launchChrome, assert, gameUrl } = require('./lib/cdp');
 
 (async () => {
-  console.log('=== test_64: 16v16 战场压力测试 ===');
+  console.log('=== test_64: 24v24 战场压力测试 ===');
   const { proc, cdp } = await launchChrome(gameUrl(), 9236);
   let failed = false;
   try {
@@ -17,7 +17,7 @@ const { launchChrome, assert, gameUrl } = require('./lib/cdp');
       var times=[], worst=0;
       // v5：确定性压力测试——固定种子 + 全量重建重置（地形/旗点/载具/士兵全复位），
       // 修复 AI 随机决策导致的 22~27 阵亡波动（三次裸跑 38/28/25 的抖动）
-      var origRandom = Math.random; Math.random = G.newRng(17);   // 沙漠默认图（16 阵亡/15 击杀/6 载具，确定性）
+      var origRandom = Math.random; Math.random = G.newRng(17);   // 24v24 沙漠默认图（33 阵亡/33 击杀/7 载具，确定性）
       (function deterministicReset(){
         var prevMap = G.mapId;
         G.mapId = prevMap === 'desert' ? 'snow' : 'desert';   // 强制走全量重建分支
@@ -64,11 +64,11 @@ const { launchChrome, assert, gameUrl } = require('./lib/cdp');
     })()`);
     const r = JSON.parse(perf);
     console.log(`    tick: 平均 ${r.avg.toFixed(2)}ms · P50 ${r.p50.toFixed(2)}ms · P95 ${r.p95.toFixed(2)}ms · 最差 ${r.worst.toFixed(1)}ms`);
-    console.log(`    30秒战况: 存活 ${r.alive}/32 · 累计阵亡 ${r.deaths} · 击杀 ${r.kills} · 载具在驾 ${r.vehOcc}`);
-    assert(r.soldiers === 32, `16v16 32 名士兵全程在场 (${r.soldiers})`);
+    console.log(`    30秒战况: 存活 ${r.alive}/48 · 累计阵亡 ${r.deaths} · 击杀 ${r.kills} · 载具在驾 ${r.vehOcc}`);
+    assert(r.soldiers === 48, `24v24 48 名士兵全程在场 (${r.soldiers})`);
     assert(r.deaths > 8, `30 秒高强度战斗（累计阵亡 ${r.deaths} 人次）`);
     assert(r.kills >= 8, `有效击杀（${r.kills}，环境击杀不计入）`);
-    assert(r.alive <= 32, '存活数守恒');
+    assert(r.alive <= 48, '存活数守恒');
     assert(r.vehOcc >= 4, `载具持续被驾驶 (${r.vehOcc})`);
     assert(r.avg < 16, `平均 tick < 16ms（实际 ${r.avg.toFixed(2)}ms）`);
     assert(r.p95 < 40, `P95 tick < 40ms（实际 ${r.p95.toFixed(2)}ms）`);

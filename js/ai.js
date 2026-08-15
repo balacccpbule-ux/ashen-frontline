@@ -538,6 +538,29 @@
       }
     }
 
+    // 4.05) v5.44 迫击炮反载具：索敌到敌方载具（坦克/装甲车/直升机）→ 高价值目标，优先曲射
+    if (s.clsKey === 'mortar' && eveh && (seeVeh || eveh.spottedUntil > Game.time) &&
+        evehD >= (GADGETS.mortar.minRange || 15) && evehD <= (GADGETS.mortar.maxRange || 180)) {
+      b.state = 'mortar';
+      if (b.mortarT === undefined) b.mortarT = Game.time + 1.2;
+      if (Game.time >= b.mortarT && s.gadgetAmmo > 0 && s.gadgetCooldown <= 0) {
+        // 载具目标大，散布更小（更精准反载具）
+        let tx = eveh.pos.x + (Game.rng() - 0.5) * 5;
+        let tz = eveh.pos.z + (Game.rng() - 0.5) * 5;
+        const dx = tx - s.pos.x, dz = tz - s.pos.z;
+        const dd = Math.hypot(dx, dz) || 1;
+        const minR = GADGETS.mortar.minRange || 15;
+        if (dd < minR) { tx = s.pos.x + (dx / dd) * minR; tz = s.pos.z + (dz / dd) * minR; }
+        b.mortarTarget = { x: tx, z: tz };
+        Game.weapons.fireGadget(s);
+        b.mortarT = Game.time + 4 + Game.rng() * 2.5;
+      }
+      if (evehD < 50) moveToward(s, eveh.pos, dt, -1);
+      else if (evehD > 110) moveToward(s, eveh.pos, dt, 1);
+      else strafe(s, dt);
+      return;
+    }
+
     // 4.1) 迫击炮兵：中远距曲射压制（无视线也能打，目标为索敌/被标记敌人）
     if (s.clsKey === 'mortar' && seeEnemy && enemyD >= (GADGETS.mortar.minRange || 15)) {   // v5.24 跟随配置最小射程
       b.state = 'mortar';
@@ -676,7 +699,10 @@
     }
     else tgt = nearestEnemyFlag(s);
     b.state = 'advance';
-    moveToward(s, { x: tgt.x, z: tgt.z }, dt, 1);
+    // v5.44 反抱团：每个 bot 按 ID 围绕目标点分散（黄金角环形散开），不再挤成一团
+    const spreadAng = s.id * 2.39996;          // 黄金角：均匀散开
+    const spreadR = 5 + (s.id % 6) * 2.5;      // 5~17.5m 分散半径
+    moveToward(s, { x: tgt.x + Math.cos(spreadAng) * spreadR, z: tgt.z + Math.sin(spreadAng) * spreadR }, dt, 1);
     b.scanT += dt;
     if (b.scanT > 1.6) { b.scanT = 0; s.yaw += (Math.random() - 0.5) * 1.4; }
   }

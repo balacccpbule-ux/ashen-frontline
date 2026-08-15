@@ -1,12 +1,12 @@
 # 灰烬战线 · ASHEN FRONTLINE
 
-> 纯原生 JavaScript + Three.js（自托管）打造的类《战地》16v16 大战场。**零依赖、零构建，双击 `index.html` 即玩**；`dist/灰烬战线_单文件版.html` 为单文件发行版。开局可选语言：**简体中文 / English**。
+> 纯原生 JavaScript + Three.js（自托管）打造的类《战地》24v24 大战场。**零依赖、零构建，双击 `index.html` 即玩**；`dist/灰烬战线_单文件版.html` 为单文件发行版。开局可选语言：**简体中文 / English**。
 
 ---
 
 ## 特色 Features
 
-- **16v16 大战场**：32 名士兵同场（红军 15 BOT + 你，蓝军 16 BOT），InstancedMesh 渲染 + 空间哈希索敌 + 按距离降频，30 秒压力测试平均 tick < 1ms。
+- **24v24 大战场**：48 名士兵同场（红军 23 BOT + 你，蓝军 24 BOT），InstancedMesh 渲染 + 空间哈希索敌 + 按距离降频，30 秒压力测试平均 tick < 1ms。
 - **双模式**：征服（占旗 + 票数流血）· 突破（红攻蓝守、3 扇区线性推进、攻下补票、史诗播报）。
 - **三张地图**：沙暴行动（中东沙漠油田）· 雪域要塞（极地雪原冰湖）· 钢铁防线（血色黄昏要塞攻坚），每图绑定天气粒子（沙尘/降雪/灰烬）。
 - **六大兵种**：突击兵 · 支援兵 · 侦察兵 · 工程兵 · 迫击炮兵 · 医疗兵，各配专属主武器 + 战术装备。
@@ -83,7 +83,7 @@ dist/             单文件发行版
 
 ## 验证 Tests
 
-22 项无头 Chrome CDP 确定性测试覆盖：16v16 启动/战斗/压力、全流程、载具、战斗导演、武器手感、突破、破坏、地图切换、霰弹、防空、雪域、菜单、迫击炮、医疗箱、升级、侦察、载具近战、小地图、功绩、钢铁防线、玩法补齐。
+22 项无头 Chrome CDP 确定性测试覆盖：24v24 启动/战斗/压力、全流程、载具、战斗导演、武器手感、突破、破坏、地图切换、霰弹、防空、雪域、菜单、迫击炮、医疗箱、升级、侦察、载具近战、小地图、功绩、钢铁防线、玩法补齐。
 
 ```bash
 node tests/run_all.js          # 全部 22 项
@@ -102,11 +102,11 @@ node tests/run_all.js test_spot.js   # 单项
 
 # English
 
-> A Battlefield-like 16v16 battlefield built with vanilla JavaScript + self-hosted Three.js. **Zero dependencies, zero build — double-click `index.html` to play.** `dist/灰烬战线_单文件版.html` is the single-file release. Language can be selected at startup: **简体中文 / English**.
+> A Battlefield-like 24v24 battlefield built with vanilla JavaScript + self-hosted Three.js. **Zero dependencies, zero build — double-click `index.html` to play.** `dist/灰烬战线_单文件版.html` is the single-file release. Language can be selected at startup: **简体中文 / English**.
 
 ## Features
 
-- **16v16**: 32 soldiers in one match (15 bots + you on Red, 16 bots on Blue). InstancedMesh rendering, spatial-hash targeting, distance-based AI tick scaling — 30s stress test averages < 1ms/tick.
+- **24v24**: 48 soldiers in one match (23 bots + you on Red, 24 bots on Blue). InstancedMesh rendering, spatial-hash targeting, distance-based AI tick scaling — 30s stress test averages < 1ms/tick.
 - **Two modes**: Conquest (flag capture + ticket bleed) · Breakthrough (attack vs. defend, 3-sector linear push, sector bonus, epic callouts).
 - **Three maps**: Operation Sandstorm · Snow Fortress · Iron Line — each with bound weather particles (sand / snow / ash).
 - **Six classes**: Assault · Support · Recon · Engineer · Mortarman · Medic, each with a dedicated primary weapon and gadget.

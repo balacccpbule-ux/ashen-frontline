@@ -33,7 +33,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(a.map === 'fort' && a.name === '钢铁防线', '第五张地图钢铁防线（' + a.map + '/' + a.name + '）');
     assert(a.weather === 'ash' && a.fog === 140, '血色黄昏 + 灰烬天气 + 近距离雾（' + a.weather + '/' + a.fog + '）');
     assert(a.flags === 6 && a.sectors === 3, '突破 3 扇区 × 2 旗 = 6 旗（' + a.flags + '/' + a.sectors + '）');
-    assert(a.soldiers === 32 && a.vehicles === 8, '16v16 32 士兵 / 8 载具');
+    assert(a.soldiers === 48 && a.vehicles === 10, '24v24 48 士兵 / 10 载具');
     assert(a.bld >= 6, '东侧堡垒建筑 ≥ 6（' + a.bld + '）');
     assert(a.bunkers >= 6, '混凝土碉堡 ≥ 6（' + a.bunkers + '）');
     assert(a.tanks >= 10, '中央油库油罐 ≥ 10（' + a.tanks + '，殉爆链）');

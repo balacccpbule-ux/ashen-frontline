@@ -48,7 +48,7 @@ window.Game = {
 const CONFIG = {
   WORLD: 120,                 // v5.39 地图半径（x/z ∈ [-WORLD, WORLD]）——拉长纵深 160→240m
   TICKETS: 500,               // 征服模式双方初始兵力
-  BOT_COUNT_PER_TEAM: 15,     // 16v16：红军 15 BOT + 玩家 = 16；蓝军补 16 BOT → 共 32 人
+  BOT_COUNT_PER_TEAM: 23,     // 24v24：红军 23 BOT + 玩家 = 24；蓝军 24 BOT → 共 48 人
   CAPTURE_SPEED: 34,          // 占领点 control 变化速率 / 秒
   BLEED_PER_FLAG: 0.55,       // 每多占 1 点，每秒消耗兵力
   BLEED_PER_DEATH: 1,         // 每次阵亡扣兵力
@@ -481,8 +481,10 @@ const VEHICLE_SPAWNS = [
   { team: TEAM_RED,  kind: 'apc',  x: -93, z: 18 },
   { team: TEAM_RED,  kind: 'aa',   x: -96, z: -39 },
   { team: TEAM_RED,  kind: 'heli', x: -81, z: -36 },
+  { team: TEAM_RED,  kind: 'heli', x: -81, z: 36 },   // v5.44 第二架直升机
   { team: TEAM_BLUE, kind: 'tank', x: 93,  z: 18 },
   { team: TEAM_BLUE, kind: 'apc',  x: 93,  z: -18 },
   { team: TEAM_BLUE, kind: 'aa',   x: 96,  z: 39 },
   { team: TEAM_BLUE, kind: 'heli', x: 81,  z: 36 },
+  { team: TEAM_BLUE, kind: 'heli', x: 81,  z: -36 },  // v5.44 第二架直升机
 ];

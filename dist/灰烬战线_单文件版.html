@@ -498,7 +498,7 @@ html, body {
       </div>
       <h1 class="title" data-i18n="menu.title">灰烬战线</h1>
       <div class="subtitle" data-i18n="menu.subtitle">ASHEN FRONTLINE</div>
-      <p class="menu-desc" data-i18n="menu.desc">16v16 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏</p>
+      <p class="menu-desc" data-i18n="menu.desc">24v24 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏</p>
       <div class="menu-grid">
         <div class="menu-col">
           <div class="menu-label" data-i18n="menu.mode">游戏模式</div>
@@ -618,7 +618,7 @@ window.Game = {
 const CONFIG = {
   WORLD: 120,                 // v5.39 地图半径（x/z ∈ [-WORLD, WORLD]）——拉长纵深 160→240m
   TICKETS: 500,               // 征服模式双方初始兵力
-  BOT_COUNT_PER_TEAM: 15,     // 16v16：红军 15 BOT + 玩家 = 16；蓝军补 16 BOT → 共 32 人
+  BOT_COUNT_PER_TEAM: 23,     // 24v24：红军 23 BOT + 玩家 = 24；蓝军 24 BOT → 共 48 人
   CAPTURE_SPEED: 34,          // 占领点 control 变化速率 / 秒
   BLEED_PER_FLAG: 0.55,       // 每多占 1 点，每秒消耗兵力
   BLEED_PER_DEATH: 1,         // 每次阵亡扣兵力
@@ -1051,10 +1051,12 @@ const VEHICLE_SPAWNS = [
   { team: TEAM_RED,  kind: 'apc',  x: -93, z: 18 },
   { team: TEAM_RED,  kind: 'aa',   x: -96, z: -39 },
   { team: TEAM_RED,  kind: 'heli', x: -81, z: -36 },
+  { team: TEAM_RED,  kind: 'heli', x: -81, z: 36 },   // v5.44 第二架直升机
   { team: TEAM_BLUE, kind: 'tank', x: 93,  z: 18 },
   { team: TEAM_BLUE, kind: 'apc',  x: 93,  z: -18 },
   { team: TEAM_BLUE, kind: 'aa',   x: 96,  z: 39 },
   { team: TEAM_BLUE, kind: 'heli', x: 81,  z: 36 },
+  { team: TEAM_BLUE, kind: 'heli', x: 81,  z: -36 },  // v5.44 第二架直升机
 ];
 
   </script>
@@ -1078,7 +1080,7 @@ const VEHICLE_SPAWNS = [
     zh: {
       'menu.title': '灰烬战线',
       'menu.subtitle': 'ASHEN FRONTLINE',
-      'menu.desc': '16v16 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏',
+      'menu.desc': '24v24 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏',
       'menu.mode': '游戏模式',
       'menu.map': '战场地图',
       'menu.diff': 'AI 难度',
@@ -1215,7 +1217,7 @@ const VEHICLE_SPAWNS = [
     en: {
       'menu.title': 'ASHEN FRONTLINE',
       'menu.subtitle': 'ASHEN FRONTLINE',
-      'menu.desc': '16v16 battlefield · 2 modes · 3 maps · 6 classes · land & air vehicles · full destruction',
+      'menu.desc': '24v24 battlefield · 2 modes · 3 maps · 6 classes · land & air vehicles · full destruction',
       'menu.mode': 'GAME MODE',
       'menu.map': 'BATTLEFIELD MAP',
       'menu.diff': 'AI DIFFICULTY',
@@ -1747,7 +1749,7 @@ const VEHICLE_SPAWNS = [
       A.ctx = new AC();
       A.master = A.ctx.createGain();
       A.master.gain.value = 0.5;
-      // v5.42 主总线压限器：16v16 密集交火不削波、响度更稳
+      // v5.42 主总线压限器：24v24 密集交火不削波、响度更稳
       A.comp = A.ctx.createDynamicsCompressor();
       A.comp.threshold.value = -14;
       A.comp.knee.value = 22;
@@ -6649,6 +6651,29 @@ const VEHICLE_SPAWNS = [
       }
     }
 
+    // 4.05) v5.44 迫击炮反载具：索敌到敌方载具（坦克/装甲车/直升机）→ 高价值目标，优先曲射
+    if (s.clsKey === 'mortar' && eveh && (seeVeh || eveh.spottedUntil > Game.time) &&
+        evehD >= (GADGETS.mortar.minRange || 15) && evehD <= (GADGETS.mortar.maxRange || 180)) {
+      b.state = 'mortar';
+      if (b.mortarT === undefined) b.mortarT = Game.time + 1.2;
+      if (Game.time >= b.mortarT && s.gadgetAmmo > 0 && s.gadgetCooldown <= 0) {
+        // 载具目标大，散布更小（更精准反载具）
+        let tx = eveh.pos.x + (Game.rng() - 0.5) * 5;
+        let tz = eveh.pos.z + (Game.rng() - 0.5) * 5;
+        const dx = tx - s.pos.x, dz = tz - s.pos.z;
+        const dd = Math.hypot(dx, dz) || 1;
+        const minR = GADGETS.mortar.minRange || 15;
+        if (dd < minR) { tx = s.pos.x + (dx / dd) * minR; tz = s.pos.z + (dz / dd) * minR; }
+        b.mortarTarget = { x: tx, z: tz };
+        Game.weapons.fireGadget(s);
+        b.mortarT = Game.time + 4 + Game.rng() * 2.5;
+      }
+      if (evehD < 50) moveToward(s, eveh.pos, dt, -1);
+      else if (evehD > 110) moveToward(s, eveh.pos, dt, 1);
+      else strafe(s, dt);
+      return;
+    }
+
     // 4.1) 迫击炮兵：中远距曲射压制（无视线也能打，目标为索敌/被标记敌人）
     if (s.clsKey === 'mortar' && seeEnemy && enemyD >= (GADGETS.mortar.minRange || 15)) {   // v5.24 跟随配置最小射程
       b.state = 'mortar';
@@ -6787,7 +6812,10 @@ const VEHICLE_SPAWNS = [
     }
     else tgt = nearestEnemyFlag(s);
     b.state = 'advance';
-    moveToward(s, { x: tgt.x, z: tgt.z }, dt, 1);
+    // v5.44 反抱团：每个 bot 按 ID 围绕目标点分散（黄金角环形散开），不再挤成一团
+    const spreadAng = s.id * 2.39996;          // 黄金角：均匀散开
+    const spreadR = 5 + (s.id % 6) * 2.5;      // 5~17.5m 分散半径
+    moveToward(s, { x: tgt.x + Math.cos(spreadAng) * spreadR, z: tgt.z + Math.sin(spreadAng) * spreadR }, dt, 1);
     b.scanT += dt;
     if (b.scanT > 1.6) { b.scanT = 0; s.yaw += (Math.random() - 0.5) * 1.4; }
   }

@@ -16,7 +16,7 @@
     zh: {
       'menu.title': '灰烬战线',
       'menu.subtitle': 'ASHEN FRONTLINE',
-      'menu.desc': '16v16 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏',
+      'menu.desc': '24v24 大战场 · 双模式 · 三地图 · 六兵种 · 陆空载具 · 全域破坏',
       'menu.mode': '游戏模式',
       'menu.map': '战场地图',
       'menu.diff': 'AI 难度',
@@ -153,7 +153,7 @@
     en: {
       'menu.title': 'ASHEN FRONTLINE',
       'menu.subtitle': 'ASHEN FRONTLINE',
-      'menu.desc': '16v16 battlefield · 2 modes · 3 maps · 6 classes · land & air vehicles · full destruction',
+      'menu.desc': '24v24 battlefield · 2 modes · 3 maps · 6 classes · land & air vehicles · full destruction',
       'menu.mode': 'GAME MODE',
       'menu.map': 'BATTLEFIELD MAP',
       'menu.diff': 'AI DIFFICULTY',

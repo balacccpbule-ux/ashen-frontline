@@ -26,7 +26,7 @@
       A.ctx = new AC();
       A.master = A.ctx.createGain();
       A.master.gain.value = 0.5;
-      // v5.42 主总线压限器：16v16 密集交火不削波、响度更稳
+      // v5.42 主总线压限器：24v24 密集交火不削波、响度更稳
       A.comp = A.ctx.createDynamicsCompressor();
       A.comp.threshold.value = -14;
       A.comp.knee.value = 22;

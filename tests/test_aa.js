@@ -32,7 +32,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'return JSON.stringify({ vehCount: G.vehicles.length, aaId: aa.id, heliId: heli.id });' +
       '})()');
     const s = JSON.parse(setup);
-    assert(s.vehCount === 8, '8 载具（喷气机已删除）');
+    assert(s.vehCount === 10, '10 载具（喷气机已删除，直升机 ×4）');
 
     // ---- 伤害倍率（此刻载具全存活） ----
     const m = await cdp.eval('(function(){' +

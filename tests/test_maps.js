@@ -25,7 +25,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(c.oilTanks >= 8, `油田油罐 >= 8 (${c.oilTanks})`);
     assert(c.walls >= 6, `村庄院墙 >= 6 (${c.walls})`);
     assert(c.buildings >= 10, `土坯房屋 >= 10 (${c.buildings})`);
-    assert(c.vehicles === 8 && c.soldiers === 32, '8 载具 / 16v16 32 士兵');
+    assert(c.vehicles === 10 && c.soldiers === 48, '10 载具 / 24v24 48 士兵');
 
     // 2. 切雪域
     const snow = await cdp.eval(`(function(){
@@ -45,7 +45,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(s.flags === 4, `雪域征服 4 旗 (${s.flags})`);
     assert(s.pines >= 40, `雪松林 >= 40 (${s.pines})`);
     assert(s.ice === true, '冰湖冰面生成');
-    assert(s.vehicles === 8 && s.soldiers === 32, '载具与士兵保持');
+    assert(s.vehicles === 10 && s.soldiers === 48, '载具与士兵保持');
 
     // 3. 切钢铁防线 + 突破模式
     const back = await cdp.eval(`(function(){

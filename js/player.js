@@ -377,13 +377,24 @@
       const body = box(0.06, 0.1, 0.5, poly); body.position.set(0, 0.02, 0.05);
       const barrel = cyl(0.028, 0.62, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.58);
       const muzzle = cyl(0.04, 0.08, glow); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.05, -0.9);
-      const scope = box(0.05, 0.065, 0.24, glow); scope.position.set(0, 0.13, -0.08);
-      const scopeRing = cyl(0.055, 0.03, metal); scopeRing.rotation.x = Math.PI / 2; scopeRing.position.set(0, 0.13, 0.02);
+      // v5.45 瞄准镜改柱状镂空长方体（四壁镜管 + 前后镜环，可透视中心）
+      const scope = new THREE.Group();
+      { const st = 0.008, tl = 0.28, tw = 0.08, th = 0.06;
+        const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+        const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+        const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+        const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
+        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rB.position.z = tl / 2;
+        scope.add(wT, wB, wL, wR, rF, rB);
+      }
+      scope.position.set(0, 0.13, -0.08);
+      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
       const stock = box(0.055, 0.1, 0.3, wood); stock.position.set(0, -0.02, 0.36);
       const mag = box(0.05, 0.12, 0.08, metal); mag.position.set(0, -0.1, -0.18);
       const bipod = box(0.05, 0.15, 0.03, dark); bipod.position.set(0, -0.11, -0.42); bipod.rotation.x = 0.22;
       const bolt = box(0.028, 0.028, 0.14, metal); bolt.position.set(0.055, 0.045, -0.06);   // v5.17 拉栓柄（动画部件）
-      g.add(body, barrel, muzzle, scope, scopeRing, stock, mag, bipod, bolt);
+      g.add(body, barrel, muzzle, scope, stock, mag, bipod, bolt);
       g.userData.bolt = bolt;
     } else if (key === 'lmg') {
       const body = box(0.08, 0.13, 0.55, poly); body.position.set(0, 0.02, 0.02);
@@ -427,7 +438,19 @@
       const body = box(0.06, 0.11, 0.55, poly); body.position.set(0, 0.01, 0.02);
       const barrel = cyl(0.026, 0.5, metal); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.5);
       const muzzle = cyl(0.04, 0.09, glow); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.05, -0.78);
-      const scope = box(0.05, 0.06, 0.26, glow); scope.position.set(0, 0.13, -0.06);
+      // v5.45 中倍镜镂空镜管
+      const scope = new THREE.Group();
+      { const st = 0.008, tl = 0.3, tw = 0.07, th = 0.055;
+        const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+        const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+        const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+        const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
+        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rB.position.z = tl / 2;
+        scope.add(wT, wB, wL, wR, rF, rB);
+      }
+      scope.position.set(0, 0.13, -0.06);
+      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
       const mag = box(0.05, 0.14, 0.08, metal); mag.position.set(0, -0.11, -0.12); mag.rotation.x = 0.2;
       const stock = box(0.055, 0.09, 0.28, poly); stock.position.set(0, -0.01, 0.34);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.14);
@@ -553,6 +576,11 @@
     if (!wdef && s.slot === 'gadget') {
       const gd = GADGETS[s.gadget];
       if (gd && gd.scope) wdef = gd;
+    }
+    // v5.45 镜枪：读取枪模上的镜管位置，用于开镜时对准屏幕中心
+    P.scopeLocal = null;
+    if (wdef && wdef.scope && wslot && P.models && P.models[wdef.key] && P.models[wdef.key].userData.scopeLocal) {
+      P.scopeLocal = P.models[wdef.key].userData.scopeLocal;
     }
 
     // --- ADS 缓动（adsK 线性爬升 + easeInOutCubic 塑形；出镜快 1.25×） ---
@@ -701,15 +729,17 @@
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);
-    if (P.view) P.view.visible = !(P.ads && P.adsEase > 0.5); // 开镜隐藏枪模，避免黑块遮挡
+    // v5.45 镜枪开镜不隐藏枪模（看穿镂空镜管）；非镜枪仍隐藏
+    const scopedGun = !!(wdef && wdef.scope);
+    if (P.view) P.view.visible = !(P.ads && P.adsEase > 0.5 && !scopedGun);
     updateViewmodel(dt, spdRatio);
   }
 
   function updateViewmodel(dt, spdRatio) {
     if (!P.view) return;
-    // 后坐回弹 + 落地顿挫衰减
-    P.viewKick = Math.max(0, P.viewKick - dt * 6);
-    P.landKick = Math.max(0, P.landKick - dt * 3.5);
+    // v5.45 平滑后坐：指数衰减，后移与回正都更顺滑
+    P.viewKick *= Math.exp(-7 * dt);
+    P.landKick *= Math.exp(-3.5 * dt);
     // 走路晃动
     if (Game.player.alive && Game.player.grounded && spdRatio > 0.1) {
       P.bobT += dt * (4 + spdRatio * 6);
@@ -750,7 +780,11 @@
     }
     // 目标位置（瞄准 / 腰射 / v5.10 冲刺压低持枪）
     const sprinting = Game.player.sprinting && !(P.ads && P.adsEase > 0.5);
-    const target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
+    let target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
+    // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
+    if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {
+      target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
+    }
     const k = 1 - Math.exp(-14 * dt);
     P.view.position.x = M.lerp(P.view.position.x, target.x + bobX, k);
     P.view.position.y = M.lerp(P.view.position.y,

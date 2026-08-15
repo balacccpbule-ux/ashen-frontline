@@ -269,6 +269,7 @@
       addSolid(T.solids, 'rock', spot.x, spot.z, spot.w, spot.d, M.randRange(rng, 1.2, 2.8),
         { destructible: false, blocksLOS: true, isRock: true });
     }
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   // ============================================================
@@ -357,6 +358,7 @@
         { destructible: false, blocksLOS: true, isRock: true });
     }
     placeScenery(rng, W, flags, false);
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   // ============================================================
@@ -377,6 +379,7 @@
     placeFlagCover(rng, flags);
     // 岩群 + 棕榈/枯树
     placeScenery(rng, W, flags, true);
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   function adobeVillage(rng, cx, cz, seed, flags) {
@@ -555,10 +558,43 @@
     }
   }
 
+  // v5.45 军事设施与掩体工事（瞭望塔/雷达/帐篷/弹药箱）
+  function placeMilitary(rng, W, flags) {
+    // 瞭望塔（2 座）
+    for (let i = 0; i < 2; i++) {
+      const spot = findSpot(rng, 2.6, 2.6, 2.6, 2.6, 16, 30, flags);
+      if (spot) addSolid(T.solids, 'watchtower', spot.x, spot.z, 2.6, 2.6, 8.5,
+        { destructible: false, blocksLOS: true });
+    }
+    // 雷达站（1 座）
+    const rspot = findSpot(rng, 2.0, 2.0, 2.0, 2.0, 14, 28, flags);
+    if (rspot) addSolid(T.solids, 'radar', rspot.x, rspot.z, 1.7, 1.7, 2.6,
+      { destructible: false, blocksLOS: false });
+    // 帐篷（3 顶）
+    for (let i = 0; i < 3; i++) {
+      const spot = findSpot(rng, 2.4, 3.2, 2.4, 3.2, 14, 26, flags);
+      if (spot) addSolid(T.destructibles, 'tent', spot.x, spot.z, spot.w, spot.d, 1.7,
+        { destructible: true, hp: 500, blocksLOS: true, collapse: true });
+    }
+    // 弹药箱（8 个，可殉爆）
+    for (let i = 0; i < 8; i++) {
+      const spot = findSpot(rng, 1.0, 1.2, 1.0, 1.2, 7, 20, flags);
+      if (spot) addSolid(T.destructibles, 'crate', spot.x, spot.z, spot.w, spot.d, 1.1,
+        { destructible: true, hp: 200, blocksLOS: false, explode: true, blastRadius: 5, blastDmg: 90 });
+    }
+  }
+
   // ---- 登记实体（压平 + 碰撞盒） ----
   function addSolid(list, kind, x, z, w, d, h, opts) {
-    const baseH = rawHeight(x, z);
-    T.flattenZones.push({ cx: x, cz: z, w: w, d: d, baseH: baseH, margin: 2.5 });
+    // v5.45 修复悬空：取足迹内最低高度为地基（向上填土），避免建筑悬空在坡地上
+    let baseH = rawHeight(x, z);
+    for (let sx = -2; sx <= 2; sx++) {
+      for (let sz = -2; sz <= 2; sz++) {
+        const px = x + (sx / 2) * (w / 2), pz = z + (sz / 2) * (d / 2);
+        baseH = Math.min(baseH, rawHeight(px, pz));
+      }
+    }
+    T.flattenZones.push({ cx: x, cz: z, w: w, d: d, baseH: baseH, margin: 3.5 });
     const s = {
       kind, list, cx: x, cz: z, w, d, h,
       baseH,
@@ -728,6 +764,45 @@
       g.add(body, cabin);
       g.position.set(s.cx, s.baseH, s.cz);
       g.rotation.y = ((s.cx * 7 + s.cz * 13) % 314) / 100;   // 确定性朝向
+      mesh = g;
+    } else if (s.kind === 'watchtower') {
+      // v5.45 瞭望塔：四脚 + 平台 + 顶棚
+      const g = new THREE.Group();
+      const wood = new THREE.MeshStandardMaterial({ color: 0x6b5438, roughness: 0.9 });
+      for (let i = 0; i < 4; i++) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28, s.h, 0.28), wood);
+        leg.position.set((i % 2 ? 1.0 : -1.0), s.h / 2, (i < 2 ? 1.0 : -1.0));
+        g.add(leg);
+      }
+      const plat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.28, 2.6), new THREE.MeshStandardMaterial({ color: 0x8a7a5c, roughness: 0.9 }));
+      plat.position.set(0, s.h, 0);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.22, 3.0), wood);
+      roof.position.set(0, s.h + 1.15, 0);
+      g.add(plat, roof);
+      g.position.set(s.cx, s.baseH, s.cz);
+      mesh = g;
+    } else if (s.kind === 'radar') {
+      // v5.45 雷达站：基座 + 旋转抛物面
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.7, s.h, 1.7), new THREE.MeshStandardMaterial({ color: 0x6a7076, roughness: 0.85 }));
+      base.position.set(0, s.h / 2, 0);
+      const dish = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.5, metalness: 0.6 }));
+      dish.rotation.x = 0.8; dish.position.set(0, s.h + 0.3, -0.25);
+      g.add(base, dish);
+      g.position.set(s.cx, s.baseH, s.cz);
+      g.rotation.y = ((s.cx * 5 + s.cz * 11) % 314) / 100;
+      mesh = g;
+      s.radarDish = dish;
+    } else if (s.kind === 'tent') {
+      // v5.45 帐篷：帐篷体 + 脊线
+      const g = new THREE.Group();
+      const cloth = new THREE.MeshStandardMaterial({ color: 0x6a7a58, roughness: 0.95 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, s.d), cloth);
+      body.position.set(0, s.h / 2, 0);
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(s.w * 1.05, 0.14, s.d * 1.05), new THREE.MeshStandardMaterial({ color: 0x58674a, roughness: 0.95 }));
+      ridge.position.set(0, s.h + 0.05, 0);
+      g.add(body, ridge);
+      g.position.set(s.cx, s.baseH, s.cz);
       mesh = g;
     } else {
       // building / shack（v5.35 纵深造型：退台式塔楼 + 附楼 + 屋顶设备 + 天线，告别大方块）
@@ -1002,10 +1077,10 @@
     if (s.rubble) {
       const rb = {
         kind: 'rubble', list: T.buildings, cx: s.cx, cz: s.cz,
-        w: s.w * 0.9, d: s.d * 0.9, h: 0.9, baseH: s.baseH,
+        w: s.w * 0.9, d: s.d * 0.9, h: 0.6, baseH: s.baseH,
         min: { x: s.cx - s.w * 0.45, y: s.baseH, z: s.cz - s.d * 0.45 },
-        max: { x: s.cx + s.w * 0.45, y: s.baseH + 0.9, z: s.cz + s.d * 0.45 },
-        solid: true, blocksLOS: true, destructible: false,
+        max: { x: s.cx + s.w * 0.45, y: s.baseH + 0.6, z: s.cz + s.d * 0.45 },
+        solid: true, blocksLOS: false, destructible: false,
         hp: Infinity, maxHp: Infinity, state: 2, mesh: null, parts: null,
       };
       const g = new THREE.Group();

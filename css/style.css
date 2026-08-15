@@ -53,17 +53,17 @@ html, body {
   opacity: 0; transition: opacity 0.1s;
 }
 
+/* v5.45 瞄准镜：镂空镜管内渲染十字线（无黑圈遮罩，镜管本身作为镜框） */
 #scope-overlay {
   position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(circle at 50% 50%, transparent 22%, rgba(0,0,0,0.96) 23%);
 }
 #scope-overlay::before {
-  content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 100%;
-  background: rgba(0,0,0,0.8);
+  content: ''; position: absolute; left: 50%; top: 46%; width: 1px; height: 8%;
+  background: rgba(0,0,0,0.85); box-shadow: 0 0 1px rgba(255,255,255,0.3);
 }
 #scope-overlay::after {
-  content: ''; position: absolute; left: 0; top: 50%; width: 100%; height: 1px;
-  background: rgba(0,0,0,0.8);
+  content: ''; position: absolute; left: 46%; top: 50%; width: 8%; height: 1px;
+  background: rgba(0,0,0,0.85); box-shadow: 0 0 1px rgba(255,255,255,0.3);
 }
 
 /* ---------- 左上 兵力 ---------- */
@@ -228,7 +228,9 @@ html, body {
 #death-classes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 96%; }
 #death-spawns { position: absolute; inset: 0; pointer-events: none; }
 #death-spawns .spawn-btn { pointer-events: auto; }
-#death-classes .cls-card { width: 128px; padding: 8px 6px; }
+#death-classes .cls-card { width: 128px; padding: 8px 6px; background: rgba(0,0,0,0.72); border: 2px solid rgba(255,255,255,0.16); }
+#death-classes .cls-card:hover { background: rgba(14,16,20,0.85); }
+#death-classes .cls-card.selected { background: rgba(26,22,14,0.9); border-color: #ffd27a; }
 #death-classes .cc-name { font-size: 15px; }
 #death-classes .cc-desc { display: none; }
 #death-classes .cc-weapon { font-size: 11px; }

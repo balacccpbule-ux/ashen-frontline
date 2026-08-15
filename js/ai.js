@@ -11,14 +11,23 @@
   // ============================================================
   //  实例化士兵渲染（每队一个 InstancedMesh，合并部件 + 顶点色）
   // ============================================================
+  // v5.45 士兵建模细化：腿+靴+躯干+背包+肩+双臂+手+头+盔+枪
   const PARTS = [
-    { w: 0.16, h: 0.72, d: 0.18, x: -0.12, y: 0.36, z: 0, c: 0x262626 },   // 左腿
-    { w: 0.16, h: 0.72, d: 0.18, x: 0.12, y: 0.36, z: 0, c: 0x262626 },    // 右腿
+    { w: 0.15, h: 0.68, d: 0.17, x: -0.12, y: 0.4, z: 0, c: 0x262626 },    // 左腿
+    { w: 0.15, h: 0.68, d: 0.17, x: 0.12, y: 0.4, z: 0, c: 0x262626 },     // 右腿
+    { w: 0.17, h: 0.13, d: 0.28, x: -0.12, y: 0.06, z: -0.03, c: 0x1a1a1a }, // 左靴
+    { w: 0.17, h: 0.13, d: 0.28, x: 0.12, y: 0.06, z: -0.03, c: 0x1a1a1a },  // 右靴
     { w: 0.52, h: 0.72, d: 0.32, x: 0, y: 1.08, z: 0, c: 'team' },         // 躯干
-    { w: 0.14, h: 0.6, d: 0.16, x: 0.34, y: 1.1, z: 0, c: 'team' },        // 持枪臂
-    { w: 0.26, h: 0.28, d: 0.26, x: 0, y: 1.6, z: 0, c: 0xd8b088 },        // 头
-    { w: 0.32, h: 0.16, d: 0.32, x: 0, y: 1.76, z: 0, c: 'team' },         // 头盔
-    { w: 0.07, h: 0.09, d: 0.85, x: 0.28, y: 1.15, z: -0.35, c: 0x262626 }, // 枪
+    { w: 0.36, h: 0.4, d: 0.16, x: 0, y: 1.12, z: 0.24, c: 0x33302a },     // 背包
+    { w: 0.16, h: 0.13, d: 0.2, x: -0.34, y: 1.38, z: 0, c: 'team' },      // 左肩
+    { w: 0.16, h: 0.13, d: 0.2, x: 0.34, y: 1.38, z: 0, c: 'team' },       // 右肩
+    { w: 0.13, h: 0.56, d: 0.15, x: 0.32, y: 1.08, z: 0, c: 'team' },      // 持枪臂
+    { w: 0.13, h: 0.56, d: 0.15, x: -0.32, y: 1.08, z: 0, c: 'team' },     // 左臂
+    { w: 0.09, h: 0.09, d: 0.09, x: 0.32, y: 0.8, z: 0, c: 0xd8b088 },     // 右手
+    { w: 0.09, h: 0.09, d: 0.09, x: -0.32, y: 0.8, z: 0, c: 0xd8b088 },    // 左手
+    { w: 0.25, h: 0.26, d: 0.24, x: 0, y: 1.6, z: 0, c: 0xd8b088 },        // 头
+    { w: 0.31, h: 0.15, d: 0.31, x: 0, y: 1.75, z: 0, c: 'team' },         // 头盔
+    { w: 0.07, h: 0.09, d: 0.85, x: 0.28, y: 1.12, z: -0.35, c: 0x262626 }, // 枪
   ];
   const TEAM_CLOTH = [0xc0463a, 0x3a66c0];
   // v5 LOD：远距低模（躯干 + 头 + 头盔，3 部件；近距为完整 7 部件）
@@ -120,16 +129,16 @@
     const other = useNear ? ims.far : ims.near;
     other.setMatrixAt(s.instSlot, _hidden);
     other.instanceMatrix.needsUpdate = true;
-    // v5.10 士兵姿态动画：蹲姿压缩、移动前倾
-    const crouchK = s.crouching ? 0.62 : 1;
-    const lean = !dead && s.moving && s.grounded ? -0.10 : 0;
+    // v5.45 士兵姿态动画：蹲姿微微前倾（不再过度压缩 0.62→0.88）、移动前倾
+    const crouchK = s.crouching ? 0.88 : 1;
+    const lean = (s.crouching ? -0.16 : 0) + (!dead && s.moving && s.grounded ? -0.08 : 0);
     _e.set(lean, s.yaw, dead ? -(Math.min(s.corpseT, 0.5) / 0.5) * Math.PI / 2 : 0, 'YXZ');
     _q.setFromEuler(_e);
     // v5.38 兵种外观差异：体型差异（支援壮硕 / 侦察纤细）+ 身高微差
     const clsK = s.clsKey === 'support' ? 1.07 : s.clsKey === 'assault' ? 1.03 : s.clsKey === 'recon' ? 0.94 : s.clsKey === 'engineer' ? 1.02 : s.clsKey === 'medic' ? 0.98 : 1.0;
     _s.set(clsK, crouchK * clsK, clsK);
     const bob = !dead && s.moving && s.grounded ? Math.abs(Math.sin(Game.time * 8 + s.id)) * 0.05 : 0;
-    _p.set(s.pos.x, s.pos.y + (dead ? 0.05 : bob) - (s.crouching ? 0.30 : 0), s.pos.z);
+    _p.set(s.pos.x, s.pos.y + (dead ? 0.05 : bob) - (s.crouching ? 0.12 : 0), s.pos.z);
     _m.compose(_p, _q, _s);
     im.setMatrixAt(s.instSlot, _m);
     im.instanceMatrix.needsUpdate = true;

@@ -61,17 +61,17 @@ html, body {
   opacity: 0; transition: opacity 0.1s;
 }
 
+/* v5.45 瞄准镜：镂空镜管内渲染十字线（无黑圈遮罩，镜管本身作为镜框） */
 #scope-overlay {
   position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(circle at 50% 50%, transparent 22%, rgba(0,0,0,0.96) 23%);
 }
 #scope-overlay::before {
-  content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 100%;
-  background: rgba(0,0,0,0.8);
+  content: ''; position: absolute; left: 50%; top: 46%; width: 1px; height: 8%;
+  background: rgba(0,0,0,0.85); box-shadow: 0 0 1px rgba(255,255,255,0.3);
 }
 #scope-overlay::after {
-  content: ''; position: absolute; left: 0; top: 50%; width: 100%; height: 1px;
-  background: rgba(0,0,0,0.8);
+  content: ''; position: absolute; left: 46%; top: 50%; width: 8%; height: 1px;
+  background: rgba(0,0,0,0.85); box-shadow: 0 0 1px rgba(255,255,255,0.3);
 }
 
 /* ---------- 左上 兵力 ---------- */
@@ -236,7 +236,9 @@ html, body {
 #death-classes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 96%; }
 #death-spawns { position: absolute; inset: 0; pointer-events: none; }
 #death-spawns .spawn-btn { pointer-events: auto; }
-#death-classes .cls-card { width: 128px; padding: 8px 6px; }
+#death-classes .cls-card { width: 128px; padding: 8px 6px; background: rgba(0,0,0,0.72); border: 2px solid rgba(255,255,255,0.16); }
+#death-classes .cls-card:hover { background: rgba(14,16,20,0.85); }
+#death-classes .cls-card.selected { background: rgba(26,22,14,0.9); border-color: #ffd27a; }
 #death-classes .cc-name { font-size: 15px; }
 #death-classes .cc-desc { display: none; }
 #death-classes .cc-weapon { font-size: 11px; }
@@ -2815,6 +2817,7 @@ const VEHICLE_SPAWNS = [
       addSolid(T.solids, 'rock', spot.x, spot.z, spot.w, spot.d, M.randRange(rng, 1.2, 2.8),
         { destructible: false, blocksLOS: true, isRock: true });
     }
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   // ============================================================
@@ -2903,6 +2906,7 @@ const VEHICLE_SPAWNS = [
         { destructible: false, blocksLOS: true, isRock: true });
     }
     placeScenery(rng, W, flags, false);
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   // ============================================================
@@ -2923,6 +2927,7 @@ const VEHICLE_SPAWNS = [
     placeFlagCover(rng, flags);
     // 岩群 + 棕榈/枯树
     placeScenery(rng, W, flags, true);
+    placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
   function adobeVillage(rng, cx, cz, seed, flags) {
@@ -3101,10 +3106,43 @@ const VEHICLE_SPAWNS = [
     }
   }
 
+  // v5.45 军事设施与掩体工事（瞭望塔/雷达/帐篷/弹药箱）
+  function placeMilitary(rng, W, flags) {
+    // 瞭望塔（2 座）
+    for (let i = 0; i < 2; i++) {
+      const spot = findSpot(rng, 2.6, 2.6, 2.6, 2.6, 16, 30, flags);
+      if (spot) addSolid(T.solids, 'watchtower', spot.x, spot.z, 2.6, 2.6, 8.5,
+        { destructible: false, blocksLOS: true });
+    }
+    // 雷达站（1 座）
+    const rspot = findSpot(rng, 2.0, 2.0, 2.0, 2.0, 14, 28, flags);
+    if (rspot) addSolid(T.solids, 'radar', rspot.x, rspot.z, 1.7, 1.7, 2.6,
+      { destructible: false, blocksLOS: false });
+    // 帐篷（3 顶）
+    for (let i = 0; i < 3; i++) {
+      const spot = findSpot(rng, 2.4, 3.2, 2.4, 3.2, 14, 26, flags);
+      if (spot) addSolid(T.destructibles, 'tent', spot.x, spot.z, spot.w, spot.d, 1.7,
+        { destructible: true, hp: 500, blocksLOS: true, collapse: true });
+    }
+    // 弹药箱（8 个，可殉爆）
+    for (let i = 0; i < 8; i++) {
+      const spot = findSpot(rng, 1.0, 1.2, 1.0, 1.2, 7, 20, flags);
+      if (spot) addSolid(T.destructibles, 'crate', spot.x, spot.z, spot.w, spot.d, 1.1,
+        { destructible: true, hp: 200, blocksLOS: false, explode: true, blastRadius: 5, blastDmg: 90 });
+    }
+  }
+
   // ---- 登记实体（压平 + 碰撞盒） ----
   function addSolid(list, kind, x, z, w, d, h, opts) {
-    const baseH = rawHeight(x, z);
-    T.flattenZones.push({ cx: x, cz: z, w: w, d: d, baseH: baseH, margin: 2.5 });
+    // v5.45 修复悬空：取足迹内最低高度为地基（向上填土），避免建筑悬空在坡地上
+    let baseH = rawHeight(x, z);
+    for (let sx = -2; sx <= 2; sx++) {
+      for (let sz = -2; sz <= 2; sz++) {
+        const px = x + (sx / 2) * (w / 2), pz = z + (sz / 2) * (d / 2);
+        baseH = Math.min(baseH, rawHeight(px, pz));
+      }
+    }
+    T.flattenZones.push({ cx: x, cz: z, w: w, d: d, baseH: baseH, margin: 3.5 });
     const s = {
       kind, list, cx: x, cz: z, w, d, h,
       baseH,
@@ -3274,6 +3312,45 @@ const VEHICLE_SPAWNS = [
       g.add(body, cabin);
       g.position.set(s.cx, s.baseH, s.cz);
       g.rotation.y = ((s.cx * 7 + s.cz * 13) % 314) / 100;   // 确定性朝向
+      mesh = g;
+    } else if (s.kind === 'watchtower') {
+      // v5.45 瞭望塔：四脚 + 平台 + 顶棚
+      const g = new THREE.Group();
+      const wood = new THREE.MeshStandardMaterial({ color: 0x6b5438, roughness: 0.9 });
+      for (let i = 0; i < 4; i++) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.28, s.h, 0.28), wood);
+        leg.position.set((i % 2 ? 1.0 : -1.0), s.h / 2, (i < 2 ? 1.0 : -1.0));
+        g.add(leg);
+      }
+      const plat = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.28, 2.6), new THREE.MeshStandardMaterial({ color: 0x8a7a5c, roughness: 0.9 }));
+      plat.position.set(0, s.h, 0);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.22, 3.0), wood);
+      roof.position.set(0, s.h + 1.15, 0);
+      g.add(plat, roof);
+      g.position.set(s.cx, s.baseH, s.cz);
+      mesh = g;
+    } else if (s.kind === 'radar') {
+      // v5.45 雷达站：基座 + 旋转抛物面
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.7, s.h, 1.7), new THREE.MeshStandardMaterial({ color: 0x6a7076, roughness: 0.85 }));
+      base.position.set(0, s.h / 2, 0);
+      const dish = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.5, metalness: 0.6 }));
+      dish.rotation.x = 0.8; dish.position.set(0, s.h + 0.3, -0.25);
+      g.add(base, dish);
+      g.position.set(s.cx, s.baseH, s.cz);
+      g.rotation.y = ((s.cx * 5 + s.cz * 11) % 314) / 100;
+      mesh = g;
+      s.radarDish = dish;
+    } else if (s.kind === 'tent') {
+      // v5.45 帐篷：帐篷体 + 脊线
+      const g = new THREE.Group();
+      const cloth = new THREE.MeshStandardMaterial({ color: 0x6a7a58, roughness: 0.95 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, s.d), cloth);
+      body.position.set(0, s.h / 2, 0);
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(s.w * 1.05, 0.14, s.d * 1.05), new THREE.MeshStandardMaterial({ color: 0x58674a, roughness: 0.95 }));
+      ridge.position.set(0, s.h + 0.05, 0);
+      g.add(body, ridge);
+      g.position.set(s.cx, s.baseH, s.cz);
       mesh = g;
     } else {
       // building / shack（v5.35 纵深造型：退台式塔楼 + 附楼 + 屋顶设备 + 天线，告别大方块）
@@ -3548,10 +3625,10 @@ const VEHICLE_SPAWNS = [
     if (s.rubble) {
       const rb = {
         kind: 'rubble', list: T.buildings, cx: s.cx, cz: s.cz,
-        w: s.w * 0.9, d: s.d * 0.9, h: 0.9, baseH: s.baseH,
+        w: s.w * 0.9, d: s.d * 0.9, h: 0.6, baseH: s.baseH,
         min: { x: s.cx - s.w * 0.45, y: s.baseH, z: s.cz - s.d * 0.45 },
-        max: { x: s.cx + s.w * 0.45, y: s.baseH + 0.9, z: s.cz + s.d * 0.45 },
-        solid: true, blocksLOS: true, destructible: false,
+        max: { x: s.cx + s.w * 0.45, y: s.baseH + 0.6, z: s.cz + s.d * 0.45 },
+        solid: true, blocksLOS: false, destructible: false,
         hp: Infinity, maxHp: Infinity, state: 2, mesh: null, parts: null,
       };
       const g = new THREE.Group();
@@ -5724,13 +5801,24 @@ const VEHICLE_SPAWNS = [
       const body = box(0.06, 0.1, 0.5, poly); body.position.set(0, 0.02, 0.05);
       const barrel = cyl(0.028, 0.62, dark); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.58);
       const muzzle = cyl(0.04, 0.08, glow); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.05, -0.9);
-      const scope = box(0.05, 0.065, 0.24, glow); scope.position.set(0, 0.13, -0.08);
-      const scopeRing = cyl(0.055, 0.03, metal); scopeRing.rotation.x = Math.PI / 2; scopeRing.position.set(0, 0.13, 0.02);
+      // v5.45 瞄准镜改柱状镂空长方体（四壁镜管 + 前后镜环，可透视中心）
+      const scope = new THREE.Group();
+      { const st = 0.008, tl = 0.28, tw = 0.08, th = 0.06;
+        const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+        const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+        const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+        const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
+        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.007, 6, 16), metal); rB.position.z = tl / 2;
+        scope.add(wT, wB, wL, wR, rF, rB);
+      }
+      scope.position.set(0, 0.13, -0.08);
+      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.08 };
       const stock = box(0.055, 0.1, 0.3, wood); stock.position.set(0, -0.02, 0.36);
       const mag = box(0.05, 0.12, 0.08, metal); mag.position.set(0, -0.1, -0.18);
       const bipod = box(0.05, 0.15, 0.03, dark); bipod.position.set(0, -0.11, -0.42); bipod.rotation.x = 0.22;
       const bolt = box(0.028, 0.028, 0.14, metal); bolt.position.set(0.055, 0.045, -0.06);   // v5.17 拉栓柄（动画部件）
-      g.add(body, barrel, muzzle, scope, scopeRing, stock, mag, bipod, bolt);
+      g.add(body, barrel, muzzle, scope, stock, mag, bipod, bolt);
       g.userData.bolt = bolt;
     } else if (key === 'lmg') {
       const body = box(0.08, 0.13, 0.55, poly); body.position.set(0, 0.02, 0.02);
@@ -5774,7 +5862,19 @@ const VEHICLE_SPAWNS = [
       const body = box(0.06, 0.11, 0.55, poly); body.position.set(0, 0.01, 0.02);
       const barrel = cyl(0.026, 0.5, metal); barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.05, -0.5);
       const muzzle = cyl(0.04, 0.09, glow); muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 0.05, -0.78);
-      const scope = box(0.05, 0.06, 0.26, glow); scope.position.set(0, 0.13, -0.06);
+      // v5.45 中倍镜镂空镜管
+      const scope = new THREE.Group();
+      { const st = 0.008, tl = 0.3, tw = 0.07, th = 0.055;
+        const wT = box(tw, st, tl, dark); wT.position.y = th / 2;
+        const wB = box(tw, st, tl, dark); wB.position.y = -th / 2;
+        const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
+        const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
+        const rF = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rF.position.z = -tl / 2;
+        const rB = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.007, 6, 16), metal); rB.position.z = tl / 2;
+        scope.add(wT, wB, wL, wR, rF, rB);
+      }
+      scope.position.set(0, 0.13, -0.06);
+      g.userData.scopeLocal = { x: 0, y: 0.13, z: -0.06 };
       const mag = box(0.05, 0.14, 0.08, metal); mag.position.set(0, -0.11, -0.12); mag.rotation.x = 0.2;
       const stock = box(0.055, 0.09, 0.28, poly); stock.position.set(0, -0.01, 0.34);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.14);
@@ -5900,6 +6000,11 @@ const VEHICLE_SPAWNS = [
     if (!wdef && s.slot === 'gadget') {
       const gd = GADGETS[s.gadget];
       if (gd && gd.scope) wdef = gd;
+    }
+    // v5.45 镜枪：读取枪模上的镜管位置，用于开镜时对准屏幕中心
+    P.scopeLocal = null;
+    if (wdef && wdef.scope && wslot && P.models && P.models[wdef.key] && P.models[wdef.key].userData.scopeLocal) {
+      P.scopeLocal = P.models[wdef.key].userData.scopeLocal;
     }
 
     // --- ADS 缓动（adsK 线性爬升 + easeInOutCubic 塑形；出镜快 1.25×） ---
@@ -6048,15 +6153,17 @@ const VEHICLE_SPAWNS = [
     }
 
     P.scoped = !!(wdef && wdef.scope && P.adsEase > 0.55);
-    if (P.view) P.view.visible = !(P.ads && P.adsEase > 0.5); // 开镜隐藏枪模，避免黑块遮挡
+    // v5.45 镜枪开镜不隐藏枪模（看穿镂空镜管）；非镜枪仍隐藏
+    const scopedGun = !!(wdef && wdef.scope);
+    if (P.view) P.view.visible = !(P.ads && P.adsEase > 0.5 && !scopedGun);
     updateViewmodel(dt, spdRatio);
   }
 
   function updateViewmodel(dt, spdRatio) {
     if (!P.view) return;
-    // 后坐回弹 + 落地顿挫衰减
-    P.viewKick = Math.max(0, P.viewKick - dt * 6);
-    P.landKick = Math.max(0, P.landKick - dt * 3.5);
+    // v5.45 平滑后坐：指数衰减，后移与回正都更顺滑
+    P.viewKick *= Math.exp(-7 * dt);
+    P.landKick *= Math.exp(-3.5 * dt);
     // 走路晃动
     if (Game.player.alive && Game.player.grounded && spdRatio > 0.1) {
       P.bobT += dt * (4 + spdRatio * 6);
@@ -6097,7 +6204,11 @@ const VEHICLE_SPAWNS = [
     }
     // 目标位置（瞄准 / 腰射 / v5.10 冲刺压低持枪）
     const sprinting = Game.player.sprinting && !(P.ads && P.adsEase > 0.5);
-    const target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
+    let target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
+    // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
+    if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {
+      target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
+    }
     const k = 1 - Math.exp(-14 * dt);
     P.view.position.x = M.lerp(P.view.position.x, target.x + bobX, k);
     P.view.position.y = M.lerp(P.view.position.y,
@@ -6128,14 +6239,23 @@ const VEHICLE_SPAWNS = [
   // ============================================================
   //  实例化士兵渲染（每队一个 InstancedMesh，合并部件 + 顶点色）
   // ============================================================
+  // v5.45 士兵建模细化：腿+靴+躯干+背包+肩+双臂+手+头+盔+枪
   const PARTS = [
-    { w: 0.16, h: 0.72, d: 0.18, x: -0.12, y: 0.36, z: 0, c: 0x262626 },   // 左腿
-    { w: 0.16, h: 0.72, d: 0.18, x: 0.12, y: 0.36, z: 0, c: 0x262626 },    // 右腿
+    { w: 0.15, h: 0.68, d: 0.17, x: -0.12, y: 0.4, z: 0, c: 0x262626 },    // 左腿
+    { w: 0.15, h: 0.68, d: 0.17, x: 0.12, y: 0.4, z: 0, c: 0x262626 },     // 右腿
+    { w: 0.17, h: 0.13, d: 0.28, x: -0.12, y: 0.06, z: -0.03, c: 0x1a1a1a }, // 左靴
+    { w: 0.17, h: 0.13, d: 0.28, x: 0.12, y: 0.06, z: -0.03, c: 0x1a1a1a },  // 右靴
     { w: 0.52, h: 0.72, d: 0.32, x: 0, y: 1.08, z: 0, c: 'team' },         // 躯干
-    { w: 0.14, h: 0.6, d: 0.16, x: 0.34, y: 1.1, z: 0, c: 'team' },        // 持枪臂
-    { w: 0.26, h: 0.28, d: 0.26, x: 0, y: 1.6, z: 0, c: 0xd8b088 },        // 头
-    { w: 0.32, h: 0.16, d: 0.32, x: 0, y: 1.76, z: 0, c: 'team' },         // 头盔
-    { w: 0.07, h: 0.09, d: 0.85, x: 0.28, y: 1.15, z: -0.35, c: 0x262626 }, // 枪
+    { w: 0.36, h: 0.4, d: 0.16, x: 0, y: 1.12, z: 0.24, c: 0x33302a },     // 背包
+    { w: 0.16, h: 0.13, d: 0.2, x: -0.34, y: 1.38, z: 0, c: 'team' },      // 左肩
+    { w: 0.16, h: 0.13, d: 0.2, x: 0.34, y: 1.38, z: 0, c: 'team' },       // 右肩
+    { w: 0.13, h: 0.56, d: 0.15, x: 0.32, y: 1.08, z: 0, c: 'team' },      // 持枪臂
+    { w: 0.13, h: 0.56, d: 0.15, x: -0.32, y: 1.08, z: 0, c: 'team' },     // 左臂
+    { w: 0.09, h: 0.09, d: 0.09, x: 0.32, y: 0.8, z: 0, c: 0xd8b088 },     // 右手
+    { w: 0.09, h: 0.09, d: 0.09, x: -0.32, y: 0.8, z: 0, c: 0xd8b088 },    // 左手
+    { w: 0.25, h: 0.26, d: 0.24, x: 0, y: 1.6, z: 0, c: 0xd8b088 },        // 头
+    { w: 0.31, h: 0.15, d: 0.31, x: 0, y: 1.75, z: 0, c: 'team' },         // 头盔
+    { w: 0.07, h: 0.09, d: 0.85, x: 0.28, y: 1.12, z: -0.35, c: 0x262626 }, // 枪
   ];
   const TEAM_CLOTH = [0xc0463a, 0x3a66c0];
   // v5 LOD：远距低模（躯干 + 头 + 头盔，3 部件；近距为完整 7 部件）
@@ -6237,16 +6357,16 @@ const VEHICLE_SPAWNS = [
     const other = useNear ? ims.far : ims.near;
     other.setMatrixAt(s.instSlot, _hidden);
     other.instanceMatrix.needsUpdate = true;
-    // v5.10 士兵姿态动画：蹲姿压缩、移动前倾
-    const crouchK = s.crouching ? 0.62 : 1;
-    const lean = !dead && s.moving && s.grounded ? -0.10 : 0;
+    // v5.45 士兵姿态动画：蹲姿微微前倾（不再过度压缩 0.62→0.88）、移动前倾
+    const crouchK = s.crouching ? 0.88 : 1;
+    const lean = (s.crouching ? -0.16 : 0) + (!dead && s.moving && s.grounded ? -0.08 : 0);
     _e.set(lean, s.yaw, dead ? -(Math.min(s.corpseT, 0.5) / 0.5) * Math.PI / 2 : 0, 'YXZ');
     _q.setFromEuler(_e);
     // v5.38 兵种外观差异：体型差异（支援壮硕 / 侦察纤细）+ 身高微差
     const clsK = s.clsKey === 'support' ? 1.07 : s.clsKey === 'assault' ? 1.03 : s.clsKey === 'recon' ? 0.94 : s.clsKey === 'engineer' ? 1.02 : s.clsKey === 'medic' ? 0.98 : 1.0;
     _s.set(clsK, crouchK * clsK, clsK);
     const bob = !dead && s.moving && s.grounded ? Math.abs(Math.sin(Game.time * 8 + s.id)) * 0.05 : 0;
-    _p.set(s.pos.x, s.pos.y + (dead ? 0.05 : bob) - (s.crouching ? 0.30 : 0), s.pos.z);
+    _p.set(s.pos.x, s.pos.y + (dead ? 0.05 : bob) - (s.crouching ? 0.12 : 0), s.pos.z);
     _m.compose(_p, _q, _s);
     im.setMatrixAt(s.instSlot, _m);
     im.instanceMatrix.needsUpdate = true;

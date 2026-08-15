@@ -13,7 +13,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     for (let i = 0; i < 80; i++) { if (await cdp.eval('typeof Game!=="undefined" && Game.player ? 1 : 0')) break; await sleep(250); }
 
     // 显式重置（autotest 下 rAF 会在页面加载期间自动推进战局）
-    await cdp.eval('Game.applySelection("breakthrough", "desert")');
+    await cdp.eval('Game.applySelection("breakthrough", "snow")');
 
     // 1. 初始状态
     const init = await cdp.eval(`JSON.stringify({
@@ -60,7 +60,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
 
     // 4. 时间到 → 守方胜
     const timeWin = await cdp.eval(`(function(){
-      Game.applySelection('breakthrough', 'desert');   // 重置战局
+      Game.applySelection('breakthrough', 'snow');   // 重置战局
       Game.ticketsRed=400; Game.ticketsBlue=250;
       Game.time = Game.matchTimeLimit;
       Game.updateBreakthrough(1/30);

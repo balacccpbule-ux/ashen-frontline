@@ -19,7 +19,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     // ---- 布置：沙漠图 + 关闭步兵 AI 开枪（隔离载具变量）+ 找一条无障碍通道 ----
     const setup = await cdp.eval('(function(){' +
       'var G=Game; G.godMode=true;' +
-      'G.applySelection("conquest", "desert"); G.deployPlayer(); G.godMode=true;' +
+      'G.applySelection("conquest", "snow"); G.deployPlayer(); G.godMode=true;' +
       'G.__origFireWeapon = G.weapons.fireWeapon;' +
       'G.weapons.fireWeapon = function(){ return false; };' +   // 步兵 AI 停火（载具测试专用）
       'G.bots.forEach(function(b){ if (b.clsKey==="mortar") { b.gadgetAmmo = 0; b.bot.mortarT = undefined; } });' +

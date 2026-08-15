@@ -17,7 +17,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     const setup = await cdp.eval('(function(){' +
       'var G = Game;' +
       'CONFIG.DOWNED_ENABLED = undefined; G.godMode = true;' +
-      'G.applySelection("conquest", "desert"); G.deployPlayer();' +
+      'G.applySelection("conquest", "snow"); G.deployPlayer();' +
       'var aa = G.vehicles.filter(function(v){ return v.kind==="aa" && v.team===1; })[0];' +
       'var aaPilot = G.bots.filter(function(b){ return b.team===1 && b.bot.crew==="aa"; })[0];' +
       'var heli = G.vehicles.filter(function(v){ return v.kind==="heli" && v.team===0; })[0];' +
@@ -27,8 +27,8 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       '  var x = b.team===0 ? -78 : 78, z = b.team===0 ? -74 : 74;' +
       '  b.pos.x = x; b.pos.z = z; b.pos.y = G.heightAt(x,z); b.vel = {x:0,y:0,z:0}; b.spawnProtect = 0;' +
       '  G.__pinned.push({ id: b.id, x: x, z: z }); });' +
-      'aa.pos.x = -65; aa.pos.z = 0; aa.pos.y = G.heightAt(-65,0);' +
-      'heli.pos.x = -10; heli.pos.z = 0; heli.pos.y = 26; heli.vel = {x:0,y:0,z:0};' +
+      'aa.pos.x = -108; aa.pos.z = 0; aa.pos.y = G.heightAt(-108,0);' +
+      'heli.pos.x = -50; heli.pos.z = 0; heli.pos.y = 26; heli.vel = {x:0,y:0,z:0};' +
       'return JSON.stringify({ vehCount: G.vehicles.length, aaId: aa.id, heliId: heli.id });' +
       '})()');
     const s = JSON.parse(setup);
@@ -66,8 +66,8 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'for (var k=0;k<G.vehicles.length;k++){ var v=G.vehicles[k]; if(v.id===AID)AA=v; if(v.id===HID)H=v; }' +
       'for (var i=0;i<180;i++){' +
       '  var dt=1/30; G.time+=dt;' +
-      '  AA.pos.x=-65; AA.pos.z=0; AA.pos.y=G.heightAt(-65,0); AA.vel={x:0,y:0,z:0};' +
-      '  H.pos.x=-10; H.pos.z=0; H.pos.y=26; H.vel={x:0,y:0,z:0};' +
+      '  AA.pos.x=-108; AA.pos.z=0; AA.pos.y=G.heightAt(-108,0); AA.vel={x:0,y:0,z:0};' +
+      '  H.pos.x=-50; H.pos.z=0; H.pos.y=26; H.vel={x:0,y:0,z:0};' +
       '  for (var p=0;p<G.__pinned.length;p++){ var pb=G.__pinned[p]; var bot=G.soldiers[pb.id];' +
       '    bot.pos.x=pb.x; bot.pos.z=pb.z; bot.pos.y=G.heightAt(pb.x,pb.z); bot.vel={x:0,y:0,z:0}; }' +
       '  if (G.player.alive) G.Player.update(dt);' +

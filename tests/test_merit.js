@@ -19,7 +19,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     // ---- 布置：清场 + 靶子 ----
     await cdp.eval('(function(){' +
       'var G=Game; G.godMode=true;' +
-      'G.applySelection("conquest", "desert"); G.deployPlayer(); G.godMode=true;' +
+      'G.applySelection("conquest", "snow"); G.deployPlayer(); G.godMode=true;' +
       'G.bots.forEach(function(b){ if (b.clsKey==="mortar") { b.gadgetAmmo = 0; b.bot.mortarT = undefined; } });' +
       'G.__foe = G.bots.filter(function(b){ return b.team===1 && !b.bot.crew; })[0];' +
       'G.__foe2 = G.bots.filter(function(b){ return b.team===1 && !b.bot.crew; })[1];' +

@@ -43,12 +43,12 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(r2.phase === 'menu' && r2.over === true && r2.hudHidden === true && r2.menuVisible === true, '退出对局 → 回到主菜单');
 
     await cdp.eval('document.querySelector(".diff-btn[data-diff=easy]").click()');
-    await cdp.eval('document.querySelector(".map-btn[data-map=desert]").click()');
+    await cdp.eval('document.querySelector(".map-btn[data-map=fort]").click()');
     await cdp.eval('document.getElementById("btn-start").click()');
     await sleep(400);
     const s3 = await cdp.eval('JSON.stringify({ map: Game.mapId, diff: Game.aiDifficulty, fire: CONFIG.AI_FIRE_CHANCE, engage: CONFIG.AI_ENGAGE_RANGE })');
     const r3 = JSON.parse(s3);
-    assert(r3.map === 'desert' && r3.diff === 'easy' && r3.fire === 0.25 && r3.engage === 60, '重新选图（沙漠）+ 简单难度 (' + r3.map + '/' + r3.diff + ')');
+    assert(r3.map === 'fort' && r3.diff === 'easy' && r3.fire === 0.25 && r3.engage === 60, '重新选图（钢铁防线）+ 简单难度 (' + r3.map + '/' + r3.diff + ')');
 
     const errors = cdp.errors();
     for (const e of errors) console.error('  !! ' + e);

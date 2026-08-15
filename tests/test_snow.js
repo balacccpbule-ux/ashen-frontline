@@ -35,7 +35,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     assert(r.cabins >= 6, '林间木屋 ≥ 6 (' + r.cabins + ')');
     assert(r.ice === true, '冰湖冰面生成');
     assert(r.weather === 'snow' && r.weatherPts === 900, '降雪粒子 900 (' + r.weatherPts + ')');
-    assert(r.menuBtns === 5, '菜单五地图按钮 (' + r.menuBtns + ')');
+    assert(r.menuBtns === 3, '菜单三地图按钮 (' + r.menuBtns + ')');
 
     // 弹坑系统已移除：爆炸不雕刻地形（地面与贴图保持一致）
     const cr = await cdp.eval(`(function(){
@@ -53,12 +53,12 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
 
     // 切回沙漠：冰面/天气清理
     const back = await cdp.eval(`(function(){
-      Game.applySelection('conquest', 'desert');
+      Game.applySelection('conquest', 'fort');
       Game.deployPlayer();
       return JSON.stringify({ map: Game.mapId, ice: !!Game.terrain.iceMesh, weather: Game.effects.weatherState.kind });
     })()`);
     const b = JSON.parse(back);
-    assert(b.map === 'desert' && b.ice === false && b.weather === 'sand', '切回沙漠 → 冰面清理 + 沙尘天气');
+    assert(b.map === 'fort' && b.ice === false && b.weather === 'ash', '切钢铁防线 → 冰面清理 + 灰烬天气');
 
     const errors = cdp.errors();
     for (const e of errors) console.error('  !! ' + e);

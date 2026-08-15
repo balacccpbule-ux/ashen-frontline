@@ -391,28 +391,10 @@ const VEHICLES = {
 };
 
 // ============================================================
-//  地图（三图：沙漠 / 雪域 / 钢铁防线）
+//  地图（三图：雪域 / 钢铁防线 / 雨林沼泽）
 //  每图 × 每模式一套占领点布局；突破模式为线性扇区链
 // ============================================================
 const MAP_DEFS = {
-  desert: {
-    name: '沙暴行动', gen: 'desert', sky: 0xd9b98a, sun: 0xffe0b0, sunPos: [110, 100, 60],
-    fogNear: 60, fogFar: 180, weather: 'sand',
-    flags: {
-      conquest: [
-        { id: 'A', name: '绿洲水站', x: 0, z: -45 },
-        { id: 'B', name: '西侧油田', x: -68, z: -12 },
-        { id: 'C', name: '东侧油井', x: 68, z: -12 },
-        { id: 'D', name: '山脊观察站', x: 0, z: 48 },
-        { id: 'E', name: '中央集市', x: 0, z: 0 },
-      ],
-      breakthrough: [
-        { sector: 1, name: '沙丘前线', flags: [{ id: 'S1A', x: -54, z: -33 }, { id: 'S1B', x: -54, z: 33 }] },
-        { sector: 2, name: '油田腹地', flags: [{ id: 'S2A', x: 0, z: -33 }, { id: 'S2B', x: 0, z: 33 }] },
-        { sector: 3, name: '绿洲要塞', flags: [{ id: 'S3A', x: 54, z: -24 }, { id: 'S3B', x: 54, z: 24 }] },
-      ],
-    },
-  },
   fort: {
     name: '钢铁防线', gen: 'fort', sky: 0x7a3020, sun: 0xff8a50, sunPos: [90, 38, 70],   // v5.30 血色黄昏
     fogNear: 35, fogFar: 140, weather: 'ash',   // 灰烬余烬上飘（烽火连天）
@@ -464,24 +446,6 @@ const MAP_DEFS = {
         { sector: 1, name: '西岸丛林', flags: [{ id: 'S1A', x: -54, z: -36 }, { id: 'S1B', x: -54, z: 36 }] },
         { sector: 2, name: '河道争夺', flags: [{ id: 'S2A', x: 0, z: -42 }, { id: 'S2B', x: 0, z: 42 }] },
         { sector: 3, name: '东岸防线', flags: [{ id: 'S3A', x: 54, z: -36 }, { id: 'S3B', x: 54, z: 36 }] },
-      ],
-    },
-  },
-  city: {
-    name: '钢铁废墟', gen: 'city', sky: 0x2a2622, sun: 0xffb080, sunPos: [100, 60, 70],
-    fogNear: 40, fogFar: 150, weather: 'ash',
-    flags: {
-      conquest: [
-        { id: 'A', name: '西区广场', x: -60, z: -30 },
-        { id: 'B', name: '东区车站', x: 60, z: -30 },
-        { id: 'C', name: '中央大道', x: 0, z: -20 },
-        { id: 'D', name: '北区高架', x: 0, z: 44 },
-        { id: 'E', name: '南区钟楼', x: 0, z: 0 },
-      ],
-      breakthrough: [
-        { sector: 1, name: '西郊废墟', flags: [{ id: 'S1A', x: -54, z: -30 }, { id: 'S1B', x: -54, z: 30 }] },
-        { sector: 2, name: '中心街区', flags: [{ id: 'S2A', x: 0, z: -30 }, { id: 'S2B', x: 0, z: 30 }] },
-        { sector: 3, name: '东区要塞', flags: [{ id: 'S3A', x: 54, z: -30 }, { id: 'S3B', x: 54, z: 30 }] },
       ],
     },
   },

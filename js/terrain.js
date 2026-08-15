@@ -46,14 +46,6 @@
   // ============================================================
   //  地图原始高度函数
   // ============================================================
-  function desertRawHeight(x, z) {
-    // 沙丘：多层正弦叠加，起伏明显
-    let h = 6.5 * Math.sin(x * 0.038 + 0.6) * Math.sin(z * 0.05 + 1.2);
-    h += 3.2 * Math.sin(x * 0.085 + 2.4) * Math.sin(z * 0.115 + 0.4);
-    h += 4.0 * Math.sin(x * 0.028 + z * 0.045 + 0.8);
-    h += 1.2 * Math.sin(x * 0.2 + z * 0.16);
-    return h - 0.8;
-  }
   // v5 第三张地图：雪域要塞（丘陵 + 北侧山脉 + 冰湖）
   function snowRawHeight(x, z) {
     let h = 4.0 * Math.sin(x * 0.03 + 0.5) * Math.sin(z * 0.042 + 0.9);
@@ -80,30 +72,16 @@
     h += -3.4 * Math.exp(-Math.pow(x / 16, 2));   // 中央河道
     return h + 1.6;
   }
-  // v5.49 城市废墟：平缓城区（微起伏，街巷高楼）
-  function cityRawHeight(x, z) {
-    let h = 0.9 * Math.sin(x * 0.04 + 0.4) * Math.cos(z * 0.05 + 0.9);
-    h += 0.5 * Math.sin(x * 0.09 + z * 0.07 + 1.1);
-    return h + 0.6;
-  }
   function rawHeight(x, z) {
     if (T.mapId === 'snow') return snowRawHeight(x, z);
     if (T.mapId === 'fort') return fortRawHeight(x, z);
-    if (T.mapId === 'jungle') return jungleRawHeight(x, z);
-    if (T.mapId === 'city') return cityRawHeight(x, z);
-    return desertRawHeight(x, z);
+    return jungleRawHeight(x, z);
   }
 
   // ---- 高度 → 地表颜色（双图配色） ----
   function bandColor(y) {
     let c;
-    if (T.mapId === 'desert') {
-      if (y < -2) c = [0xb8, 0x96, 0x5e];
-      else if (y < 2) c = [0xc2, 0xa3, 0x6b];
-      else if (y < 7) c = [0xcb, 0xaa, 0x6e];
-      else if (y < 14) c = [0xd4, 0xb2, 0x73];
-      else c = [0xdc, 0xbc, 0x7c];
-    } else if (T.mapId === 'snow') {
+    if (T.mapId === 'snow') {
       if (y < 2.4) c = [0x9f, 0xb8, 0xc8];       // 冰面蓝
       else if (y < 8) c = [0xe9, 0xef, 0xf3];     // 雪
       else if (y < 18) c = [0xc9, 0xd4, 0xdd];    // 深雪
@@ -113,10 +91,6 @@
       else if (y < 1.6) c = [0x4a, 0x74, 0x3a];   // 泥沼/湿地（绿）
       else if (y < 3.6) c = [0x3c, 0x64, 0x32];   // 雨林地表（深绿）
       else c = [0x2f, 0x50, 0x28];                // 高坡（暗绿）
-    } else if (T.mapId === 'city') {
-      if (y < 0.2) c = [0x40, 0x3e, 0x3a];        // 低洼（深灰）
-      else if (y < 1.2) c = [0x52, 0x4f, 0x4a];   // 街道（灰）
-      else c = [0x60, 0x5c, 0x56];                // 高地（浅灰）
     } else {
       if (y < -1) c = [0x5d, 0x54, 0x40];        // 泥
       else if (y < 4) c = [0x55, 0x66, 0x4a];    // 荒草
@@ -172,7 +146,7 @@
     T.mapId = mapId || 'desert';
     T.clear(scene);
     // 地图用独立确定性随机源（与战斗 rng 隔离，切图布局恒定）
-    const rng = Game.newRng((T.mapId === 'desert' ? 0x5a5a11 : T.mapId === 'fort' ? 0x7a2d2d : T.mapId === 'snow' ? 0x4a11aa : T.mapId === 'jungle' ? 0x2b6a3a : 0x5a4a3a) >>> 0);
+    const rng = Game.newRng((T.mapId === 'fort' ? 0x7a2d2d : T.mapId === 'jungle' ? 0x2b6a3a : 0x4a11aa) >>> 0);
     const W = CONFIG.WORLD;
     T.N = Math.round((W * 2) / T.cell);
     T.hf = new Float32Array((T.N + 1) * (T.N + 1));
@@ -205,9 +179,7 @@
     // 3) 布局
     if (T.mapId === 'snow') genSnow(rng, W, flagPos);
     else if (T.mapId === 'fort') genFort(rng, W, flagPos);   // v5.30 钢铁防线
-    else if (T.mapId === 'jungle') genJungle(rng, W, flagPos);   // v5.49 雨林沼泽
-    else if (T.mapId === 'city') genCity(rng, W, flagPos);       // v5.49 城市废墟
-    else genDesert(rng, W, flagPos);
+    else genJungle(rng, W, flagPos);   // v5.49 雨林沼泽
 
     // 3.5) 建筑/掩体地基压平：布局后、地形网格生成前统一应用（地形网格/小地图/heightAt 三者严格一致，
     //     根治「贴图与建模不匹配」——此前网格在压平前生成，坡地会顶穿建筑）
@@ -277,6 +249,7 @@
     placeFortifications(rng, W, flags);   // v5.13 永久墙工事（先于小型掩体，保证墙体净空）
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
+    placeTwoStory(rng, W, flags, 6);   // v5.51 二层楼房
     // 松林（密集雪松 + 少量裸岩）
     for (let i = 0; i < 70; i++) {
       const x = M.randRange(rng, -W + 12, W - 12);
@@ -378,6 +351,7 @@
     // 5) 通用：掩体/旗点工事/岩群（东侧高台加岩）
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
+    placeTwoStory(rng, W, flags, 7);   // v5.51 二层楼房
     for (let i = 0; i < 10; i++) {
       const spot = findSpot(rng, 1.5, 3.5, 1.5, 3.5, 10, 20, flags);
       if (!spot) continue;
@@ -385,27 +359,6 @@
         { destructible: false, blocksLOS: true, isRock: true });
     }
     placeScenery(rng, W, flags, false);
-    placeMilitary(rng, W, flags);   // v5.45 军事设施
-  }
-
-  // ============================================================
-  //  沙漠地图布局 — 沙暴行动
-  // ============================================================
-  function genDesert(rng, W, flags) {
-    // 土坯村庄（可破坏建筑 + 院墙）
-    adobeVillage(rng, -45, 42, 0.9, flags);
-    adobeVillage(rng, 45, 45, 0.2, flags);
-    // 油田（油罐可殉爆）
-    oilfield(rng, -68, -12, 0.6, flags);
-    oilfield(rng, 68, -12, 0.1, flags);
-    // 绿洲（旗点 A 附近棕榈林）
-    oasis(rng, 0, -45, flags);
-    placeFortifications(rng, W, flags);   // v5.13 永久墙工事（先于小型掩体，保证墙体净空）
-    // 掩体 + 补给
-    placeDestructibles(rng, W, flags);
-    placeFlagCover(rng, flags);
-    // 岩群 + 棕榈/枯树
-    placeScenery(rng, W, flags, true);
     placeMilitary(rng, W, flags);   // v5.45 军事设施
   }
 
@@ -436,6 +389,7 @@
     placeFortifications(rng, W, flags);
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
+    placeTwoStory(rng, W, flags, 6);   // v5.51 二层楼房
     // 密林（大量绿树）
     for (let i = 0; i < 90; i++) {
       const x = M.randRange(rng, -W + 12, W - 12);
@@ -459,66 +413,6 @@
     placeMilitary(rng, W, flags);
   }
 
-  // ============================================================
-  //  v5.49 城市废墟布局 — 成排混凝土高楼 + 街巷 + 废墟车辆
-  // ============================================================
-  function genCity(rng, W, flags) {
-    // 城区网格：成排高楼（留街道/广场空隙）
-    for (let bx = -88; bx <= 88; bx += 22) {
-      for (let bz = -82; bz <= 82; bz += 18) {
-        if (rng() < 0.18) continue;
-        const x = bx + (rng() - 0.5) * 5, z = bz + (rng() - 0.5) * 5;
-        let nearFlag = false;
-        for (const f of flags) if (dist2(x, z, f.x, f.z) < 13) nearFlag = true;
-        if (nearFlag || Math.abs(x) > W - 16 || Math.abs(z) > W - 16) continue;
-        addSolid(T.buildings, 'building', x, z, 10 + rng() * 6, 8 + rng() * 5, 8 + rng() * 10,
-          { destructible: true, hp: 16000, blocksLOS: true, stages: true, rubble: true });
-      }
-    }
-    // 废墟车辆（可殉爆）
-    for (let i = 0; i < 16; i++) {
-      const spot = findSpot(rng, 2.0, 2.2, 4.0, 4.4, 8, 18, flags);
-      if (!spot) continue;
-      addSolid(T.destructibles, 'wreck', spot.x, spot.z, spot.w, spot.d, 1.4,
-        { destructible: true, hp: 350, blocksLOS: true, explode: true, blastRadius: 6, blastDmg: 120 });
-    }
-    placeFortifications(rng, W, flags);
-    placeDestructibles(rng, W, flags);
-    placeFlagCover(rng, flags);
-    // 混凝土碉堡
-    for (let i = 0; i < 8; i++) {
-      const spot = findSpot(rng, 4, 6, 4, 6, 16, 26, flags);
-      if (!spot) continue;
-      addSolid(T.destructibles, 'bunker', spot.x, spot.z, spot.w, spot.d, 3.2,
-        { destructible: false, blocksLOS: true, bunker: true });
-    }
-    placeMilitary(rng, W, flags);
-  }
-
-  function adobeVillage(rng, cx, cz, seed, flags) {
-    for (let i = 0; i < 8; i++) {
-      const ang = rng() * Math.PI * 2, dist = 6 + rng() * 20;
-      const x = cx + Math.sin(ang) * dist, z = cz + Math.cos(ang) * dist;
-      let nearFlag = false;
-      for (const f of flags) if (dist2(x, z, f.x, f.z) < 14) nearFlag = true;
-      if (nearFlag || Math.abs(x) > CONFIG.WORLD - 20 || Math.abs(z) > CONFIG.WORLD - 20) continue;
-      const w = 7 + rng() * 6, d = 7 + rng() * 6, h = 3.6 + rng() * 2.4;
-      addSolid(T.buildings, 'building', x, z, w, d, h,
-        { destructible: true, hp: 12400, blocksLOS: true, stages: true, rubble: true, adobe: true });
-    }
-    // 院墙（长条低墙，可破坏）
-    for (let i = 0; i < 5; i++) {
-      const ang = rng() * Math.PI * 2, dist = 10 + rng() * 16;
-      const x = cx + Math.sin(ang) * dist, z = cz + Math.cos(ang) * dist;
-      let nearFlag = false;
-      for (const f of flags) if (dist2(x, z, f.x, f.z) < 12) nearFlag = true;
-      if (nearFlag) continue;
-      const len = 8 + rng() * 8;
-      addSolid(T.destructibles, 'wall', x, z, len, 0.7, 2.1,
-        { destructible: true, hp: 240, blocksLOS: true });
-    }
-  }
-
   function oilfield(rng, cx, cz, seed, flags) {
     for (let i = 0; i < 5; i++) {
       const ang = rng() * Math.PI * 2, dist = 4 + rng() * 14;
@@ -531,16 +425,6 @@
       const ang = rng() * Math.PI * 2, dist = 6 + rng() * 12;
       const x = cx + Math.sin(ang) * dist, z = cz + Math.cos(ang) * dist;
       T.trees.push({ x, z, h: 2.6, s: 0.5, kind: 'pump' });
-    }
-  }
-
-  function oasis(rng, cx, cz, flags) {
-    T.flattenZones.push({ cx, cz, w: 22, d: 22, baseH: rawHeight(cx, cz) - 0.5, margin: 6 });
-    applyFlattens();
-    for (let k = 0; k < 10; k++) {
-      const ang = (k / 10) * Math.PI * 2 + 0.3;
-      const x = cx + Math.sin(ang) * 10, z = cz + Math.cos(ang) * 10;
-      T.trees.push({ x, z, h: 5.2, s: 1.1, kind: 'palm' });
     }
   }
 
@@ -640,6 +524,16 @@
       if (!spot) continue;
       addSolid(T.destructibles, 'barrel', spot.x, spot.z, spot.w, spot.d, 1.1,
         { destructible: true, hp: 24, blocksLOS: false, explode: true });
+    }
+  }
+
+  // v5.51 二层楼房：四面通风（无墙），可分级破坏（上层先塌）
+  function placeTwoStory(rng, W, flags, n) {
+    for (let i = 0; i < n; i++) {
+      const spot = findSpot(rng, 7, 9, 7, 9, 14, 26, flags);
+      if (!spot) continue;
+      addSolid(T.buildings, 'house2', spot.x, spot.z, spot.w, spot.d, M.randRange(rng, 5.5, 7),
+        { destructible: true, hp: 14000, blocksLOS: false, stages: true, rubble: true });
     }
   }
 
@@ -943,6 +837,30 @@
       g.add(body, ridge);
       g.position.set(s.cx, s.baseH, s.cz);
       mesh = g;
+    } else if (s.kind === 'house2') {
+      // v5.51 二层楼房：四面通风（四角立柱 + 楼板 + 屋顶，无墙），可分级破坏
+      const g = new THREE.Group();
+      const concM = new THREE.MeshStandardMaterial({ color: 0x8a867e, roughness: 0.85 });
+      const darkM = new THREE.MeshStandardMaterial({ color: 0x55514a, roughness: 0.9 });
+      const floorH = s.h / 2;
+      const ground = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.18, s.d), darkM);
+      ground.position.set(0, 0.09, 0);
+      const mid = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.16, s.d), darkM);
+      mid.position.set(0, floorH + 0.08, 0);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.4, 0.2, s.d + 0.4), concM);
+      roof.position.set(0, s.h + 0.1, 0);
+      roof.castShadow = true;
+      const pillars = new THREE.Group();
+      for (const o of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, s.h, 0.4), concM);
+        p.position.set(o[0] * (s.w / 2 - 0.25), s.h / 2, o[1] * (s.d / 2 - 0.25));
+        p.castShadow = true;
+        pillars.add(p);
+      }
+      g.add(ground, mid, roof, pillars);
+      g.position.set(s.cx, s.baseH, s.cz);
+      mesh = g;
+      s.parts = { roof, mid, pillars, extras: [mid] };
     } else {
       // building / shack（v5.35 纵深造型：退台式塔楼 + 附楼 + 屋顶设备 + 天线，告别大方块）
       const isShack = s.kind === 'shack';
@@ -1179,16 +1097,28 @@
       if (s.parts && s.parts.crackedMat && s.parts.wall) s.parts.wall.material = s.parts.crackedMat;
       if (Game.effects) Game.effects.emit(s.cx, s.baseH + s.h / 2, s.cz, 0x999999, 10, 3, 0.6, 0.2, 12, 1);
     } else if (st === 2) {
-      // 残破：墙体塌成矮墙（碰撞同步）
-      if (s.parts && s.parts.wall) { s.parts.wall.scale.y = 1.2 / s.h; s.parts.wall.position.y = 0.6; }
-      if (s.parts) {
-        if (s.parts.roof) s.parts.roof.visible = false;
-        if (s.parts.door) s.parts.door.visible = false;
-        if (s.parts.extras) for (const ex of s.parts.extras) ex.visible = false;   // v5.35 塔楼/设备随残破消失
+      if (s.kind === 'house2') {
+        // v5.51 二层楼房残破：上层（屋顶+二层楼板）塌落，立柱折成矮桩
+        if (s.parts) {
+          if (s.parts.roof) s.parts.roof.visible = false;
+          if (s.parts.extras) for (const ex of s.parts.extras) ex.visible = false;
+          if (s.parts.pillars) s.parts.pillars.scale.y = 1.2 / s.h;
+        }
+        s.h = 1.2;
+        s.max.y = s.baseH + 1.2;
+        if (Game.effects) Game.effects.emit(s.cx, s.baseH + 1, s.cz, 0x8a867e, 14, 4, 0.7, 0.25, 14, 1);
+      } else {
+        // 残破：墙体塌成矮墙（碰撞同步）
+        if (s.parts && s.parts.wall) { s.parts.wall.scale.y = 1.2 / s.h; s.parts.wall.position.y = 0.6; }
+        if (s.parts) {
+          if (s.parts.roof) s.parts.roof.visible = false;
+          if (s.parts.door) s.parts.door.visible = false;
+          if (s.parts.extras) for (const ex of s.parts.extras) ex.visible = false;   // v5.35 塔楼/设备随残破消失
+        }
+        s.h = 1.2;
+        s.max.y = s.baseH + 1.2;
+        if (Game.effects) Game.effects.emit(s.cx, s.baseH + 1, s.cz, 0x8a7a5c, 14, 4, 0.7, 0.25, 14, 1);
       }
-      s.h = 1.2;
-      s.max.y = s.baseH + 1.2;
-      if (Game.effects) Game.effects.emit(s.cx, s.baseH + 1, s.cz, 0x8a7a5c, 14, 4, 0.7, 0.25, 14, 1);
     }
   }
 

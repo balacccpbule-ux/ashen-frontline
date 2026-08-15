@@ -17,7 +17,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     // ---- 布置：沙漠图（默认）+ 清场 ----
     const setup = await cdp.eval('(function(){' +
       'var G=Game; G.godMode=true;' +
-      'G.applySelection("conquest", "desert"); G.deployPlayer(); G.godMode=true;' +
+      'G.applySelection("conquest", "snow"); G.deployPlayer(); G.godMode=true;' +
       // v5.41 固定玩家位置到红基地，消除 deployPlayer 随机偏移导致的 LOS 断言偶发失败
       'G.player.pos.x = -108; G.player.pos.z = 0; G.player.pos.y = G.heightAt(-108, 0); G.player.vel = {x:0,y:0,z:0};' +
       // 红方迫击炮哑火（防止 AI 抢先炮击靶子）；蓝方迫击炮保留（反炮击预警主角）

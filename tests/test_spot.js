@@ -80,7 +80,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     // 4) LOS：建筑内的敌人无法标记
     const r4 = await cdp.eval('(function(){' +
       'var G=Game; var p=G.player; p.spotCooldown=0;' +
-      'var bld = G.terrain.buildings.filter(function(s){return s.kind==="building" && s.solid;})[0];' +
+      'var bld = G.terrain.buildings.filter(function(s){return (s.kind==="building" || s.kind==="shack") && s.solid && s.blocksLOS;})[0];' +
       'var f3 = G.bots.filter(function(b){return b.team===1 && !b.bot.crew;})[2];' +
       'f3.pos.x = bld.cx; f3.pos.z = bld.cz; f3.pos.y = G.heightAt(bld.cx, bld.cz);' +
       'var dx = f3.pos.x - p.pos.x, dz = f3.pos.z - p.pos.z;' +

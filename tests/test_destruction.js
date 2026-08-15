@@ -6,7 +6,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
 
 (async () => {
   console.log('=== test_destruction: 全域破坏 ===');
-  const { proc, cdp } = await launchChrome(gameUrl(), 9238);
+  const { proc, cdp } = await launchChrome(gameUrl('autotest=1&map=fort'), 9238);
   let failed = false;
   try {
     await cdp.send('Runtime.enable');

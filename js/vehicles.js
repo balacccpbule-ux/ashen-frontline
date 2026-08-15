@@ -48,7 +48,7 @@
       },
       vel: { x: 0, y: 0, z: 0 },
       yaw: team === TEAM_RED ? 0 : Math.PI,
-      turretYaw: 0, turretPitch: 0, hovPitch: 0, hovRoll: 0,
+      turretYaw: 0, turretPitch: 0, hovPitch: 0, hovRoll: 0, viewPitch: 0,   // v5.47 viewPitch=直升机鼠标俯仰视角
       hp: def.hp, maxHp: def.hp, alive: true,
       occupant: null, gunner: null, throttle: 0,   // v5.38 gunner=装甲车机枪手（第二乘员）
       weaponSlot: 'primary',
@@ -545,7 +545,7 @@
     }
     if (v.kind === 'heli') {
       if (v.group) v.group.visible = !P.ads;
-      const yaw = v.yaw, pitch = v.hovPitch;
+      const yaw = v.yaw, pitch = v.hovPitch + (v.viewPitch || 0);   // v5.47 视角=飞行俯仰+鼠标俯仰
       const cp = Math.cos(pitch), sp = Math.sin(pitch);
       const fwd = { x: -Math.sin(yaw) * cp, y: sp, z: -Math.cos(yaw) * cp };
       const camDist = 10, camHeight = 3.5;
@@ -570,7 +570,7 @@
     };
     v.vel = { x: 0, y: 0, z: 0 };
     v.yaw = v.team === TEAM_RED ? 0 : Math.PI;
-    v.turretYaw = 0; v.turretPitch = 0; v.hovPitch = 0; v.hovRoll = 0;
+    v.turretYaw = 0; v.turretPitch = 0; v.hovPitch = 0; v.hovRoll = 0; v.viewPitch = 0;
     v.throttle = 0;
     v.botYaw = v.botPitch = v.botRoll = v.botThrottle = null;
     if (v.group) v.group.visible = true;
@@ -753,7 +753,8 @@
         if (P.locked) {
           if (v.kind === 'heli') {
             v.yaw -= P.dx * 0.0022;
-            // v5.42 直升机俯仰改由 W/S 控制（见 heliPhysics），鼠标 Y 不再控俯仰
+            // v5.47 鼠标 Y 控制视角俯仰（自由观察/瞄准），飞行俯仰仍由 W/S 控制（见 heliPhysics）
+            v.viewPitch = M.clamp(v.viewPitch - P.dy * 0.0022, -0.85, 0.85);
           } else {
             v.turretYaw -= P.dx * 0.002;
             const pmax = v.kind === 'aa' ? 1.35 : 0.6;

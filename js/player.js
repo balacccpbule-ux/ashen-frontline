@@ -809,25 +809,27 @@
         }
       }
     }
-    // 目标位置（瞄准 / 腰射 / v5.10 冲刺压低持枪）
+    // 目标位置（瞄准 / 腰射）；v5.47 冲刺改为横持胸前 + 左右摇晃
     const sprinting = Game.player.sprinting && !(P.ads && P.adsEase > 0.5);
+    const sprintSway = sprinting ? Math.sin(P.bobT * 0.85) * 0.13 : 0;
     let target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
     // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
     if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {
       target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
     }
     const k = 1 - Math.exp(-14 * dt);
-    P.view.position.x = M.lerp(P.view.position.x, target.x + bobX, k);
+    P.view.position.x = M.lerp(P.view.position.x, target.x + bobX + sprintSway * 0.05, k);
     // v5.47 后座动画仅前后（z 主），上下只留极小下压用于干扰（y 极微），枪口始终朝前
     P.view.position.y = M.lerp(P.view.position.y,
-      target.y + bobY - P.viewKick * 0.015 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.07 : 0) - boltWave * 0.05, k);
-    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.16 - reloadDip * 0.1 - (sprinting ? 0.05 : 0), k);
+      target.y + bobY - P.viewKick * 0.015 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.02 : 0) - boltWave * 0.05, k);
+    P.view.position.z = M.lerp(P.view.position.z, target.z + P.viewKick * 0.16 - reloadDip * 0.1 + (sprinting ? 0.06 : 0), k);
     // v5.46 枪口始终与准星一致：后坐只做平移（后移/下压），不再单独低头，避免枪口偏离准星
     P.view.rotation.x = M.lerp(P.view.rotation.x,
-      reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.28 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
+      reloadDip * 0.9 + switchDip * 0.6 + (sprinting ? 0.05 : 0) + P.landKick * 0.16 + boltWave * 0.14, k);
     // v5.46 开镜时摆正（消除腰射 0.03 的轻微偏转），镜管严格对准屏幕中心
     const scopeAligned = P.ads && P.adsEase > 0.5 && P.scopeLocal;
-    P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : 0.03, k);
+    // v5.47 冲刺横持：绕 Y 转 ~81° 使枪身横过胸前，叠加左右摇晃；开镜/腰射仍 0.03 微偏
+    P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : (sprinting ? 1.42 + sprintSway : 0.03), k);
     // v5.47 开镜只显示镜管：隐藏枪身，消除枪体挡镜内视野（镜管+集成十字线保留）
     if (pw && P.models && P.models[pw.def.key]) {
       const gm = P.models[pw.def.key];

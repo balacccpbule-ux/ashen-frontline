@@ -312,6 +312,7 @@
       '东侧堡垒': 'East Fort', '北岭哨塔': 'North Ridge Tower',
       '冰湖哨站': 'Ice Lake Outpost', '西线碉堡': 'West Bunker', '东线碉堡': 'East Bunker',
       '山地雷达站': 'Mountain Radar', '钢铁堡垒': 'Steel Fortress', '要塞大门': 'Fortress Gate',
+      '中央集市': 'Central Market', '冰原枢纽': 'Tundra Hub', '谷地哨站': 'Valley Outpost',
       '西郊哨站': 'West Outpost', '中央街区': 'Central District', '东岸指挥所': 'East Bank HQ',
       '沙丘前线': 'Dune Front', '油田腹地': 'Oilfield Heartland', '绿洲要塞': 'Oasis Fortress',
       '冰川前线': 'Glacier Front', '雪林腹地': 'Snowwood Heartland',

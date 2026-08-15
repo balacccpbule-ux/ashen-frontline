@@ -36,8 +36,8 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       '  G.__vehPin.push({ id: v.id, x: v.team===0 ? -68 : 68, z: v.team===0 ? 55 : -55, y: 30 });' +
       '});' +
       'G.__tank = G.vehicles.filter(function(v){ return v.kind==="tank" && v.team===1; })[0];' +
-      // 蓝方迫击炮位：东侧旗点开阔区（新城区非网格后需避开楼群，否则炮弹出膛即炸）
-      'var mortX = 63, mortZ = 30;' +
+      // 蓝方迫击炮位：东侧开阔区（v5.44 5旗后需避开楼群/墙，否则炮弹出膛即炸）
+      'var mortX = 60, mortZ = 30;' +
       'G.__mortPos = { x: mortX, z: mortZ };' +
       'G.__victimPos = { x: -105, z: 5 };' +   // 红基地压平区（开阔，新城区非网格后需更贴近基地）
       'var pe = G.weapons.getEyePos(G.player);' +
@@ -121,8 +121,8 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     await cdp.eval('(function(){ var G=Game;' +
       'var rm=null, bm=null;' +
       'for (var k=0;k<G.soldiers.length;k++){ var ss=G.soldiers[k]; if(ss.id===G.__redMortar.id)rm=ss; if(ss.id===G.__blueMortar.id)bm=ss; }' +
-      'G.__rmortPos = { x: -60, z: 10 };' +
-      'G.__mortPos = { x: 60, z: 10 };' +   // 蓝迫击炮挪到 60,10（距红 120m）
+      'G.__rmortPos = { x: -55, z: 10 };' +
+      'G.__mortPos = { x: 55, z: 10 };' +   // 蓝迫击炮挪到 55,10（距红 110m，避开油罐/墙）
       'G.bots.forEach(function(b){ if (b.clsKey==="mortar" && b.team===1 && b !== bm) b.gadgetAmmo = 0; });' +   // 其余蓝迫击炮哑火（只留主角反打）
       'rm.spottedUntil = G.time + 99;' +   // 红方迫击炮开火暴露
       'bm.gadgetAmmo = 6; bm.gadgetCooldown = 0; bm.bot.mortarT = 0;' +
@@ -135,7 +135,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'var bm=null, rm=null;' +
       'for (var k=0;k<G.soldiers.length;k++){ var ss=G.soldiers[k]; if(ss.id===G.__blueMortar.id)bm=ss; if(ss.id===G.__redMortar.id)rm=ss; }' +
       'var fired = !!G.__cb;' +
-      'var onTarget = fired && Math.abs(G.__cb.x + 60) <= 12 && Math.abs(G.__cb.z - 10) <= 12;' +
+      'var onTarget = fired && Math.abs(G.__cb.x + 55) <= 12 && Math.abs(G.__cb.z - 10) <= 12;' +
       'var exposed = bm.spottedUntil > G.time;' +
       'G.weapons.fireGadget = G.__origFG;' +
       'return JSON.stringify({ fired: fired, onTarget: onTarget, exposed: exposed, cb: G.__cb });' +

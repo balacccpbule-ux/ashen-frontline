@@ -47,7 +47,7 @@ window.Game = {
 // ============================================================
 const CONFIG = {
   WORLD: 120,                 // v5.39 地图半径（x/z ∈ [-WORLD, WORLD]）——拉长纵深 160→240m
-  TICKETS: 500,               // 征服模式双方初始兵力
+  TICKETS: 800,               // 征服模式双方初始兵力（v5.44 24v24 拉长战局）
   BOT_COUNT_PER_TEAM: 23,     // 24v24：红军 23 BOT + 玩家 = 24；蓝军 24 BOT → 共 48 人
   CAPTURE_SPEED: 34,          // 占领点 control 变化速率 / 秒
   BLEED_PER_FLAG: 0.55,       // 每多占 1 点，每秒消耗兵力
@@ -399,6 +399,7 @@ const MAP_DEFS = {
         { id: 'B', name: '西侧油田', x: -68, z: -12 },
         { id: 'C', name: '东侧油井', x: 68, z: -12 },
         { id: 'D', name: '山脊观察站', x: 0, z: 48 },
+        { id: 'E', name: '中央集市', x: 0, z: 0 },
       ],
       breakthrough: [
         { sector: 1, name: '沙丘前线', flags: [{ id: 'S1A', x: -54, z: -33 }, { id: 'S1B', x: -54, z: 33 }] },
@@ -416,6 +417,7 @@ const MAP_DEFS = {
         { id: 'B', name: '中央油库', x: 0, z: -21 },
         { id: 'C', name: '东侧堡垒', x: 60, z: -21 },
         { id: 'D', name: '北岭哨塔', x: 0, z: 39 },
+        { id: 'E', name: '谷地哨站', x: -30, z: 12 },
       ],
       breakthrough: [
         { sector: 1, name: '西线堑壕', flags: [{ id: 'S1A', x: -57, z: -24 }, { id: 'S1B', x: -57, z: 27 }] },
@@ -433,6 +435,7 @@ const MAP_DEFS = {
         { id: 'B', name: '西线碉堡', x: -63, z: 21 },
         { id: 'C', name: '东线碉堡', x: 63, z: 21 },
         { id: 'D', name: '山地雷达站', x: 0, z: 54 },
+        { id: 'E', name: '冰原枢纽', x: 0, z: 0 },
       ],
       breakthrough: [
         { sector: 1, name: '冰川前线', flags: [{ id: 'S1A', x: -54, z: -39 }, { id: 'S1B', x: -54, z: 33 }] },

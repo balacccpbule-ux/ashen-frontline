@@ -38,7 +38,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'var off = null, zT = 40, zF = -20;' +
       'var lanes = [[40,-20],[30,-30],[20,-40],[20,-20],[30,-10],[40,0],[-20,-40]];' +
       'for (var k=0;k<21 && off===null;k++){' +
-      '  var x = -40 + k*4;' +
+      '  var x = -100 + k*4;' +   // v5.44 5旗后布局变化，通道改从基地附近搜起
       '  for (var li=0;li<lanes.length && off===null;li++){' +
       '    var lzT = lanes[li][0], lzF = lanes[li][1];' +
       '    var ey = G.heightAt(x,lzT)+4.6, ty = G.heightAt(x,lzF)+1;' +

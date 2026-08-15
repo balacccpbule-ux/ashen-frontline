@@ -21,7 +21,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       buildings: Game.terrain.buildings.filter(function(s){return s.kind==='building';}).length,
     })`);
     const c = JSON.parse(desert0);
-    assert(c.map === 'desert' && c.flags === 4, `初始沙漠图 · 4 旗 (${c.flags})`);
+    assert(c.map === 'desert' && c.flags === 5, `初始沙漠图 · 5 旗 (${c.flags})`);
     assert(c.oilTanks >= 8, `油田油罐 >= 8 (${c.oilTanks})`);
     assert(c.walls >= 6, `村庄院墙 >= 6 (${c.walls})`);
     assert(c.buildings >= 10, `土坯房屋 >= 10 (${c.buildings})`);
@@ -42,7 +42,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     const s = JSON.parse(snow);
     console.log(`    雪域: ${JSON.stringify(s)}`);
     assert(s.map === 'snow', '切换到雪域要塞');
-    assert(s.flags === 4, `雪域征服 4 旗 (${s.flags})`);
+    assert(s.flags === 5, `雪域征服 5 旗 (${s.flags})`);
     assert(s.pines >= 40, `雪松林 >= 40 (${s.pines})`);
     assert(s.ice === true, '冰湖冰面生成');
     assert(s.vehicles === 10 && s.soldiers === 48, '载具与士兵保持');

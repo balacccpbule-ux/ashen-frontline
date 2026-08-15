@@ -29,7 +29,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
     })()`);
     const r = JSON.parse(s0);
     assert(r.map === 'snow' && r.name === '雪域要塞', 'URL ?map=snow 直进雪域要塞 (' + r.map + ')');
-    assert(r.flags === 4 && r.soldiers === 48 && r.vehicles === 10, '4 旗 / 24v24 48 士兵 / 10 载具');
+    assert(r.flags === 5 && r.soldiers === 48 && r.vehicles === 10, '5 旗 / 24v24 48 士兵 / 10 载具');
     assert(r.pines >= 40, '雪松林 ≥ 40 (' + r.pines + ')');
     assert(r.bunkers >= 8, '混凝土碉堡 ≥ 8 (' + r.bunkers + ')');
     assert(r.cabins >= 6, '林间木屋 ≥ 6 (' + r.cabins + ')');

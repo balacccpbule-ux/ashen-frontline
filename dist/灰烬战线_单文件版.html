@@ -6311,7 +6311,8 @@ const VEHICLE_SPAWNS = [
       target = { x: -P.scopeLocal.x, y: -P.scopeLocal.y, z: -0.42 - P.scopeLocal.z };
     }
     const k = 1 - Math.exp(-14 * dt);
-    P.view.position.x = M.lerp(P.view.position.x, target.x + bobX + sprintSway * 0.05, k);
+    // v5.48 冲刺横持：整体再往左偏移一点
+    P.view.position.x = M.lerp(P.view.position.x, target.x + bobX + sprintSway * 0.05 - (sprinting ? 0.12 : 0), k);
     // v5.47 后座动画仅前后（z 主），上下只留极小下压用于干扰（y 极微），枪口始终朝前
     P.view.position.y = M.lerp(P.view.position.y,
       target.y + bobY - P.viewKick * 0.015 - reloadDip * 0.12 - switchDip * 0.28 - P.landKick * 0.09 - (sprinting ? 0.02 : 0) - boltWave * 0.05, k);

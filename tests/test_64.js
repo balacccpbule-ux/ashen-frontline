@@ -17,10 +17,10 @@ const { launchChrome, assert, gameUrl } = require('./lib/cdp');
       var times=[], worst=0;
       // v5：确定性压力测试——固定种子 + 全量重建重置（地形/旗点/载具/士兵全复位），
       // 修复 AI 随机决策导致的 22~27 阵亡波动（三次裸跑 38/28/25 的抖动）
-      var origRandom = Math.random; Math.random = G.newRng(17);   // v5.42 城市图非网格重做后重探（18 阵亡/17 击杀/6 载具）
+      var origRandom = Math.random; Math.random = G.newRng(17);   // 沙漠默认图（11 阵亡/10 击杀/5 载具，确定性）
       (function deterministicReset(){
         var prevMap = G.mapId;
-        G.mapId = prevMap === 'city' ? 'desert' : 'city';   // 强制走全量重建分支
+        G.mapId = prevMap === 'desert' ? 'snow' : 'desert';   // 强制走全量重建分支
         G.applySelection(Game.mode, prevMap);               // 地形/旗点/载具/小地图重建 + resetMatch
         G.deployPlayer();
         // 复刻 ai.init 布局：60% 非乘员部署到旗点附近（种子化随机）

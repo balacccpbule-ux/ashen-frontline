@@ -521,7 +521,7 @@
         y += Math.sin(Game.time * 0.9 + i) * 0.8 * dt;
         if (x > r) x -= r * 2;
       } else {
-        // 灰烬：余烬缓慢上飘 + 轻微摇曳（灰烬都市氛围）
+        // 灰烬：余烬缓慢上飘 + 轻微摇曳（钢铁防线氛围）
         y += 0.9 * dt;
         x += Math.sin(Game.time * 0.6 + i * 1.3) * 0.35 * dt;
         z += Math.cos(Game.time * 0.5 + i * 0.9) * 0.3 * dt;

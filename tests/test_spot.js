@@ -97,7 +97,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
       'var G=Game; var p=G.player; p.spotCooldown=0;' +
       'var tank = G.vehicles.filter(function(v){ return v.kind==="tank" && v.team===1; })[0];' +
       'if (tank.occupant) G.Vehicles.exit(tank.occupant);' +
-      'tank.pos.x = -108; tank.pos.z = 30; tank.pos.y = G.heightAt(-108, 30); tank.vel = {x:0,y:0,z:0};' +
+      'tank.pos.x = -108; tank.pos.z = 15; tank.pos.y = G.heightAt(-108, 15); tank.vel = {x:0,y:0,z:0};' +   // 基地压平区内（沙漠沙丘会挡 LOS，须在压平区）
       'tank.spottedUntil = 0;' +
       'var f1x=null, f2x=null; for (var k=0;k<G.soldiers.length;k++){ var ss=G.soldiers[k]; if(ss.id===G.__f1)f1x=ss; if(ss.id===G.__f2)f2x=ss; }' +
       'if (f1x){ f1x.pos.x=120; f1x.pos.z=120; f1x.pos.y=G.heightAt(120,120); }' +

@@ -8,7 +8,7 @@
 
 - **16v16 大战场**：32 名士兵同场（红军 15 BOT + 你，蓝军 16 BOT），InstancedMesh 渲染 + 空间哈希索敌 + 按距离降频，30 秒压力测试平均 tick < 1ms。
 - **双模式**：征服（占旗 + 票数流血）· 突破（红攻蓝守、3 扇区线性推进、攻下补票、史诗播报）。
-- **四张地图**：灰烬都市（现代城市巷战）· 沙暴行动（中东沙漠油田）· 雪域要塞（极地雪原冰湖）· 钢铁防线（血色黄昏要塞攻坚），每图绑定天气粒子（灰烬/沙尘/降雪）。
+- **三张地图**：沙暴行动（中东沙漠油田）· 雪域要塞（极地雪原冰湖）· 钢铁防线（血色黄昏要塞攻坚），每图绑定天气粒子（沙尘/降雪/灰烬）。
 - **六大兵种**：突击兵 · 支援兵 · 侦察兵 · 工程兵 · 迫击炮兵 · 医疗兵，各配专属主武器 + 战术装备。
 - **陆空载具**：主战坦克 · 装甲运兵车（机枪位）· 防空炮车（克制直升机）×3 · 武装直升机（火箭/机炮）；完整克制环（重甲/轻甲/航空器 + 伤害类型倍率）。
 - **全域破坏**：建筑三级破坏（完好→开裂→残破→倒塌），油桶/油罐殉爆，地形保持稳定。
@@ -108,7 +108,7 @@ node tests/run_all.js test_spot.js   # 单项
 
 - **16v16**: 32 soldiers in one match (15 bots + you on Red, 16 bots on Blue). InstancedMesh rendering, spatial-hash targeting, distance-based AI tick scaling — 30s stress test averages < 1ms/tick.
 - **Two modes**: Conquest (flag capture + ticket bleed) · Breakthrough (attack vs. defend, 3-sector linear push, sector bonus, epic callouts).
-- **Four maps**: Ashen City · Operation Sandstorm · Snow Fortress · Iron Line — each with bound weather particles (ash / sand / snow).
+- **Three maps**: Operation Sandstorm · Snow Fortress · Iron Line — each with bound weather particles (sand / snow / ash).
 - **Six classes**: Assault · Support · Recon · Engineer · Mortarman · Medic, each with a dedicated primary weapon and gadget.
 - **Land & air vehicles**: MBT · APC (gunner seat) · Anti-Air gun (×3 vs helicopters) · Attack helicopter (rockets/cannon); full rock-paper-scissors armor model.
 - **Full destruction**: buildings break in three stages (intact → cracked → ruined → collapsed); oil drums/tanks chain-explode.

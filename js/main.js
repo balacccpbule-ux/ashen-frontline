@@ -11,7 +11,7 @@
   // ---- 模式/地图运行时状态 ----
   Game.mode = URLP.get('mode') === 'breakthrough' ? 'breakthrough' : 'conquest';
   const mapParam = URLP.get('map');
-  Game.mapId = (mapParam === 'desert' || mapParam === 'snow') ? mapParam : 'city';
+  Game.mapId = (mapParam === 'desert' || mapParam === 'snow' || mapParam === 'fort') ? mapParam : 'desert';
   Game.sectors = [];        // 突破模式扇区
   Game.activeSector = 1;
   Game.supplyBoxes = [];     // v5.31 地面补给箱（医疗/弹药）

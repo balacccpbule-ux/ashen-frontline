@@ -1,5 +1,5 @@
 // ============================================================
-//  terrain.js  ·  高度场缓冲地形 + 双地图（城市/沙漠）
+//  terrain.js  ·  高度场缓冲地形 + 三地图（沙漠/雪域/钢铁防线）
 //  可破坏建筑（三级状态）/ 弹坑雕刻 / 碰撞 / 视线
 //  v4 爆改：地形真相改为 1m 高度场缓冲，弹坑直接雕刻缓冲，
 //           人与载具统一采样，物理天然一致。
@@ -17,7 +17,7 @@
     trees: [],
     flattenZones: [],
     roadPaths: [],
-    mapId: 'city',
+    mapId: 'desert',
   };
 
   // ============================================================
@@ -46,14 +46,6 @@
   // ============================================================
   //  地图原始高度函数
   // ============================================================
-  function cityRawHeight(x, z) {
-    // v5.42 城区起伏：多层正弦丘陵（±4m 左右，有起伏但不夸张，告别田字格般的平坦）
-    let h = Math.sin(x * 0.02 + 0.6) * 2.4 + Math.cos(z * 0.017 + 1.1) * 2.1;
-    h += Math.sin(x * 0.055 + z * 0.042 + 0.9) * 1.3;
-    h += Math.cos(x * 0.09 + z * 0.13) * 0.7;
-    return h;
-  }
-
   function desertRawHeight(x, z) {
     // 沙丘：多层正弦叠加，起伏明显
     let h = 6.5 * Math.sin(x * 0.038 + 0.6) * Math.sin(z * 0.05 + 1.2);
@@ -81,10 +73,9 @@
     return h;
   }
   function rawHeight(x, z) {
-    if (T.mapId === 'desert') return desertRawHeight(x, z);
     if (T.mapId === 'snow') return snowRawHeight(x, z);
     if (T.mapId === 'fort') return fortRawHeight(x, z);
-    return cityRawHeight(x, z);
+    return desertRawHeight(x, z);
   }
 
   // ---- 高度 → 地表颜色（双图配色） ----
@@ -153,7 +144,7 @@
   //  生成主入口（支持切换地图）
   // ============================================================
   function generate(scene, mapId) {
-    T.mapId = mapId || 'city';
+    T.mapId = mapId || 'desert';
     T.clear(scene);
     // 地图用独立确定性随机源（与战斗 rng 隔离，切图布局恒定）
     const rng = Game.newRng((T.mapId === 'desert' ? 0x5a5a11 : T.mapId === 'fort' ? 0x7a2d2d : 0x4a11aa) >>> 0);
@@ -187,10 +178,9 @@
     applyFlattens();
 
     // 3) 布局
-    if (T.mapId === 'desert') genDesert(rng, W, flagPos);
-    else if (T.mapId === 'snow') genSnow(rng, W, flagPos);
+    if (T.mapId === 'snow') genSnow(rng, W, flagPos);
     else if (T.mapId === 'fort') genFort(rng, W, flagPos);   // v5.30 钢铁防线
-    else genCity(rng, W, flagPos);
+    else genDesert(rng, W, flagPos);
 
     // 4) 地形网格
     buildTerrainMesh(scene, W);
@@ -282,7 +272,7 @@
   }
 
   // ============================================================
-  //  城市地图布局 — 灰烬都市
+  //  通用布局助手（随机落点，避让旗点/基地/已有实体）
   // ============================================================
   function findSpot(rng, minW, maxW, minD, maxD, minFlagDist, minBaseDist, flags) {
     for (let i = 0; i < 80; i++) {
@@ -301,32 +291,6 @@
       if (ok) return { x, z, w, d };
     }
     return null;
-  }
-
-  function genCity(rng, W, flags) {
-    // v5.42 重置灰烬都市：非田字格——随机散落街区（大小/高度错落），
-    // 楼间自然形成街道/广场，不再规则网格直来直往
-    const N = 140;
-    for (let i = 0; i < N; i++) {
-      const spot = findSpot(rng, 7, 12, 7, 12, 16, 26, flags);
-      if (!spot) continue;
-      const dc = Math.hypot(spot.x, spot.z);
-      const h = dc < 35 ? M.randRange(rng, 10, 19) : (dc < 70 ? M.randRange(rng, 8, 14) : M.randRange(rng, 5, 10));
-      addSolid(T.buildings, 'building', spot.x, spot.z, spot.w, spot.d, h,
-        { destructible: true, hp: 18000, blocksLOS: true, stages: true, rubble: true });
-    }
-    // 简易棚屋（可毁，倒塌）
-    for (let i = 0; i < 40; i++) {
-      const spot = findSpot(rng, 5, 7, 5, 7, 14, 22, flags);
-      if (!spot) continue;
-      const h = M.randRange(rng, 3, 4.2);
-      addSolid(T.buildings, 'shack', spot.x, spot.z, spot.w, spot.d, h,
-        { destructible: true, hp: 7600, blocksLOS: true, collapse: true, rubble: true });
-    }
-    placeFortifications(rng, W, flags);   // v5.13 永久墙工事（先于小型掩体，保证墙体净空）
-    placeDestructibles(rng, W, flags);
-    placeFlagCover(rng, flags);
-    placeScenery(rng, W, flags, false);
   }
 
   // ============================================================

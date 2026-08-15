@@ -8,7 +8,7 @@
     minimapBg: null,
     selectedClass: 'assault',
     selectedMode: Game.mode || 'conquest',
-    selectedMap: Game.mapId || 'city',
+    selectedMap: Game.mapId || 'desert',
     selectedDiff: 'normal',
     msgTimer: null,
     save: { totalScore: 0, kills: 0, deaths: 0, wins: 0, losses: 0, bestStreak: 0 },
@@ -60,7 +60,7 @@
   // 由 main.js boot() 调用：把 URL 参数/当前局模式同步到菜单选择高亮
   function syncMenuSelection(mode, mapId) {
     H.selectedMode = mode || 'conquest';
-    H.selectedMap = mapId || 'city';
+    H.selectedMap = mapId || 'desert';
     document.querySelectorAll('.mode-btn').forEach((x) => x.classList.toggle('selected', x.dataset.mode === H.selectedMode));
     document.querySelectorAll('.map-btn').forEach((x) => x.classList.toggle('selected', x.dataset.map === H.selectedMap));
   }

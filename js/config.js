@@ -386,26 +386,10 @@ const VEHICLES = {
 };
 
 // ============================================================
-//  地图（现代战争双图：城市 / 沙漠）
+//  地图（三图：沙漠 / 雪域 / 钢铁防线）
 //  每图 × 每模式一套占领点布局；突破模式为线性扇区链
 // ============================================================
 const MAP_DEFS = {
-  city: {
-    name: '灰烬都市', gen: 'city', sky: 0x87a8c0, sun: 0xfff2d8, sunPos: [150, 95, 70],
-    fogNear: 45, fogFar: 150, weather: 'ash',   // v5.8 灰烬余烬上飘
-    flags: {
-      conquest: [
-        { id: 'A', name: '中央广场', x: 0, z: -30 },
-        { id: 'B', name: '西区车站', x: -63, z: 30 },
-        { id: 'C', name: '东区码头', x: 63, z: 30 },
-      ],
-      breakthrough: [
-        { sector: 1, name: '西郊哨站', flags: [{ id: 'S1A', x: -54, z: -30 }, { id: 'S1B', x: -42, z: 18 }] },
-        { sector: 2, name: '中央街区', flags: [{ id: 'S2A', x: -6, z: -24 }, { id: 'S2B', x: 6, z: 21 }] },
-        { sector: 3, name: '东岸指挥所', flags: [{ id: 'S3A', x: 42, z: -18 }, { id: 'S3B', x: 54, z: 24 }] },
-      ],
-    },
-  },
   desert: {
     name: '沙暴行动', gen: 'desert', sky: 0xd9b98a, sun: 0xffe0b0, sunPos: [110, 100, 60],
     fogNear: 60, fogFar: 180, weather: 'sand',
@@ -461,7 +445,7 @@ const MAP_DEFS = {
 
 // 地图上全部旗点位置（布局避让用，跨模式合并）
 function allFlagPositions(mapId) {
-  const m = MAP_DEFS[mapId] || MAP_DEFS.city;
+  const m = MAP_DEFS[mapId] || MAP_DEFS.desert;
   const out = [];
   for (const f of m.flags.conquest) out.push({ x: f.x, z: f.z });
   for (const s of m.flags.breakthrough) for (const f of s.flags) out.push({ x: f.x, z: f.z });

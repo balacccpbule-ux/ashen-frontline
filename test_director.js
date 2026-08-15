@@ -69,7 +69,7 @@ function main() {
     await evl(`(function(){
       var G=Game, P=G.player;
       G.godMode=true; P.spawnProtect=0;
-      P.pos.x=-72; P.pos.z=0; P.pos.y=G.heightAt(-72,0); P.vel={x:0,y:0,z:0};
+      P.pos.x=-108; P.pos.z=0; P.pos.y=G.heightAt(-108,0); P.vel={x:0,y:0,z:0};
       G.bots.forEach(function(b){
         var x = b.team===0 ? -78 : 78, z = b.team===0 ? 78 : -78;
         b.pos.x=x; b.pos.z=z; b.pos.y=G.heightAt(x,z); b.vel={x:0,y:0,z:0};
@@ -84,7 +84,7 @@ function main() {
       // 攻击者：非乘员突击兵（排除 b.bot.crew —— 乘员只登车不交战）
       var atk = G.bots.filter(function(b){return b.team===1 && !b.bot.crew && b.clsKey==='assault';})[0];
       var others = G.bots.filter(function(b){return b !== atk;});
-      atk.pos.x=-60; atk.pos.z=0; atk.pos.y=G.heightAt(-60,0); atk.vel={x:0,y:0,z:0};
+      atk.pos.x=-100; atk.pos.z=0; atk.pos.y=G.heightAt(-100,0); atk.vel={x:0,y:0,z:0};
       atk.spawnProtect=999;   // v4 64人规模：孤军需无敌，否则被集火秒杀
       atk.bot.lastTarget=null; atk.bot.mayFire=false; atk.bot.graceUntil=-999;
       atk.bot.hunt=null; atk.bot.reactT=0;
@@ -94,7 +94,7 @@ function main() {
         if (G.player.alive) G.Player.update(dt);
         G.ai.update(dt); G.Vehicles.update(dt); G.weapons.update(dt);
         G.updateConquest(dt); G.effects.update(dt);
-        atk.pos.x=-60; atk.pos.z=0; atk.vel.x=0; atk.vel.z=0;
+        atk.pos.x=-100; atk.pos.z=0; atk.vel.x=0; atk.vel.z=0;
         for (var k=0;k<others.length;k++){ others[k].vel.x=0; others[k].vel.z=0; }
       }
       var log = G.ai._fireLog.filter(function(f){return f.tgt===0;});
@@ -125,7 +125,7 @@ function main() {
       var G=Game;
       var pool = G.bots.filter(function(b){return b.team===1 && !b.bot.crew && b.clsKey!=='mortar' && b.clsKey!=='medic';});
       var atks = pool.slice(0, 5);
-      var spots = [[-64,-8],[-64,8],[-62,6],[-62,-6],[-60,0]];
+      var spots = [[-100,-8],[-100,8],[-98,-6],[-98,6],[-96,0]];
       for (var i=0;i<atks.length;i++){
         var b = atks[i];
         b.pos.x=spots[i][0]; b.pos.z=spots[i][1];

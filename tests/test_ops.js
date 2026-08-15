@@ -18,7 +18,7 @@ const { launchChrome, sleep, assert, gameUrl } = require('./lib/cdp');
 
     await cdp.eval('(function(){' +
       'var G=Game; G.godMode=true;' +
-      'G.applySelection("conquest", "city"); G.deployPlayer(); G.godMode=true;' +
+      'G.applySelection("conquest", "desert"); G.deployPlayer(); G.godMode=true;' +
       'G.bots.forEach(function(b){ if (b.clsKey==="mortar") { b.gadgetAmmo = 0; b.bot.mortarT = undefined; } });' +
       'G.__pinned = [];' +
       'G.bots.forEach(function(b){' +

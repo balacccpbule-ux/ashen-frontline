@@ -1,0 +1,15 @@
+# 依赖（本仓库零依赖，此条目仅为防误提交）
+node_modules/
+
+# 编辑器 / 工具状态
+.zcode/
+.vscode/
+.idea/
+
+# 测试 / 构建产物
+headless_shot.png
+
+# 系统文件
+Thumbs.db
+.DS_Store
+desktop.ini

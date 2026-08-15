@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+<head>
+<meta charset='UTF-8'>
+<title>音效工坊 · 灰烬战线程序化音效设计工具</title>
+<style>
+  :root { --bg:#111318; --panel:#1a1d24; --line:#2c313c; --gold:#ffd27a; --txt:#d8dce4; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--txt); font: 13px/1.5 'Segoe UI', 'Microsoft YaHei', sans-serif; padding: 18px; }
+  h1 { font-size: 18px; color: var(--gold); margin-bottom: 2px; }
+  .sub { color: #8a93a2; font-size: 12px; margin-bottom: 14px; }
+  .wrap { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .layers { width: 460px; }
+  .layer { border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-bottom: 10px; background: #16181e; }
+  .layer h3 { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .row label { width: 64px; color: #9aa4b2; font-size: 12px; }
+  select, input[type=number] { background: #0c0e12; color: var(--txt); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+  input[type=number] { width: 74px; }
+  input[type=range] { flex: 1; min-width: 120px; }
+  .val { width: 46px; text-align: right; color: #b8c2d0; font-size: 11px; }
+  .ctrl { width: 360px; }
+  button { background: #2a3140; color: var(--txt); border: 1px solid #3a4456; border-radius: 5px; padding: 7px 14px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #35405a; }
+  button.primary { background: #7a5a20; border-color: #9a7a30; color: #ffe9b0; }
+  .presets button { margin: 0 6px 6px 0; font-size: 12px; padding: 5px 10px; }
+  textarea { width: 100%; height: 200px; background: #0c0e12; color: #9ad0ff; border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: 11px/1.5 Consolas, monospace; margin-top: 8px; }
+  .note { color: #8a93a2; font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>音效工坊 SOUNDLAB</h1>
+  <div class='sub'>灰烬战线 · 程序化音效设计工具（零依赖，双击即用）——设计 → 试听 → 导出 JS 粘贴进 js/audio.js</div>
+  <div class='wrap'>
+    <div class='panel layers' id='layers'></div>
+    <div class='panel ctrl'>
+      <div class='row'><button class='primary' id='btnPlay'>▶ 试听</button><button id='btnStop'>■ 停止</button><button id='btnRand'>✦ 随机化</button><button id='btnAdd'>+ 层</button></div>
+      <div class='row'><label>主音量</label><input type='range' id='masterVol' min='0' max='100' value='60'><span class='val' id='masterVolV'>60%</span></div>
+      <h3 style='color:var(--gold);margin:12px 0 6px;'>内置预设（战地专用音效）</h3>
+      <div class='presets' id='presets'></div>
+      <h3 style='color:var(--gold);margin:12px 0 6px;'>导出（游戏 audio.js 可直接使用的函数）</h3>
+      <button id='btnExport'>生成导出代码</button>
+      <div class='row' style='margin-top:8px;'><label>函数名</label><input type='text' id='fnName' value='mySfx' style='width:120px;'></div>
+      <textarea id='export' readonly></textarea>
+      <div class='note'>导出函数与游戏共用同一合成模型（振荡器/噪声/双二阶滤波/增益包络）。粘贴进 js/audio.js 的 A 模块内，并在底部 Game.sound 对象中登记即可在游戏内调用。</div>
+    </div>
+  </div>
+<script>
+/* ================= 合成引擎（与游戏同构） ================= */
+var AC = null, MASTER = null, NOISEBUF = null;
+function ensureAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  MASTER = AC.createGain(); MASTER.gain.value = 0.6; MASTER.connect(AC.destination);
+  var len = AC.sampleRate; NOISEBUF = AC.createBuffer(1, len, AC.sampleRate);
+  var d = NOISEBUF.getChannelData(0); for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+}
+function playLayer(L, t0, dur, vol) {
+  var t = t0;
+  var env = AC.createGain();
+  var a = L.attack || 0.01, d = L.decay || 0.2, s = L.sustain || 0.3, r = L.release || 0.15;
+  var total = Math.max(dur, a + d + r);
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.exponentialRampToValueAtTime(vol * (L.gain || 0.5), t + a);
+  if (d > 0) env.gain.exponentialRampToValueAtTime(vol * s, t + a + d);
+  env.gain.setValueAtTime(vol * s, t + total - r);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + total);
+  var src;
+  if (L.type === 'noise') {
+    src = AC.createBufferSource(); src.buffer = NOISEBUF; src.loop = true;
+  } else {
+    src = AC.createOscillator(); src.type = L.type;
+    var f0 = L.freq0 || 440, f1 = L.freq1 || L.freq0 || 440;
+    if (L.glide === 'exp') { src.frequency.setValueAtTime(Math.max(1, f0), t); src.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur); }
+    else if (L.glide === 'lin') { src.frequency.setValueAtTime(f0, t); src.frequency.linearRampToValueAtTime(f1, t + dur); }
+    else src.frequency.setValueAtTime(f0, t);
+  }
+  var node = src;
+  if (L.filter !== 'none') {
+    var f = AC.createBiquadFilter(); f.type = L.filter; f.frequency.value = L.freq || 800; f.Q.value = L.q || 1;
+    node.connect(f); node = f;
+  }
+  node.connect(env); env.connect(MASTER);
+  src.start(t); src.stop(t + total + 0.05);
+}
+var design = [
+  { type:'noise', filter:'bandpass', freq:1400, freq1:350, glide:'exp', attack:0.02, decay:0.7, sustain:0.02, release:0.1, gain:0.5 },
+  { type:'sine', freq0:160, freq1:55, glide:'exp', filter:'lowpass', freq:420, q:0.8, attack:0.01, decay:0.4, sustain:0.02, release:0.1, gain:0.8, delay:0.05 },
+  { type:'triangle', freq0:660, freq1:990, glide:'lin', attack:0.02, decay:0.25, sustain:0.1, release:0.1, gain:0.14, delay:0.55 }
+];
+var activeNodes = [];
+function play() {
+  ensureAudio(); stop();
+  var t = AC.currentTime + 0.03, vol = masterVol.value / 100;
+  var maxDur = 0;
+  design.forEach(function(L) {
+    var dur = (L.attack || 0.01) + (L.decay || 0.2) + (L.release || 0.15);
+    if (dur > maxDur) maxDur = dur;
+    playLayer(L, t + (L.delay || 0), Math.max(0.15, dur), vol);
+  });
+  var total = maxDur + 0.3;
+  activeNodes.push(setTimeout(function() {}, total * 1000));
+}
+function stop() { /* 单次合成自然衰减，无需硬停 */ }
+/* ================= 预设（已设计好的专用音效） ================= */
+var PRESETS = {
+  部署落地: [
+    { type:'noise', filter:'bandpass', freq:1400, freq1:350, glide:'exp', attack:0.02, decay:0.7, sustain:0.02, release:0.1, gain:0.5 },
+    { type:'sine', freq0:160, freq1:55, glide:'exp', filter:'lowpass', freq:420, q:0.8, attack:0.01, decay:0.4, sustain:0.02, release:0.1, gain:0.8, delay:0.05 },
+    { type:'triangle', freq0:660, freq1:990, glide:'lin', attack:0.02, decay:0.25, sustain:0.1, release:0.1, gain:0.14, delay:0.55 }
+  ],
+  死亡低鸣: [
+    { type:'sine', freq0:110, freq1:55, glide:'exp', attack:0.12, decay:1.5, sustain:0.02, release:0.2, gain:0.32 },
+    { type:'noise', filter:'lowpass', freq:260, q:0.6, attack:0.2, decay:1.5, sustain:0.02, release:0.2, gain:0.1 }
+  ],
+  击杀清脆: [
+    { type:'square', freq0:880, freq1:1318, glide:'lin', attack:0.005, decay:0.14, sustain:0.05, release:0.08, gain:0.28 },
+    { type:'sine', freq0:1760, freq1:1760, glide:'none', attack:0.004, decay:0.1, sustain:0.03, release:0.06, gain:0.12, delay:0.01 }
+  ],
+  标记提示: [
+    { type:'triangle', freq0:988, freq1:1319, glide:'lin', attack:0.01, decay:0.08, sustain:0.02, release:0.06, gain:0.2 },
+    { type:'triangle', freq0:1319, freq1:1568, glide:'lin', attack:0.01, decay:0.08, sustain:0.02, release:0.06, gain:0.18, delay:0.08 }
+  ],
+  命中反馈: [
+    { type:'sine', freq0:1200, freq1:700, glide:'exp', attack:0.003, decay:0.06, sustain:0.02, release:0.04, gain:0.22 }
+  ],
+  迫击炮出膛: [
+    { type:'noise', filter:'lowpass', freq:700, q:0.8, attack:0.005, decay:0.5, sustain:0.05, release:0.2, gain:0.55 },
+    { type:'sine', freq0:120, freq1:45, glide:'exp', attack:0.008, decay:0.5, sustain:0.03, release:0.15, gain:0.9 }
+  ]
+};
+/* ================= UI ================= */
+function field(L, key, label, min, max, step) {
+  var row = document.createElement('div'); row.className = 'row';
+  var lb = document.createElement('label'); lb.textContent = label;
+  var rng = document.createElement('input'); rng.type = 'range'; rng.min = min; rng.max = max; rng.step = step; rng.value = L[key] === undefined ? 0 : L[key];
+  var val = document.createElement('span'); val.className = 'val';
+  var fmt = function() { var v = L[key]; return (v < 10 ? v.toFixed(2) : v.toFixed(0)); };
+  val.textContent = fmt();
+  rng.oninput = function() { L[key] = parseFloat(rng.value); val.textContent = fmt(); };
+  row.appendChild(lb); row.appendChild(rng); row.appendChild(val);
+  return row;
+}
+function selectField(L, key, label, options) {
+  var row = document.createElement('div'); row.className = 'row';
+  var lb = document.createElement('label'); lb.textContent = label;
+  var sel = document.createElement('select');
+  options.forEach(function(o) { var op = document.createElement('option'); op.value = o; op.textContent = o; if (L[key] === o) op.selected = true; sel.appendChild(op); });
+  sel.onchange = function() { L[key] = sel.value; };
+  row.appendChild(lb); row.appendChild(sel);
+  return row;
+}
+function renderLayers() {
+  var box = document.getElementById('layers'); box.innerHTML = '';
+  design.forEach(function(L, i) {
+    var el = document.createElement('div'); el.className = 'layer';
+    var h = document.createElement('h3'); h.textContent = '层 ' + (i + 1);
+    var del = document.createElement('button'); del.textContent = '删除'; del.style.cssText = 'float:right;font-size:11px;padding:2px 8px;';
+    del.onclick = function() { design.splice(i, 1); renderLayers(); };
+    el.appendChild(h); el.appendChild(del);
+    el.appendChild(selectField(L, 'type', '波形', ['sine', 'square', 'sawtooth', 'triangle', 'noise']));
+    if (L.type !== 'noise') el.appendChild(field(L, 'freq0', '频率起', 20, 4000, 10));
+    el.appendChild(selectField(L, 'glide', '滑音', ['none', 'exp', 'lin']));
+    if (L.glide !== 'none') el.appendChild(field(L, 'freq1', '频率止', 20, 4000, 10));
+    el.appendChild(selectField(L, 'filter', '滤波', ['none', 'lowpass', 'highpass', 'bandpass']));
+    if (L.filter !== 'none') { el.appendChild(field(L, 'freq', '滤波频率', 40, 8000, 40)); el.appendChild(field(L, 'q', 'Q 值', 0.2, 12, 0.1)); }
+    el.appendChild(field(L, 'attack', '起音 A', 0, 1, 0.005));
+    el.appendChild(field(L, 'decay', '衰减 D', 0, 3, 0.01));
+    el.appendChild(field(L, 'sustain', '延音 S', 0, 1, 0.01));
+    el.appendChild(field(L, 'release', '释音 R', 0, 2, 0.01));
+    el.appendChild(field(L, 'gain', '音量', 0, 1.5, 0.01));
+    el.appendChild(field(L, 'delay', '延迟', 0, 2, 0.01));
+    box.appendChild(el);
+  });
+}
+function renderPresets() {
+  var box = document.getElementById('presets'); box.innerHTML = '';
+  Object.keys(PRESETS).forEach(function(name) {
+    var b = document.createElement('button'); b.textContent = name;
+    b.onclick = function() { design = JSON.parse(JSON.stringify(PRESETS[name])); renderLayers(); };
+    box.appendChild(b);
+  });
+}
+function randomize() {
+  var types = ['sine', 'square', 'sawtooth', 'triangle', 'noise'];
+  design = [];
+  var n = 2 + Math.floor(Math.random() * 2);
+  for (var i = 0; i < n; i++) {
+    var L = { type: types[Math.floor(Math.random() * 5)], glide: 'none', filter: 'none', attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.1, gain: 0.3, delay: i * 0.08 };
+    if (L.type !== 'noise') { L.freq0 = 60 + Math.random() * 2500; if (Math.random() < 0.6) { L.glide = Math.random() < 0.5 ? 'exp' : 'lin'; L.freq1 = 60 + Math.random() * 2500; } }
+    if (Math.random() < 0.7) { L.filter = ['lowpass', 'highpass', 'bandpass'][Math.floor(Math.random() * 3)]; L.freq = 100 + Math.random() * 4000; L.q = 0.5 + Math.random() * 5; }
+    design.push(L);
+  }
+  renderLayers();
+}
+function layerCode(L, t0, dur, gi) {
+  var lines = [];
+  var g = 'g' + gi;
+  if (L.type === 'noise') {
+    lines.push("    const src = ctx.createBufferSource(); src.buffer = A.noiseBuf; src.loop = true;");
+  } else {
+    lines.push("    const o = ctx.createOscillator(); o.type = '" + L.type + "';");
+    lines.push("    o.frequency.setValueAtTime(" + (L.freq0 || 440).toFixed(0) + ", t + " + t0 + ");");
+    if (L.glide === 'exp') lines.push("    o.frequency.exponentialRampToValueAtTime(" + (L.freq1 || 440).toFixed(0) + ", t + " + dur.toFixed(2) + ");");
+    if (L.glide === 'lin') lines.push("    o.frequency.linearRampToValueAtTime(" + (L.freq1 || 440).toFixed(0) + ", t + " + dur.toFixed(2) + ");");
+  }
+  var srcName = L.type === 'noise' ? 'src' : 'o';
+  if (L.filter !== 'none') {
+    lines.push("    const f = ctx.createBiquadFilter(); f.type = '" + L.filter + "'; f.frequency.value = " + (L.freq || 800).toFixed(0) + "; f.Q.value = " + (L.q || 1).toFixed(1) + ";");
+    lines.push("    " + srcName + ".connect(f); f.connect(" + g + ");");
+  } else {
+    lines.push("    " + srcName + ".connect(" + g + ");");
+  }
+  return lines.join('\n');
+}
+function exportCode() {
+  var name = document.getElementById('fnName').value || 'mySfx';
+  var code = [];
+  code.push("  // v5.33 音效工坊导出：" + name);
+  code.push("  function " + name + "() {");
+  code.push("    if (!ready()) return;");
+  code.push("    const ctx = A.ctx, t = ctx.currentTime;");
+  design.forEach(function(L, i) {
+    var a = L.attack || 0.01, d = L.decay || 0.2, r = L.release || 0.15, s = L.sustain || 0.3;
+    var total = Math.max(0.15, a + d + r);
+    var dl = (L.delay || 0).toFixed(2);
+    code.push("    // 层 " + (i + 1) + "：" + L.type + (L.glide !== 'none' ? " " + L.glide : ''));
+    code.push(layerCode(L, dl, total, i));
+    code.push("    const g" + i + " = ctx.createGain();");
+    code.push("    g" + i + ".gain.setValueAtTime(0.0001, t + " + dl + ");");
+    code.push("    g" + i + ".gain.exponentialRampToValueAtTime(" + (L.gain || 0.3).toFixed(2) + ", t + " + (parseFloat(dl) + a).toFixed(2) + ");");
+    code.push("    g" + i + ".gain.setValueAtTime(" + ((L.gain || 0.3) * s).toFixed(3) + ", t + " + (parseFloat(dl) + total - r).toFixed(2) + ");");
+    code.push("    g" + i + ".gain.exponentialRampToValueAtTime(0.0001, t + " + (parseFloat(dl) + total).toFixed(2) + ");");
+    code.push("    g" + i + ".connect(A.master);");
+    var src = L.type === 'noise' ? 'src' : 'o';
+    code.push("    " + src + ".start(t + " + dl + "); " + src + ".stop(t + " + (parseFloat(dl) + total + 0.05).toFixed(2) + ");");
+    code.push('');
+  });
+  code.push("  }");
+  document.getElementById('export').value = code.join('\n');
+}
+document.getElementById('btnPlay').onclick = play;
+document.getElementById('btnRand').onclick = randomize;
+document.getElementById('btnAdd').onclick = function() { design.push({ type:'sine', freq0:440, glide:'none', filter:'none', attack:0.01, decay:0.2, sustain:0.2, release:0.1, gain:0.3, delay:design.length * 0.08 }); renderLayers(); };
+document.getElementById('btnExport').onclick = exportCode;
+document.getElementById('masterVol').oninput = function() { document.getElementById('masterVolV').textContent = this.value + '%'; MASTER && (MASTER.gain.value = this.value / 100 * 0.6); };
+renderLayers(); renderPresets();
+</script>
+</body>
+</html>

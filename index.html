@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>灰烬战线 · ASHEN FRONTLINE</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- 渲染画布由 main.js 注入 -->
+
+    <!-- ===== 战斗 HUD ===== -->
+    <div id="hud" class="hidden">
+      <!-- v5.28 氛围：暗角 + 爆炸闪光 -->
+      <div id="vignette"></div>
+      <div id="flash"></div>
+      <div id="crosshair">
+        <span class="ch ch-t"></span><span class="ch ch-b"></span>
+        <span class="ch ch-l"></span><span class="ch ch-r"></span>
+        <span class="ch-dot"></span>
+      </div>
+      <div id="hitmarker" class="hidden">✕</div>
+      <div id="damage-flash" class="hidden"></div>
+      <div id="scope-overlay" class="hidden"></div>
+      <div id="hit-indicator" class="hidden">▲</div>
+      <div id="lowhp" class="hidden"></div>
+      <div id="smoke-overlay" class="hidden"></div>
+
+      <!-- 中央播报 -->
+      <div id="announce" class="hidden"></div>
+      <!-- 目标罗盘 -->
+      <div id="objective" class="hidden"><span id="obj-arrow">▶</span><span id="obj-text"></span></div>
+      <!-- 飘字容器 -->
+      <div id="popups"></div>
+
+      <!-- 左上：兵力 + 占领点 -->
+      <div id="top-left">
+        <div id="tickets">
+          <span id="ticket-red" class="t-red">500</span>
+          <span class="t-vs">/</span>
+          <span id="ticket-blue" class="t-blue">500</span>
+          <span id="mode-tag" class="mode-tag">征服</span>
+        </div>
+        <div id="sector-bar" class="hidden"></div>
+        <div id="flags"></div>
+        <button id="btn-exit" title="退出对局，回主菜单重新选图">退出对局</button>
+      </div>
+
+      <!-- 迫击炮部署地图（右下悬空，点击选点） -->
+      <div id="mortar-map-panel" class="hidden">
+        <canvas id="mortar-map" width="380" height="380"></canvas>
+        <div class="mortar-hint">点击地图选择落点 · 右键或 3 收起</div>
+      </div>
+
+      <!-- v5.18/v5.22 功绩播报（底部小字堆叠 + 上方分数缓动；原击杀播报已由功绩系统替代） -->
+      <div id="merit">
+        <div id="merit-score" class="hidden">0</div>
+        <div id="scorefeed"></div>
+      </div>
+
+      <!-- 右上：分数 + 小地图 -->
+      <div id="top-right">
+        <div id="score">0</div>
+        <div id="rank-mini">列兵</div>
+        <canvas id="minimap" width="190" height="190"></canvas>
+      </div>
+
+      <!-- 左下：血量 -->
+      <div id="bottom-left">
+        <div id="shield-bar" class="hidden"><div id="shield-fill"></div></div>
+        <div id="health-bar"><div id="health-fill"></div></div>
+        <div id="health-num">100</div>
+      </div>
+
+      <!-- 装填读条（准星下方细条） -->
+      <div id="reload-bar" class="hidden"><div id="reload-fill"></div></div>
+
+      <!-- 右下：弹药 -->
+      <div id="bottom-right">
+        <div id="weapon-name">AR-40 突击步枪</div>
+        <div id="ammo"><span id="ammo-mag">30</span><span class="ammo-sep">/</span><span id="ammo-reserve">150</span></div>
+        <div id="gadget-info"></div>
+        <div id="reload-hint" class="hidden">换弹中…</div>
+      </div>
+
+      <!-- 占领状态 -->
+      <div id="capture-status" class="hidden"></div>
+      <!-- 中央消息 -->
+      <div id="message" class="hidden"></div>
+      <!-- 出生保护提示 -->
+      <div id="spawn-hint" class="hidden">出生保护</div>
+
+      <!-- 载具 HUD -->
+      <div id="vehicle-hud" class="hidden">
+        <div id="vehicle-name">主战坦克</div>
+        <div id="vehicle-health"><div id="vehicle-health-fill"></div></div>
+        <div id="vehicle-hint"></div>
+      </div>
+
+      <div id="pause-hint" class="hidden">点击画面锁定鼠标 · Esc 释放 · Tab 计分板</div>
+    </div>
+
+    <!-- ===== 主菜单 ===== -->
+    <div id="menu" class="screen">
+      <h1 class="title">灰烬战线</h1>
+      <div class="subtitle">ASHEN FRONTLINE · v5</div>
+      <p class="menu-desc">16v16 大战场 · 双模式 · 四地图 · 六兵种 · 陆空载具 · 全域破坏</p>
+      <div class="menu-grid">
+        <div class="menu-col">
+          <div class="menu-label">游戏模式</div>
+          <button class="btn mode-btn selected" data-mode="conquest">征服模式<span>占领旗帜 · 消耗敌军兵力</span></button>
+          <button class="btn mode-btn" data-mode="breakthrough">突破模式<span>扇区推进 · 攻防拉锯</span></button>
+        </div>
+        <div class="menu-col">
+          <div class="menu-label">战场地图</div>
+          <button class="btn map-btn selected" data-map="city">灰烬都市<span>现代城市 · 巷战</span></button>
+          <button class="btn map-btn" data-map="desert">沙暴行动<span>中东沙漠 · 油田</span></button>
+          <button class="btn map-btn" data-map="snow">雪域要塞<span>极地雪原 · 冰湖碉堡</span></button>
+    <button class="btn map-btn" data-map="fort">钢铁防线<span>要塞攻坚 · 为突破而生</span></button>
+        </div>
+        <div class="menu-col">
+          <div class="menu-label">AI 难度</div>
+          <button class="btn diff-btn" data-diff="easy">简单<span>AI 反应慢 · 枪法差</span></button>
+          <button class="btn diff-btn selected" data-diff="normal">普通<span>均衡的反应与枪法</span></button>
+          <button class="btn diff-btn" data-diff="hard">困难<span>AI 反应快 · 枪法准</span></button>
+        </div>
+      </div>
+      <button id="btn-start" class="btn btn-primary">开始游戏</button>
+      <div id="rank-display" class="rank-line">军衔：列兵</div>
+      <div class="controls-hint">
+        WASD 移动 · Shift 冲刺 · C 蹲 · 空格跳跃 · 鼠标射击<br>
+        R 换弹 · 1/2/3 切换武器 · G 手雷 · Q 标记敌人 · F 上下车 · Tab 计分板
+      </div>
+    </div>
+
+    <!-- ===== 选兵种 ===== -->
+    <div id="class-select" class="screen hidden">
+      <h2>选择兵种</h2>
+      <div id="class-options"></div>
+      <button id="btn-deploy" class="btn">部署</button>
+    </div>
+
+    <!-- ===== 阵亡/部署（v5.39 俯视选点复活，无黑底） ===== -->
+    <div id="death-screen" class="screen hidden">
+      <div id="death-info"></div>
+      <button id="btn-exit-dead" class="btn">退出对局</button>
+      <div id="death-classes"></div>
+      <div id="death-spawns"></div>
+    </div>
+
+    <!-- ===== 结束 ===== -->
+    <div id="end-screen" class="screen hidden">
+      <h2 id="end-title">胜利</h2>
+      <div id="end-info"></div>
+      <button id="btn-restart" class="btn">再来一局</button>
+      <button id="btn-exit-end" class="btn">退出对局</button>
+    </div>
+
+    <!-- ===== 计分板 ===== -->
+    <div id="scoreboard" class="screen hidden">
+      <h2>计分板</h2>
+      <div id="scoreboard-body"></div>
+    </div>
+  </div>
+
+  <script src="three.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/terrain.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/weapons.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/vehicles.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/debug.js"></script>
+</body>
+</html>

@@ -2883,7 +2883,7 @@ const VEHICLE_SPAWNS = [
     placeFortifications(rng, W, flags);   // v5.13 永久墙工事（先于小型掩体，保证墙体净空）
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
-    placeTwoStory(rng, W, flags, 6);   // v5.51 二层楼房
+    placeHouse(rng, W, flags, 6);   // v5.52 住宅楼
     // 松林（密集雪松 + 少量裸岩）
     for (let i = 0; i < 70; i++) {
       const x = M.randRange(rng, -W + 12, W - 12);
@@ -2985,7 +2985,7 @@ const VEHICLE_SPAWNS = [
     // 5) 通用：掩体/旗点工事/岩群（东侧高台加岩）
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
-    placeTwoStory(rng, W, flags, 7);   // v5.51 二层楼房
+    placeHouse(rng, W, flags, 7);   // v5.52 住宅楼
     for (let i = 0; i < 10; i++) {
       const spot = findSpot(rng, 1.5, 3.5, 1.5, 3.5, 10, 20, flags);
       if (!spot) continue;
@@ -3023,7 +3023,7 @@ const VEHICLE_SPAWNS = [
     placeFortifications(rng, W, flags);
     placeDestructibles(rng, W, flags);
     placeFlagCover(rng, flags);
-    placeTwoStory(rng, W, flags, 6);   // v5.51 二层楼房
+    placeHouse(rng, W, flags, 6);   // v5.52 住宅楼
     // 密林（大量绿树）
     for (let i = 0; i < 90; i++) {
       const x = M.randRange(rng, -W + 12, W - 12);
@@ -3161,13 +3161,13 @@ const VEHICLE_SPAWNS = [
     }
   }
 
-  // v5.51 二层楼房：四面通风（无墙），可分级破坏（上层先塌）
-  function placeTwoStory(rng, W, flags, n) {
+  // v5.52 住宅楼：有墙、可进入（门洞）、可对外射击（窗洞）、可分级破坏（上层先塌）
+  function placeHouse(rng, W, flags, n) {
     for (let i = 0; i < n; i++) {
       const spot = findSpot(rng, 7, 9, 7, 9, 14, 26, flags);
       if (!spot) continue;
       addSolid(T.buildings, 'house2', spot.x, spot.z, spot.w, spot.d, M.randRange(rng, 5.5, 7),
-        { destructible: true, hp: 14000, blocksLOS: false, stages: true, rubble: true });
+        { destructible: true, hp: 14000, blocksLOS: true, stages: true, rubble: true });
     }
   }
 
@@ -3472,29 +3472,41 @@ const VEHICLE_SPAWNS = [
       g.position.set(s.cx, s.baseH, s.cz);
       mesh = g;
     } else if (s.kind === 'house2') {
-      // v5.51 二层楼房：四面通风（四角立柱 + 楼板 + 屋顶，无墙），可分级破坏
+      // v5.52 住宅楼：四面墙（门洞+窗洞）+ 楼板 + 屋顶，可进入、可对外射击、可分级破坏
       const g = new THREE.Group();
-      const concM = new THREE.MeshStandardMaterial({ color: 0x8a867e, roughness: 0.85 });
-      const darkM = new THREE.MeshStandardMaterial({ color: 0x55514a, roughness: 0.9 });
-      const floorH = s.h / 2;
-      const ground = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.18, s.d), darkM);
-      ground.position.set(0, 0.09, 0);
-      const mid = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.16, s.d), darkM);
-      mid.position.set(0, floorH + 0.08, 0);
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.4, 0.2, s.d + 0.4), concM);
-      roof.position.set(0, s.h + 0.1, 0);
-      roof.castShadow = true;
-      const pillars = new THREE.Group();
-      for (const o of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, s.h, 0.4), concM);
-        p.position.set(o[0] * (s.w / 2 - 0.25), s.h / 2, o[1] * (s.d / 2 - 0.25));
-        p.castShadow = true;
-        pillars.add(p);
-      }
-      g.add(ground, mid, roof, pillars);
+      const wallM = new THREE.MeshStandardMaterial({ color: 0x8a867e, roughness: 0.85 });
+      const roofM = new THREE.MeshStandardMaterial({ color: 0x6a5a4a, roughness: 0.9 });
+      const floorM = new THREE.MeshStandardMaterial({ color: 0x55514a, roughness: 0.9 });
+      const doorM = new THREE.MeshStandardMaterial({ color: 0x3a352e, roughness: 0.8 });
+      const glassM = new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.2, metalness: 0.5 });
+      const hw = s.w / 2, hd = s.d / 2, t = 0.35, floorH = s.h / 2;
+      // 楼板
+      const ground = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.2, s.d), floorM); ground.position.set(0, 0.1, 0);
+      const mid = new THREE.Mesh(new THREE.BoxGeometry(s.w, 0.18, s.d), floorM); mid.position.set(0, floorH + 0.09, 0);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(s.w + 0.6, 0.25, s.d + 0.6), roofM); roof.position.set(0, s.h + 0.12, 0); roof.castShadow = true;
+      g.add(ground, mid, roof);
+      // 四面墙（整墙薄盒）
+      const walls = new THREE.Group();
+      const mkWall = (wx, wz, wlen, dlen) => { const m = new THREE.Mesh(new THREE.BoxGeometry(wlen, s.h, dlen), wallM); m.position.set(wx, s.h / 2, wz); m.castShadow = true; walls.add(m); return m; };
+      mkWall(0, -hd, s.w, t);   // 前墙
+      mkWall(0, hd, s.w, t);    // 后墙
+      mkWall(-hw, 0, t, s.d);   // 左墙
+      mkWall(hw, 0, t, s.d);    // 右墙
+      // 门（前墙地面层中央）
+      const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.2, 0.1), doorM); door.position.set(0, 1.1, -hd - 0.03); walls.add(door);
+      // 窗户（玻璃矩形，墙上开口视觉提示）
+      const mkWin = (wx, wz, wy, wlen, dlen) => { const m = new THREE.Mesh(new THREE.BoxGeometry(wlen, 1.0, dlen), glassM); m.position.set(wx, wy, wz); walls.add(m); };
+      mkWin(0, -hd - 0.03, 3.2, 1.4, 0.06);       // 前墙二层窗
+      mkWin(0, hd + 0.03, 1.4, 1.4, 0.06);        // 后墙一层窗
+      mkWin(0, hd + 0.03, 3.2, 1.4, 0.06);        // 后墙二层窗
+      mkWin(-hw - 0.03, 0, 1.4, 0.06, 1.4);       // 左墙一层窗
+      mkWin(-hw - 0.03, 0, 3.2, 0.06, 1.4);       // 左墙二层窗
+      mkWin(hw + 0.03, 0, 1.4, 0.06, 1.4);        // 右墙一层窗
+      mkWin(hw + 0.03, 0, 3.2, 0.06, 1.4);        // 右墙二层窗
+      g.add(walls);
       g.position.set(s.cx, s.baseH, s.cz);
       mesh = g;
-      s.parts = { roof, mid, pillars, extras: [mid] };
+      s.parts = { roof, mid, walls, extras: [mid] };
     } else {
       // building / shack（v5.35 纵深造型：退台式塔楼 + 附楼 + 屋顶设备 + 天线，告别大方块）
       const isShack = s.kind === 'shack';
@@ -3636,28 +3648,75 @@ const VEHICLE_SPAWNS = [
   }
 
   // ---- 圆形碰撞体 vs 实体足迹 ----
+  // v5.52 住宅楼碰撞：四面墙薄盒 + 门洞/窗洞
+  const HOUSE_T = 0.35, HOUSE_DOOR_HALF = 0.8, HOUSE_WIN_HALF = 0.7;
+  function houseOpen(s, x, y, z) {
+    const lx = x - s.cx, lz = z - s.cz, ly = y - s.baseH;
+    const hw = s.w / 2, hd = s.d / 2, t = HOUSE_T + 0.05;
+    if (Math.abs(lz + hd) <= t && Math.abs(lx) <= HOUSE_DOOR_HALF && ly <= 2.2) return true;  // 门洞
+    const win = (ly >= 0.9 && ly <= 1.9) || (ly >= 2.7 && ly <= 3.7);
+    if (!win) return false;
+    if ((Math.abs(lx + hw) <= t || Math.abs(lx - hw) <= t) && Math.abs(lz) <= HOUSE_WIN_HALF) return true;  // 左/右窗
+    if (Math.abs(lz - hd) <= t && Math.abs(lx) <= HOUSE_WIN_HALF) return true;  // 后墙窗
+    return false;
+  }
+  function houseWallHit(o, d, s, maxDist) {
+    const hw = s.w / 2, hd = s.d / 2, t = HOUSE_T;
+    const y0 = s.baseH, y1 = s.baseH + s.h;
+    const walls = [
+      { min: { x: s.cx - hw, y: y0, z: s.cz - hd - t / 2 }, max: { x: s.cx + hw, y: y1, z: s.cz - hd + t / 2 } },
+      { min: { x: s.cx - hw, y: y0, z: s.cz + hd - t / 2 }, max: { x: s.cx + hw, y: y1, z: s.cz + hd + t / 2 } },
+      { min: { x: s.cx - hw - t / 2, y: y0, z: s.cz - hd }, max: { x: s.cx - hw + t / 2, y: y1, z: s.cz + hd } },
+      { min: { x: s.cx + hw - t / 2, y: y0, z: s.cz - hd }, max: { x: s.cx + hw + t / 2, y: y1, z: s.cz + hd } },
+    ];
+    let best = null, bestT = maxDist;
+    for (const wb of walls) {
+      const tt = Game.ray.rayAABB(o, d, wb.min, wb.max);
+      if (tt !== null && tt >= 0 && tt < bestT) {
+        const px = o.x + d.x * tt, py = o.y + d.y * tt, pz = o.z + d.z * tt;
+        if (!houseOpen(s, px, py, pz)) { bestT = tt; best = { t: tt, point: { x: px, y: py, z: pz } }; }
+      }
+    }
+    return best;
+  }
+  function pushCircleBox(pos, r, bx, bz, hx, hz) {
+    const cx = pos.x - bx, cz = pos.z - bz;
+    const px = clamp(cx, -hx, hx), pz = clamp(cz, -hz, hz);
+    const dx = cx - px, dz = cz - pz;
+    const d2 = dx * dx + dz * dz;
+    if (d2 < r * r) {
+      if (d2 > 1e-9) {
+        const d = Math.sqrt(d2), nx = dx / d, nz = dz / d;
+        pos.x = bx + px + nx * r;
+        pos.z = bz + pz + nz * r;
+      } else {
+        const left = cx + hx, right = hx - cx, top = cz + hz, bottom = hz - cz;
+        const m = Math.min(left, right, top, bottom);
+        if (m === left) pos.x = bx - hx - r;
+        else if (m === right) pos.x = bx + hx + r;
+        else if (m === top) pos.z = bz - hz - r;
+        else pos.z = bz + hz + r;
+      }
+    }
+  }
   function resolveCircle(pos, r) {
     for (const s of T.solids) {
       if (!s.solid) continue;
-      const hx = s.w / 2, hz = s.d / 2;
-      const cx = pos.x - s.cx, cz = pos.z - s.cz;
-      const px = clamp(cx, -hx, hx), pz = clamp(cz, -hz, hz);
-      const dx = cx - px, dz = cz - pz;
-      const d2 = dx * dx + dz * dz;
-      if (d2 < r * r) {
-        if (d2 > 1e-9) {
-          const d = Math.sqrt(d2), nx = dx / d, nz = dz / d;
-          pos.x = s.cx + px + nx * r;
-          pos.z = s.cz + pz + nz * r;
-        } else {
-          const left = cx + hx, right = hx - cx, top = cz + hz, bottom = hz - cz;
-          const m = Math.min(left, right, top, bottom);
-          if (m === left) pos.x = s.cx - hx - r;
-          else if (m === right) pos.x = s.cx + hx + r;
-          else if (m === top) pos.z = s.cz - hz - r;
-          else pos.z = s.cz + hz + r;
+      if (s.kind === 'house2') {
+        const hw = s.w / 2, hd = s.d / 2, t = HOUSE_T;
+        const boxes = [
+          { bx: s.cx, bz: s.cz - hd, hx: hw, hz: t / 2, door: true },
+          { bx: s.cx, bz: s.cz + hd, hx: hw, hz: t / 2 },
+          { bx: s.cx - hw, bz: s.cz, hx: t / 2, hz: hd },
+          { bx: s.cx + hw, bz: s.cz, hx: t / 2, hz: hd },
+        ];
+        for (const wb of boxes) {
+          if (wb.door && Math.abs(pos.x - s.cx) < HOUSE_DOOR_HALF) continue;  // 门洞
+          pushCircleBox(pos, r, wb.bx, wb.bz, wb.hx, wb.hz);
         }
+        continue;
       }
+      pushCircleBox(pos, r, s.cx, s.cz, s.w / 2, s.d / 2);
     }
   }
   T.resolveCircle = resolveCircle;
@@ -3671,6 +3730,11 @@ const VEHICLE_SPAWNS = [
     const o = { x: ax, y: ay, z: az };
     for (const s of T.solids) {
       if (!s.solid || !s.blocksLOS) continue;
+      if (s.kind === 'house2') {
+        const h = houseWallHit(o, d, s, len);
+        if (h && h.t >= 0.1 && h.t <= len - 0.1) return true;
+        continue;
+      }
       const t = Game.ray.rayAABB(o, d, s.min, s.max);
       if (t !== null && t >= 0.1 && t <= len - 0.1) return true;
     }
@@ -3702,6 +3766,11 @@ const VEHICLE_SPAWNS = [
     let best = null, bestT = maxDist;
     for (const s of T.solids) {
       if (!s.solid) continue;
+      if (s.kind === 'house2') {
+        const h = houseWallHit(o, d, s, bestT);
+        if (h && h.t < bestT) { bestT = h.t; best = s; }
+        continue;
+      }
       const t = Game.ray.rayAABB(o, d, s.min, s.max);
       if (t !== null && t >= 0 && t < bestT) { bestT = t; best = s; }
     }
@@ -3732,11 +3801,11 @@ const VEHICLE_SPAWNS = [
       if (Game.effects) Game.effects.emit(s.cx, s.baseH + s.h / 2, s.cz, 0x999999, 10, 3, 0.6, 0.2, 12, 1);
     } else if (st === 2) {
       if (s.kind === 'house2') {
-        // v5.51 二层楼房残破：上层（屋顶+二层楼板）塌落，立柱折成矮桩
+        // v5.52 住宅楼残破：上层（屋顶+二层楼板）塌落，墙体折成矮墙
         if (s.parts) {
           if (s.parts.roof) s.parts.roof.visible = false;
           if (s.parts.extras) for (const ex of s.parts.extras) ex.visible = false;
-          if (s.parts.pillars) s.parts.pillars.scale.y = 1.2 / s.h;
+          if (s.parts.walls) { s.parts.walls.scale.y = 1.2 / s.h; s.parts.walls.position.y = 0.6; }
         }
         s.h = 1.2;
         s.max.y = s.baseH + 1.2;

@@ -6,6 +6,10 @@ node_modules/
 .vscode/
 .idea/
 
+# VibeHub 本地映射（含项目 slug）
+.vibehub/
+.deploy-meta/
+
 # 测试 / 构建产物
 headless_shot.png
 

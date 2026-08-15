@@ -340,23 +340,6 @@
   function box(w, h, d, m) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); }
   function cyl(r, h, m, seg) { return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 12), m); }
 
-  // 红点瞄准镜（供非狙击枪使用）
-  function redDotSight() {
-    const g = new THREE.Group();
-    const base = box(0.05, 0.045, 0.1, new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.35, metalness: 0.6 }));
-    const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.012, 10),
-      new THREE.MeshStandardMaterial({ color: 0x300808, roughness: 0.2, metalness: 0.5 }));
-    lens.rotation.x = Math.PI / 2; lens.position.set(0, 0, -0.05);
-    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff3030 }));
-    dot.position.set(0, 0, -0.035);
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff2020, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
-    glow.position.copy(dot.position);
-    g.add(base, lens, dot, glow);
-    return g;
-  }
-
   // ---- 枪械模型（低模，每种枪有辨识度高的剪影） ----
   function buildGunModel(key) {
     const g = new THREE.Group();
@@ -370,7 +353,7 @@
     // v5.47 集成十字线：极细黑线刻在镜管前端，随镜管移动（非屏幕外设）
     const reticleMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, depthWrite: false, transparent: true, opacity: 0.92 });
     const addReticle = (sc, tw, th, tl) => {
-      const t = 0.003;
+      const t = 0.0016;   // v5.48 更细的十字线
       const v = box(t, th - 0.014, t, reticleMat);
       const h = box(tw - 0.014, t, t, reticleMat);
       v.position.z = h.position.z = -tl / 2 + 0.006;
@@ -396,8 +379,7 @@
       const frame = box(0.065, 0.12, 0.2, poly); frame.position.set(0, -0.04, 0.03);
       const grip = box(0.06, 0.16, 0.1, dark); grip.position.set(0, -0.13, 0.06); grip.rotation.x = 0.25;
       const muzzle = box(0.045, 0.045, 0.06, glow); muzzle.position.set(0, 0.03, -0.3);
-      const sight = redDotSight(); sight.position.set(0, 0.1, -0.12); sight.scale.setScalar(0.7);
-      g.add(slide, frame, grip, muzzle, sight);
+      g.add(slide, frame, grip, muzzle);
       addScope(g, 0.12, -0.03);
     } else if (key === 'sniper') {
       const body = box(0.06, 0.1, 0.5, poly); body.position.set(0, 0.02, 0.05);
@@ -429,9 +411,7 @@
       const mag = box(0.09, 0.17, 0.13, metal); mag.position.set(0, -0.13, 0.05);
       const stock = box(0.07, 0.1, 0.28, wood); stock.position.set(0, 0.02, 0.4);
       const bipod = box(0.06, 0.16, 0.04, dark); bipod.position.set(0, -0.12, -0.44); bipod.rotation.x = 0.15;
-      const handle = box(0.04, 0.07, 0.12, poly); handle.position.set(0, 0.15, -0.1);
-      const sight = redDotSight(); sight.position.set(0, 0.15, -0.18);
-      g.add(body, barrel, muzzle, mag, stock, bipod, handle, sight);
+      g.add(body, barrel, muzzle, mag, stock, bipod);
       addScope(g, 0.13, -0.05);
     } else if (key === 'smg') {
       const body = box(0.06, 0.11, 0.38, poly); body.position.set(0, 0.03, -0.02);
@@ -440,8 +420,7 @@
       const mag = box(0.05, 0.2, 0.07, metal); mag.position.set(0, -0.13, -0.02); mag.rotation.x = 0.15;
       const stock = box(0.05, 0.08, 0.22, dark); stock.position.set(0, 0.02, 0.22);
       const grip = box(0.04, 0.1, 0.05, dark); grip.position.set(0, -0.08, 0.08);
-      const sight = redDotSight(); sight.position.set(0, 0.12, -0.06); sight.scale.setScalar(0.8);
-      g.add(body, barrel, muzzle, mag, stock, grip, sight);
+      g.add(body, barrel, muzzle, mag, stock, grip);
       addScope(g, 0.12, -0.05);
     } else if (key === 'shotgun') {
       // 泵动霰弹枪：粗管 + 管式弹仓 + 木托 + 泵把
@@ -493,8 +472,7 @@
       const mag = box(0.055, 0.17, 0.1, metal); mag.position.set(0, -0.14, 0.02); mag.rotation.x = 0.25;
       const stock = box(0.06, 0.1, 0.24, poly); stock.position.set(0, -0.01, 0.32);
       const grip = box(0.045, 0.12, 0.05, dark); grip.position.set(0, -0.1, 0.16);
-      const sight = redDotSight(); sight.position.set(0, 0.12, -0.04);
-      g.add(body, barrel, muzzle, mag, stock, grip, sight);
+      g.add(body, barrel, muzzle, mag, stock, grip);
       addScope(g, 0.12, -0.05);
     }
     g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
@@ -830,18 +808,6 @@
     const scopeAligned = P.ads && P.adsEase > 0.5 && P.scopeLocal;
     // v5.47 冲刺横持：绕 Y 转 ~81° 使枪身横过胸前，叠加左右摇晃；开镜/腰射仍 0.03 微偏
     P.view.rotation.y = M.lerp(P.view.rotation.y, scopeAligned ? 0 : (sprinting ? 1.42 + sprintSway : 0.03), k);
-    // v5.47 开镜只显示镜管：隐藏枪身，消除枪体挡镜内视野（镜管+集成十字线保留）
-    if (pw && P.models && P.models[pw.def.key]) {
-      const gm = P.models[pw.def.key];
-      const scopeMesh = gm.userData.scopeMesh;
-      if (scopeMesh) {
-        for (let i = 0; i < gm.children.length; i++) {
-          const c = gm.children[i];
-          if (c !== scopeMesh) c.visible = !scopeAligned;
-        }
-        scopeMesh.visible = true;
-      }
-    }
   }
 
   P.init = init; P.update = update;

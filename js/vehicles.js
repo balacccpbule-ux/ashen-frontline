@@ -545,7 +545,7 @@
     }
     if (v.kind === 'heli') {
       if (v.group) v.group.visible = !P.ads;
-      const yaw = v.yaw, pitch = v.hovPitch + (v.viewPitch || 0);   // v5.47 视角=飞行俯仰+鼠标俯仰
+      const yaw = v.yaw, pitch = (v.viewPitch || 0);   // v5.48 视角俯仰仅由鼠标控制，前后移动（hovPitch）不再转动视角
       const cp = Math.cos(pitch), sp = Math.sin(pitch);
       const fwd = { x: -Math.sin(yaw) * cp, y: sp, z: -Math.cos(yaw) * cp };
       const camDist = 10, camHeight = 3.5;

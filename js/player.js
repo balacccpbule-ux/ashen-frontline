@@ -716,7 +716,7 @@
     if (s.grounded) {
       if (s.pos.y <= gh + 0.05) s.pos.y = gh;
       else { s.grounded = false; s.fallStartY = s.pos.y; }
-      if (P.keys.has('Space')) { s.vel.y = CONFIG.JUMP_VEL; s.grounded = false; s.fallStartY = s.pos.y; }
+      if (P.keys.has('Space')) { s.vel.y = CONFIG.JUMP_VEL; s.grounded = false; s.fallStartY = s.pos.y; if (s.sliding) { s.sliding = false; s.slideCd = 0.3; } }   // v5.52 滑铲接跳：结束滑铲、保留水平动量
     } else {
       s.vel.y -= CONFIG.GRAVITY * dt;
       s.pos.y += s.vel.y * dt;

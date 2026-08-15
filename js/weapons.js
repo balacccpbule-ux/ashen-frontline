@@ -505,9 +505,9 @@
 
   // ================= 范围伤害 =================
   function areaDamage(pos, radius, dmg, attacker, source, antiVehicle) {
-    // v5.10 反甲弹药（RPG/火箭）：对步兵溅射小（×0.35）、对载具高伤（×2）
+    // v5.52 反甲弹药（RPG/火箭）：对步兵溅射小（×0.35）；对载具穿甲——数值伤害=实际伤害（不再 ×2）
     const vsInf = antiVehicle ? 0.35 : 1;
-    const vsVeh = antiVehicle ? 2.0 : 1;
+    const vsVeh = 1;
     for (const s of Game.soldiers) {
       if (!s.alive || s.spawnProtect > 0) continue;
       if (s.ridingVehicle) continue;   // 乘员由载具装甲保护，伤害打在载具上

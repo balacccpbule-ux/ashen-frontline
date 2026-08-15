@@ -14,6 +14,7 @@
     switching: 0, switchTotal: 1, drawTime: 0.4, pendingSlot: null, // 换枪两段（收枪+掏枪）
     view: null, muzzleLocal: null,
     bobT: 0, viewKick: 0, lastShot: -999,
+    gaitPhase: 0,            // v5.48 步态相位（与脚步同频，驱动冲刺月牙摆动）
     landKick: 0, lastFallY: null,   // v5.10 落地顿挫动画
     flinchPitch: 0, flinchYaw: 0, flinchT: 0,   // v5.43 受击镜头甩动（被打击感）
     stepT: 0, lastSlot: 'primary', lastClsKey: null,   // v5.25 模型自动对账基准
@@ -352,8 +353,8 @@
     // v5.46 镂空长方体瞄准镜（像素风，无圆环）；长度取决于交战距离
     // v5.47 集成十字线：极细黑线刻在镜管前端，随镜管移动（非屏幕外设）
     const reticleMat = new THREE.MeshBasicMaterial({ color: 0x0a0a0a, depthWrite: false, transparent: true, opacity: 0.92 });
-    const addReticle = (sc, tw, th, tl) => {
-      const t = 0.0016;   // v5.48 更细的十字线
+    const addReticle = (sc, tw, th, tl, lineT) => {
+      const t = lineT || 0.0016;   // v5.48 十字线（栓狙/连狙传更细的 lineT）
       const v = box(t, th - 0.014, t, reticleMat);
       const h = box(tw - 0.014, t, t, reticleMat);
       v.position.z = h.position.z = -tl / 2 + 0.006;
@@ -396,7 +397,7 @@
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
-        addReticle(scope, tw, th, tl);
+        addReticle(scope, tw, th, tl, 0.0008);
         const mount = box(tw * 0.5, 0.08, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.04, 0);
         scope.add(mount);
       }
@@ -460,7 +461,7 @@
         const wL = box(st, th, tl, dark); wL.position.x = -tw / 2;
         const wR = box(st, th, tl, dark); wR.position.x = tw / 2;
         scope.add(wT, wB, wL, wR);
-        addReticle(scope, tw, th, tl);
+        addReticle(scope, tw, th, tl, 0.0008);
         const mount = box(tw * 0.5, 0.08, tl * 0.35, dark); mount.position.set(0, -th / 2 - 0.04, 0);
         scope.add(mount);
       }
@@ -608,9 +609,11 @@
     const adsRate = wdef ? (adsWant > 0 ? 1 / wdef.adsTime : 1 / (wdef.adsTime * 0.8)) : 1;
     P.adsK = M.clamp(P.adsK + (adsWant > 0 ? adsRate : -adsRate) * dt, 0, 1);
     P.adsEase = M.easeInOutCubic(P.adsK);
-    // 灵敏度缩放（tan 半角比；狙击镜钳到 0.18 下限）
+    // 灵敏度缩放（tan 半角比；狙击镜钳到 0.18 下限）× 全局/枪械开镜灵敏度倍率
     if (wdef) {
-      P.sensScale = M.lerp(1, M.clamp(Math.tan(wdef.adsFov * Math.PI / 360) / Math.tan(75 * Math.PI / 360), 0.18, 1), P.adsEase);
+      const fovSens = M.clamp(Math.tan(wdef.adsFov * Math.PI / 360) / Math.tan(75 * Math.PI / 360), 0.18, 1);
+      const adsSens = (CONFIG.ADS_SENS || 1) * (wdef.adsSens || 1);
+      P.sensScale = M.lerp(1, fovSens * adsSens, P.adsEase);
     }
 
     // --- 换枪两段状态机：倒计时独立运行（修 bug：切完一瞬间计时器冻结半途）；
@@ -698,6 +701,8 @@
     if (s.moving && s.grounded) {
       P.stepT -= dt;
       if (P.stepT <= 0) { P.stepT = s.sprinting ? 0.28 : 0.42; Game.sound.footstep(s.sprinting); }
+      // v5.48 步态相位与脚步同频：每步推进 π（两步一完整左右周期）
+      P.gaitPhase += (Math.PI / (s.sprinting ? 0.28 : 0.42)) * dt;
     }
 
     // --- 开火（自动：按住扳机；半自动：点击缓冲；换枪期禁火） ---
@@ -797,10 +802,15 @@
     }
     // 目标位置（瞄准 / 腰射）；v5.47 冲刺改为横持胸前
     const sprinting = Game.player.sprinting && !(P.ads && P.adsEase > 0.5);
-    // v5.48 极大削弱旋转摇晃；新增船形/月牙路径的【绝对位置】晃动（玩家眼里，非方向）
+    // v5.48 船形/月牙路径晃动：步态相位（与脚步同频）+ 垂直峰值停留（力量感）
     const sprintSway = sprinting ? Math.sin(P.bobT * 0.85) * 0.03 : 0;          // 旋转摇晃（大幅削弱）
-    const sprintCresX = sprinting ? Math.cos(P.bobT) * 0.04 : 0;                // 水平：左↔右
-    const sprintCresY = sprinting ? Math.cos(P.bobT * 2) * 0.06 : 0;            // 垂直：两侧上、中间下（幅度略大）
+    let sprintCresX = 0, sprintCresY = 0;
+    if (sprinting) {
+      const ph = P.gaitPhase || 0;
+      sprintCresX = Math.cos(ph) * 0.04;                                        // 水平：左↔右
+      const v = Math.cos(ph * 2);
+      sprintCresY = Math.sign(v) * Math.pow(Math.abs(v), 0.7) * 0.09;            // 垂直：幅度增大 + |cos|^0.7 峰值停留
+    }
     let target = P.ads && P.adsEase > 0.5 ? P.adsPos : P.hipPos;
     // v5.45 镜枪开镜：把镂空镜管对准屏幕中心（看穿镜管）
     if (P.ads && P.adsEase > 0.5 && P.scopeLocal) {

@@ -39,6 +39,7 @@
       captureStatus: $('capture-status'), message: $('message'),
       spawnHint: $('spawn-hint'), vehicleHud: $('vehicle-hud'),
       vehicleName: $('vehicle-name'), vehicleHealthFill: $('vehicle-health-fill'), vehicleHint: $('vehicle-hint'),
+      vehicleHeat: $('vehicle-heat'), vehicleHeatFill: $('vehicle-heat-fill'),
       pauseHint: $('pause-hint'),
       meritScore: $('merit-score'),   // v5.18 功绩分数缓动
       flash: $('flash'),               // v5.28 爆炸闪光
@@ -641,6 +642,20 @@
         : v.kind === 'aa'
           ? Game.t('veh.hint.aa')
           : Game.t('veh.hint.ground');
+      // v5.48 载具机枪过热/冷却读条
+      const heat = v.heat || 0;
+      if (el.vehicleHeat) {
+        const showHeat = heat > 0 || v.mgOverheated;
+        el.vehicleHeat.classList.toggle('hidden', !showHeat);
+        if (showHeat) {
+          const pct = Math.max(0, Math.min(100, heat));
+          el.vehicleHeatFill.style.width = pct + '%';
+          el.vehicleHeatFill.style.background = v.mgOverheated
+            ? '#e0483a' : heat > 70 ? '#e09030' : '#e0c04a';   // 过热冷却(红) / 即将过热(橙) / 升温(黄)
+          if (v.mgOverheated) el.vehicleHeatFill.classList.add('cooling');
+          else el.vehicleHeatFill.classList.remove('cooling');
+        }
+      }
     } else {
       el.vehicleHud.classList.add('hidden');
     }

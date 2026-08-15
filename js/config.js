@@ -76,6 +76,7 @@ const CONFIG = {
   WALK_SPEED: 6.0,
   SPRINT_SPEED: 9.2,
   CROUCH_SPEED: 3.0,
+  ADS_SENS: 1.0,             // v5.48 全局开镜灵敏度倍率（1=默认；调参面板可调）
   JUMP_VEL: 8.8,
   EYE_HEIGHT: 1.68,
   CROUCH_EYE: 1.05,
@@ -229,7 +230,7 @@ const WEAPONS = {
     spreadHip: 1.4, spreadAds: 0.25, spreadPerShot: 0.22, spreadMax: 3.4, spreadDecay: 3.6,
     // 新后坐模型（RecoilAxis 弹簧 + 确定性 pattern）
     recoilDef: { pitch: 0.09, yaw: 0.025, climbShape: [1.5, 1.3, 1.15, 1.05, 1.0], drift: 0.85, bias: 0.14, seed: 0x4d34a1 },   // v5.20 后坐增强
-    adsFov: 42, adsTime: 0.2,
+    adsFov: 42, adsTime: 0.2, adsSens: 1.0,
     dropoff: 0.38, falloffRange: 120,
     drawTime: 0.55, modes: ['auto', 'semi'],
     range: 120, tracer: 0xff3355, sound: 'rifle', scope: true, flashPower: 1.0,
@@ -240,7 +241,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.00045, bloomMax: 0.06, recoil: 0.028, recoilYaw: 0.009,
     spreadHip: 1.6, spreadAds: 0.3, spreadPerShot: 0.16, spreadMax: 3.8, spreadDecay: 3.0,
     recoilDef: { pitch: 0.075, yaw: 0.025, climbShape: [1.4, 1.25, 1.12, 1.05, 1.0], drift: 0.7, bias: -0.12, seed: 0x5a2b77 },   // v5.20 后坐增强
-    adsFov: 42, adsTime: 0.22,
+    adsFov: 42, adsTime: 0.22, adsSens: 1.0,
     dropoff: 0.35, falloffRange: 140,
     drawTime: 0.75, modes: ['auto'],
     range: 140, tracer: 0x38c8ff, sound: 'lmg', scope: true, flashPower: 1.2,
@@ -251,7 +252,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.03, bloomMax: 0.12, recoil: 0.07, recoilYaw: 0.007,
     spreadHip: 0.35, spreadAds: 0.02, spreadPerShot: 2.0, spreadMax: 3.0, spreadDecay: 2.5,
     recoilDef: { pitch: 0.19, yaw: 0.015, climbShape: [1.8, 1.4, 1.2, 1.1, 1.0], drift: 0.5, bias: 0.05, seed: 0x77aa11 },   // v5.20 后坐增强
-    adsFov: 18, adsTime: 0.25,
+    adsFov: 18, adsTime: 0.25, adsSens: 1.0,
     dropoff: 0, falloffRange: 400,
     drawTime: 0.7, modes: ['auto'],
     range: 400, tracer: 0x3dff9e, sound: 'sniper', scope: true, flashPower: 1.9,
@@ -262,7 +263,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.0002, bloomMax: 0.05, recoil: 0.02, recoilYaw: 0.008,
     spreadHip: 1.2, spreadAds: 0.2, spreadPerShot: 0.18, spreadMax: 3.0, spreadDecay: 4.2,
     recoilDef: { pitch: 0.05, yaw: 0.02, climbShape: [1.3, 1.2, 1.1, 1.05, 1.0], drift: 0.6, bias: 0.08, seed: 0x2c9a3f },   // v5.20 后坐增强
-    adsFov: 45, adsTime: 0.18,
+    adsFov: 45, adsTime: 0.18, adsSens: 1.0,
     dropoff: 0.45, falloffRange: 90,
     drawTime: 0.45, modes: ['auto'],
     range: 90, tracer: 0xffb340, sound: 'smg', scope: true, flashPower: 0.8,
@@ -273,7 +274,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.003, bloomMax: 0.05, recoil: 0.032, recoilYaw: 0.01,
     spreadHip: 1.0, spreadAds: 0.2, spreadPerShot: 0.35, spreadMax: 3.0, spreadDecay: 5.0,
     recoilDef: { pitch: 0.13, yaw: 0.025, climbShape: [1.4, 1.2, 1.1, 1.0], drift: 0.7, bias: 0.1, seed: 0x0f3c66 },   // v5.20 后坐增强
-    adsFov: 50, adsTime: 0.15,
+    adsFov: 50, adsTime: 0.15, adsSens: 1.0,
     dropoff: 0.5, falloffRange: 80,
     drawTime: 0.35, modes: ['auto'],
     range: 80, tracer: 0xff5fd0, sound: 'pistol', scope: true, flashPower: 0.6,
@@ -285,7 +286,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.012, bloomMax: 0.09, recoil: 0.075, recoilYaw: 0.014,
     spreadHip: 2.2, spreadAds: 1.0, spreadPerShot: 2.4, spreadMax: 4.5, spreadDecay: 4.0,
     recoilDef: { pitch: 0.22, yaw: 0.025, climbShape: [1.9, 1.5, 1.2, 1.0], drift: 0.6, bias: 0.05, seed: 0x6b1f9c },   // v5.20 后坐增强
-    adsFov: 50, adsTime: 0.18,
+    adsFov: 50, adsTime: 0.18, adsSens: 1.0,
     dropoff: 0.06, falloffRange: 32,   // 近战王者：射程末端仅剩 6% 伤害（衰减极陡）
     drawTime: 0.4, modes: ['auto'],    // v5.11 掏枪更快（0.6→0.4），换枪后立刻能射
     range: 45, tracer: 0xffaa33, sound: 'shotgun', scope: true, flashPower: 1.6,
@@ -297,7 +298,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.008, bloomMax: 0.08, recoil: 0.04, recoilYaw: 0.008,
     spreadHip: 1.9, spreadAds: 0.9, spreadPerShot: 1.1, spreadMax: 3.6, spreadDecay: 3.5,
     recoilDef: { pitch: 0.15, yaw: 0.022, climbShape: [1.5, 1.25, 1.1, 1.0], drift: 0.6, bias: 0.04, seed: 0xaa12c0 },   // v5.20 后坐增强
-    adsFov: 50, adsTime: 0.18,
+    adsFov: 50, adsTime: 0.18, adsSens: 1.0,
     dropoff: 0.12, falloffRange: 26,
     drawTime: 0.45, modes: ['auto'],
     range: 40, tracer: 0xffc040, sound: 'shotgun', scope: true, flashPower: 1.4,
@@ -308,7 +309,7 @@ const WEAPONS = {
     spread: 0, bloomPerShot: 0.004, bloomMax: 0.07, recoil: 0.05, recoilYaw: 0.009,
     spreadHip: 1.0, spreadAds: 0.08, spreadPerShot: 0.5, spreadMax: 2.6, spreadDecay: 3.2,
     recoilDef: { pitch: 0.15, yaw: 0.018, climbShape: [1.6, 1.35, 1.15, 1.0], drift: 0.6, bias: 0.06, seed: 0x3f8e5a },   // v5.20 后坐增强
-    adsFov: 28, adsTime: 0.2,         // 4x 级中倍镜（无狙击镜遮罩，见 player 开镜）
+    adsFov: 28, adsTime: 0.2, adsSens: 1.0,         // 4x 级中倍镜（无狙击镜遮罩，见 player 开镜）
     dropoff: 0.25, falloffRange: 300,
     drawTime: 0.65, modes: ['auto'],
     range: 300, tracer: 0x9ad0ff, sound: 'dmr', scope: true, flashPower: 1.3,

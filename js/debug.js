@@ -61,6 +61,7 @@
       ['w-bps', '每发扩散°', 'spreadPerShot', 0, 2, 0.01, f2],
       ['w-hip', '腰射扩散°', 'spreadHip', 0, 5, 0.05, f2],
       ['w-adsfov', '开镜FOV', 'adsFov', 10, 70, 1, f0],
+      ['w-adssens', '开镜灵敏度', 'adsSens', 0.2, 2, 0.05, f2],
       ['w-dropoff', '距离衰减', 'dropoff', 0, 0.8, 0.01, f2],
       ['w-range', '射程', 'range', 20, 500, 5, f0],
       ['w-mag', '弹匣容量', 'mag', 1, 200, 1, f0],
@@ -69,6 +70,7 @@
       ['walk', '步行速度', 'WALK_SPEED', 1, 15, 0.1, f2],
       ['sprint', '冲刺速度', 'SPRINT_SPEED', 1, 20, 0.1, f2],
       ['jump', '跳跃力', 'JUMP_VEL', 1, 20, 0.1, f2],
+      ['adssens', '开镜灵敏度', 'ADS_SENS', 0.2, 2, 0.05, f2],
     ]},
     { title: '界面', type: 'map', items: [
       ['mapsize', '小地图大小(K)', 'minimapSize', 120, 320, 10, f0],
